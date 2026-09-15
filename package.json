@@ -1,0 +1,15 @@
+{
+  "name": "projet-signet",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd backend && npx tauri dev"
+  },
+  "workspaces": [
+    "frontend",
+    "signaling"
+  ],
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

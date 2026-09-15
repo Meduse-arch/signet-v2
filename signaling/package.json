@@ -1,0 +1,9 @@
+{
+  "name": "vtt-signal-server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {},
+  "dependencies": {
+    "@vercel/node": "^12.0.3"
+  }
+}
