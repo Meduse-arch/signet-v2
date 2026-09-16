@@ -1,4 +1,5 @@
 import SimplePeer from 'simple-peer';
+import { encryptSignalData, decryptSignalData } from './crypto';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -228,10 +229,14 @@ export class VTTNetwork {
     data: SimplePeer.SignalData,
   ): Promise<void> {
     const url = `${this.signalUrl}?roomId=${encodeURIComponent(roomId)}`;
+    
+    // Chiffrement de bout en bout de l'offre/réponse
+    const encryptedData = await encryptSignalData(data, roomId);
+
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, data }),
+      body: JSON.stringify({ type, data: encryptedData }),
     });
 
     if (!res.ok) {
@@ -251,7 +256,27 @@ export class VTTNetwork {
       throw new Error(`GET ${url} → ${res.status} ${res.statusText} : ${body}`);
     }
 
-    return (await res.json()) as SignalRoomState;
+    const raw = await res.json() as { offer: string | null; answer: string | null };
+    const state: SignalRoomState = { offer: null, answer: null };
+
+    // Déchiffrement de bout en bout
+    if (raw.offer) {
+      try {
+        state.offer = await decryptSignalData<SimplePeer.SignalData>(raw.offer, roomId);
+      } catch (err) {
+        console.error('[VTTNetwork] Impossible de déchiffrer l\'offre (mauvais code ?)', err);
+      }
+    }
+
+    if (raw.answer) {
+      try {
+        state.answer = await decryptSignalData<SimplePeer.SignalData>(raw.answer, roomId);
+      } catch (err) {
+        console.error('[VTTNetwork] Impossible de déchiffrer la réponse (mauvais code ?)', err);
+      }
+    }
+
+    return state;
   }
 
   // ── Polling (côté Hôte uniquement) ──────────────────────────────────────

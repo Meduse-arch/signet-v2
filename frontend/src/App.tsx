@@ -12,6 +12,10 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>('auth');
   const [sessionRoomId, setSessionRoomId] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  // URL du serveur de signalement partagée entre l'interface réseau et le jeu
+  const [signalUrl, setSignalUrl] = useState('http://localhost:3000/api/signal');
+  const [isLanMode, setIsLanMode] = useState(false);
 
   // Vérifier la session Supabase au démarrage (une seule fois)
   useEffect(() => {
@@ -68,7 +72,13 @@ export default function App() {
       )}
 
       {appState === 'hub' && (
-        <Hub onJoinGame={handleJoinGame} onLogout={handleLogout} />
+        <Hub 
+          onJoinGame={handleJoinGame} 
+          onLogout={handleLogout} 
+          onSignalUrlChange={setSignalUrl} 
+          isLanMode={isLanMode}
+          onLanModeChange={setIsLanMode}
+        />
       )}
 
       {appState === 'game' && sessionRoomId && (
@@ -88,7 +98,7 @@ export default function App() {
           
           <div className="flex-1 overflow-hidden relative">
             {/* On réutilise temporairement le TestDashboard pour le P2P */}
-            <TestDashboard initialRoom={sessionRoomId} />
+            <TestDashboard initialRoom={sessionRoomId} signalUrl={signalUrl} />
           </div>
         </div>
       )}

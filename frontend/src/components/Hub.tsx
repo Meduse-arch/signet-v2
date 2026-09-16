@@ -6,13 +6,17 @@ import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Modal } from './ui/Modal';
 import { Input } from './ui/Input';
+import { NetworkToggle } from './NetworkToggle';
 
 interface HubProps {
   onJoinGame: (roomId: string) => void;
   onLogout: () => void;
+  onSignalUrlChange: (url: string) => void;
+  isLanMode: boolean;
+  onLanModeChange: (isLan: boolean) => void;
 }
 
-export function Hub({ onJoinGame, onLogout }: HubProps) {
+export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanModeChange }: HubProps) {
   const [roomCode, setRoomCode] = useState('');
   const [roleLevel, setRoleLevel] = useState<number>(0);
   const [username, setUsername] = useState<string>('');
@@ -113,13 +117,19 @@ export function Hub({ onJoinGame, onLogout }: HubProps) {
       </div>
 
       {/* Header Minimaliste */}
-      <header className="w-full flex justify-between items-center p-6 lg:px-12 z-20">
+      <header className="relative w-full flex justify-between items-center p-6 lg:px-12 z-50">
         <div className="flex items-center gap-3">
           <img src="/logo.svg" alt="Signet VTT" className="w-8 h-8 lg:w-10 lg:h-10 opacity-90 drop-shadow-lg" />
           <span className="text-xl font-bold tracking-widest uppercase text-white drop-shadow-md">Signet</span>
         </div>
 
         <div className="flex items-center gap-4 sm:gap-6">
+          <NetworkToggle 
+            onSignalUrlChange={onSignalUrlChange} 
+            isLanMode={isLanMode} 
+            onLanModeChange={onLanModeChange} 
+          />
+          
           <div className="hidden sm:flex flex-col items-end">
             <span className="text-sm font-bold text-white drop-shadow-md">{username}</span>
             <span className={`text-[10px] font-black uppercase tracking-widest drop-shadow-md ${isGM ? 'text-indigo-400' : 'text-slate-300'}`}>

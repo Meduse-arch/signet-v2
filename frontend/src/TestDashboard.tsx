@@ -2,9 +2,6 @@ import { useState } from 'react';
 import { useVTTNetwork } from './core/hooks/useVTTNetwork';
 import type { P2PMessage } from './core/network/schemas';
 
-// URL du serveur de signalement Vercel lancé localement via `npx vercel dev`
-const SIGNAL_URL = 'http://localhost:3000/api/signal';
-
 // Room par défaut pour les tests
 const DEFAULT_ROOM = 'test-room-42';
 
@@ -16,7 +13,7 @@ const DEFAULT_ROOM = 'test-room-42';
  * - Onglet 2 → « Rejoindre » (Joueur)
  * - Envoyer/recevoir des messages validés par Zod en temps réel.
  */
-export function TestDashboard({ initialRoom }: { initialRoom?: string }) {
+export function TestDashboard({ initialRoom, signalUrl }: { initialRoom?: string, signalUrl: string }) {
   const {
     connectionState,
     roomId,
@@ -25,7 +22,7 @@ export function TestDashboard({ initialRoom }: { initialRoom?: string }) {
     joinGame,
     sendMessage,
     disconnect,
-  } = useVTTNetwork(SIGNAL_URL);
+  } = useVTTNetwork(signalUrl);
 
   const [inputRoomId, setInputRoomId] = useState(initialRoom || DEFAULT_ROOM);
   const [chatInput, setChatInput] = useState('');
