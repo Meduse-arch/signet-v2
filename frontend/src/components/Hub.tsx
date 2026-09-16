@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../core/supabase';
-import { t } from '../core/locales/fr';
-import { Play, Plus, Clock, LogOut, Check } from 'lucide-react';
+// import { t } from '../core/locales/fr'; // plus utilisé ici
+import { Play, Plus, Clock, LogOut, Check, BookOpen, Globe, Puzzle, Settings } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Modal } from './ui/Modal';
@@ -9,7 +9,7 @@ import { Input } from './ui/Input';
 import { NetworkToggle } from './NetworkToggle';
 
 interface HubProps {
-  onJoinGame: (roomId: string) => void;
+  onJoinGame: (roomId: string, isHost: boolean) => void;
   onLogout: () => void;
   onSignalUrlChange: (url: string) => void;
   isLanMode: boolean;
@@ -75,8 +75,8 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
       ]);
 
       setIsCreateModalOpen(false);
-      // On connecte immédiatement le MJ à sa nouvelle session
-      onJoinGame(newRoom);
+      // On connecte immédiatement le MJ à sa nouvelle session (isHost = true)
+      onJoinGame(newRoom, true);
     } catch (err: any) {
       alert("Erreur lors de la création : " + err.message);
     }
@@ -87,7 +87,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
     const inputCode = roomCode.trim().toUpperCase();
     if (inputCode) {
       const finalCode = inputCode.startsWith('SIGNET-') ? inputCode : `SIGNET-${inputCode}`;
-      onJoinGame(finalCode);
+      onJoinGame(finalCode, false);
     }
   };
 
@@ -103,7 +103,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
   const isGM = roleLevel >= 10;
 
   return (
-    <div className="min-h-screen bg-[#050508] text-white flex flex-col relative font-sans selection:bg-indigo-500/30 overflow-x-hidden w-full">
+    <div className="min-h-screen bg-[#050508] text-white flex flex-col relative font-sans selection:bg-rose-500/30 overflow-x-hidden w-full">
       
       {/* Background Cinématique */}
       <div className="absolute inset-0 w-full h-full">
@@ -132,7 +132,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
           
           <div className="hidden sm:flex flex-col items-end">
             <span className="text-sm font-bold text-white drop-shadow-md">{username}</span>
-            <span className={`text-[10px] font-black uppercase tracking-widest drop-shadow-md ${isGM ? 'text-indigo-400' : 'text-slate-300'}`}>
+            <span className={`text-[10px] font-black uppercase tracking-widest drop-shadow-md ${isGM ? 'text-rose-400' : 'text-zinc-300'}`}>
               {displayRole}
             </span>
           </div>
@@ -148,48 +148,77 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
 
       {/* Contenu Principal */}
       <main className="flex-1 flex flex-col justify-end p-6 lg:p-12 z-20 pb-12 w-full min-w-0">
-        <div className="max-w-3xl animate-slide-up">
+        <div className="flex flex-col xl:flex-row gap-12 w-full xl:items-end justify-between">
           
-          <h1 className="text-4xl md:text-6xl font-black mb-3 tracking-tight drop-shadow-2xl">
-            L'Aventure vous attend.
-          </h1>
-          <p className="text-base md:text-lg text-slate-300 font-medium mb-10 max-w-xl drop-shadow-md">
-            Entrez un code d'invitation pour rejoindre la table de votre Maître du Jeu, ou reprenez une campagne existante.
-          </p>
+          {/* Section Gauche : Héro */}
+          <div className="max-w-3xl animate-slide-up flex-1">
+            <h1 className="text-4xl md:text-6xl font-black mb-3 tracking-tight drop-shadow-2xl">
+              L'Aventure vous attend.
+            </h1>
+            <p className="text-base md:text-lg text-zinc-300 font-medium mb-10 max-w-xl drop-shadow-md">
+              Entrez un code d'invitation pour rejoindre la table de votre Maître du Jeu, ou reprenez une campagne existante.
+            </p>
 
-          {/* Actions Principales (Rejoindre & Créer) */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-16">
-            
-            {/* Formulaire Rejoindre */}
-            <form onSubmit={handleJoin} className="flex gap-2 w-full sm:w-auto">
-              <input
-                type="text"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value)}
-                placeholder="CODE (EX: A4B9F2)"
-                className="w-48 sm:w-56 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
-              />
-              <Button
-                type="submit"
-                variant="white"
-                disabled={!roomCode.trim()}
-                leftIcon={<Play className="w-5 h-5 fill-current" />}
-              >
-                Jouer
-              </Button>
-            </form>
+            {/* Actions Principales (Rejoindre & Créer) */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-16 xl:mb-0">
+              
+              {/* Formulaire Rejoindre */}
+              <form onSubmit={handleJoin} className="flex gap-2 w-full sm:w-auto">
+                <input
+                  type="text"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value)}
+                  placeholder="CODE (EX: A4B9F2)"
+                  className="w-48 sm:w-56 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
+                />
+                <Button
+                  type="submit"
+                  variant="white"
+                  disabled={!roomCode.trim()}
+                  leftIcon={<Play className="w-5 h-5 fill-current" />}
+                >
+                  Jouer
+                </Button>
+              </form>
 
-            {/* Bouton Créer - Uniquement pour les MJ et Admin */}
-            {isGM && (
-              <Button
-                variant="glass"
-                onClick={handleOpenCreateModal}
-                leftIcon={<Plus className="w-5 h-5" />}
-              >
-                Créer une session
-              </Button>
-            )}
+              {/* Bouton Créer - Uniquement pour les MJ et Admin */}
+              {isGM && (
+                <Button
+                  variant="glass"
+                  onClick={handleOpenCreateModal}
+                  leftIcon={<Plus className="w-5 h-5" />}
+                >
+                  Créer une session
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Section Droite : Carré Magique de 4 Cartes (Caché sur mobile, visible sur grand écran) */}
+          <div className="hidden xl:grid grid-cols-2 gap-4 w-[380px] shrink-0 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            
+            <div className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Bientôt disponible">
+              <BookOpen className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
+              <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Carnet de Notes</span>
+            </div>
+
+            <div className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Bientôt disponible">
+              <Globe className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
+              <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Sessions Publiques</span>
+            </div>
+
+            <div className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Bientôt disponible">
+              <Puzzle className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
+              <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Mods / Extensions</span>
+            </div>
+
+            <div className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Bientôt disponible">
+              <Settings className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
+              <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Paramètres & Actu</span>
+            </div>
+
+          </div>
+          
         </div>
 
         {/* Espace pour le futur Carrousel des sessions */}
@@ -210,8 +239,8 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                 subtitle={`Dernière session : ${camp.date}`}
                 badge={`CODE : ${camp.id}`}
                 imageUrl="/fantasy_vtt_bg.jpg"
-                style={{ filter: `hue-rotate(${camp.hue})` }}
-                onClick={() => onJoinGame(camp.id)}
+                imageHue={camp.hue}
+                onClick={() => onJoinGame(camp.id, false)}
               />
             ))}
             
@@ -219,10 +248,10 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
             {isGM ? (
               <div 
                 onClick={handleOpenCreateModal}
-                className="min-w-[250px] h-[150px] bg-black/20 border border-white/5 border-dashed rounded-xl flex flex-col items-center justify-center text-white/30 hover:text-white/80 hover:border-indigo-500/50 cursor-pointer transition-all hover:bg-white/5 group"
+                className="min-w-[250px] h-[150px] bg-black/20 border border-white/5 border-dashed rounded-xl flex flex-col items-center justify-center text-white/30 hover:text-white/80 hover:border-rose-500/50 cursor-pointer transition-all hover:bg-white/5 group"
               >
-                <Plus className="w-6 h-6 mb-2 group-hover:scale-110 group-hover:text-indigo-400 transition-transform" />
-                <span className="text-sm font-medium group-hover:text-indigo-300">Créer une session</span>
+                <Plus className="w-6 h-6 mb-2 group-hover:scale-110 group-hover:text-rose-400 transition-transform" />
+                <span className="text-sm font-medium group-hover:text-rose-300">Créer une session</span>
               </div>
             ) : (
               <div className="min-w-[250px] h-[150px] bg-black/20 border border-white/5 border-dashed rounded-xl flex flex-col items-center justify-center text-white/20">

@@ -24,10 +24,10 @@ export function Button({
   const baseClasses = "font-bold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap group select-none flex-shrink-0";
   
   const variants: Record<ButtonVariant, string> = {
-    primary: "w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] px-6 py-4 rounded-xl text-base",
-    glass:   "bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-100 border border-indigo-500/30 hover:border-indigo-400 backdrop-blur-md rounded-lg px-6 py-3",
-    ghost:   "text-sm text-white/80 hover:text-white bg-black/20 hover:bg-white/10 rounded-full border border-white/10 backdrop-blur-md px-5 py-2",
-    white:   "bg-white text-black hover:bg-slate-200 rounded-lg px-6 py-3",
+    primary: "w-full bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_20px_rgba(225,29,72,0.3)] hover:shadow-[0_0_30px_rgba(225,29,72,0.5)] px-6 py-4 rounded-md text-base",
+    glass:   "bg-rose-600/20 hover:bg-rose-600/40 text-rose-100 border border-rose-500/30 hover:border-rose-400 backdrop-blur-md rounded-md px-6 py-3",
+    ghost:   "text-sm text-white/80 hover:text-white bg-black/20 hover:bg-white/10 rounded-md border border-white/10 backdrop-blur-md px-5 py-2",
+    white:   "bg-white text-black hover:bg-zinc-200 rounded-lg px-6 py-3",
   };
 
   const finalDisabled = loading || disabled;

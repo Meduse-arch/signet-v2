@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from './core/supabase';
 import { Auth } from './components/Auth';
 import { Hub } from './components/Hub';
-import { TestDashboard } from './TestDashboard';
+import { GameSession } from './components/GameSession';
 import { t } from './core/locales/fr';
 
 // Différents "écrans" de notre Single Page App
@@ -11,6 +11,8 @@ type AppState = 'auth' | 'hub' | 'game';
 export default function App() {
   const [appState, setAppState] = useState<AppState>('auth');
   const [sessionRoomId, setSessionRoomId] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
   
   // URL du serveur de signalement partagée entre l'interface réseau et le jeu
@@ -21,8 +23,10 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        // On va sur le hub uniquement si on n'est pas déjà en jeu (normalement c'est l'init donc on est sur auth)
         setAppState(current => current === 'auth' ? 'hub' : current);
+        // Récupérer le pseudo
+        supabase.from('users_profile').select('username').eq('id', session.user.id).single()
+          .then(({ data }) => { if (data?.username) setUsername(data.username); });
       } else {
         setAppState('auth');
       }
@@ -44,8 +48,9 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []); // <--- Dépendance vide pour ne pas relancer à chaque changement d'écran !
 
-  const handleJoinGame = (roomId: string) => {
+  const handleJoinGame = (roomId: string, host: boolean) => {
     setSessionRoomId(roomId);
+    setIsHost(host);
     setAppState('game');
   };
 
@@ -55,14 +60,14 @@ export default function App() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-indigo-500 animate-pulse font-bold">{t('app_loading')}</div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-rose-500 animate-pulse font-bold">{t('app_loading')}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-indigo-500/30 font-sans">
+    <div className="min-h-screen bg-zinc-950 text-zinc-200 selection:bg-rose-500/30 font-sans">
       {/* Transitions simples gérées par React (montage/démontage avec animations Tailwind) */}
       
       {appState === 'auth' && (
@@ -83,22 +88,14 @@ export default function App() {
 
       {appState === 'game' && sessionRoomId && (
         <div className="animate-fade-in h-screen flex flex-col">
-          <div className="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shrink-0">
-            <div>
-              <span className="text-slate-400">{t('app_room_label')} </span>
-              <code className="text-indigo-400 font-bold bg-indigo-400/10 px-2 py-1 rounded">{sessionRoomId}</code>
-            </div>
-            <button 
-              onClick={() => setAppState('hub')}
-              className="text-sm text-slate-400 hover:text-white transition-colors"
-            >
-              {t('app_leave_room')}
-            </button>
-          </div>
-          
           <div className="flex-1 overflow-hidden relative">
-            {/* On réutilise temporairement le TestDashboard pour le P2P */}
-            <TestDashboard initialRoom={sessionRoomId} signalUrl={signalUrl} />
+            <GameSession 
+              roomId={sessionRoomId} 
+              signalUrl={signalUrl} 
+              isHost={isHost}
+              username={username || 'Aventurier'}
+              onLeave={() => setAppState('hub')}
+            />
           </div>
         </div>
       )}

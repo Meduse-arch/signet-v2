@@ -45,6 +45,7 @@ export class VTTNetwork {
   // ── État interne ────────────────────────────────────────────────────────
   private peer: SimplePeer.Instance | null = null;
   private pollingTimer: ReturnType<typeof setInterval> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private listeners: Set<VTTNetworkListener> = new Set();
 
   /** URL de base du serveur de signalement (sans query string). */
@@ -199,6 +200,15 @@ export class VTTNetwork {
       console.info('⚡ [VTTNetwork] Connexion P2P WebRTC établie !');
       this.stopPolling();
       this.emit({ kind: 'connected' });
+
+      // Lancement d'un heartbeat pour garder la connexion WebRTC (et le routeur NAT) active
+      this.heartbeatTimer = setInterval(() => {
+        try {
+          peer.send(JSON.stringify({ type: 'PING' }));
+        } catch (e) {
+          // Ignorer si la connexion est morte
+        }
+      }, 10_000);
     });
 
     peer.on('data', (raw: Uint8Array) => {
@@ -212,6 +222,7 @@ export class VTTNetwork {
 
     peer.on('close', () => {
       console.info('[VTTNetwork] Connexion WebRTC fermée.');
+      if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
       this.emit({ kind: 'disconnected' });
     });
 
@@ -309,6 +320,10 @@ export class VTTNetwork {
 
   private cleanup(): void {
     this.stopPolling();
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
     if (this.peer) {
       // Retire les écouteurs pour éviter que le `destroy()` ne déclenche 
       // un événement 'error' ou 'close' qui polluerait l'interface (faux positifs)

@@ -5,6 +5,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   subtitle?: string;
   badge?: string;
   imageUrl?: string;
+  imageHue?: string;
 }
 
 export function Card({ 
@@ -12,6 +13,7 @@ export function Card({
   subtitle, 
   badge, 
   imageUrl, 
+  imageHue,
   className = '', 
   children,
   ...props 
@@ -24,14 +26,17 @@ export function Card({
       {imageUrl && (
         <div 
           className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 opacity-70" 
-          style={{ backgroundImage: `url("${imageUrl}")` }}
+          style={{ 
+            backgroundImage: `url("${imageUrl}")`, 
+            filter: imageHue ? `hue-rotate(${imageHue})` : undefined 
+          }}
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
       
       <div className="absolute inset-0 p-4 flex flex-col justify-end">
         {badge && (
-          <span className="text-xs font-bold text-indigo-300 mb-1 drop-shadow-md tracking-wider">
+          <span className="text-xs font-bold text-rose-300 mb-1 drop-shadow-md tracking-wider">
             {badge}
           </span>
         )}
@@ -39,7 +44,7 @@ export function Card({
           {title}
         </span>
         {subtitle && (
-          <span className="text-xs text-slate-300 drop-shadow-md">
+          <span className="text-xs text-zinc-300 drop-shadow-md">
             {subtitle}
           </span>
         )}
