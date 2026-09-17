@@ -14,6 +14,7 @@ export interface UseVTTNetworkReturn {
   messages: P2PMessage[];
   hostGame: (roomId: string) => void;
   joinGame: (roomId: string) => void;
+  lockRoom: (roomId: string) => void;
   sendMessage: (payload: P2PMessage) => void;
   disconnect: () => void;
 }
@@ -109,6 +110,13 @@ export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
     [getNetwork],
   );
 
+  const lockRoom = useCallback(
+    (id: string) => {
+      getNetwork().lockRoom(id);
+    },
+    [getNetwork],
+  );
+
   const sendMessage = useCallback(
     (payload: P2PMessage) => {
       getNetwork().send(payload);
@@ -117,8 +125,7 @@ export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
   );
 
   const disconnect = useCallback(() => {
-    networkRef.current?.destroy();
-    networkRef.current = null;
+    networkRef.current?.close(); // Keep the instance and listeners alive
     setConnectionState('disconnected');
     setRoomId(null);
     setMessages([]);
@@ -130,6 +137,7 @@ export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
     messages,
     hostGame,
     joinGame,
+    lockRoom,
     sendMessage,
     disconnect,
   };

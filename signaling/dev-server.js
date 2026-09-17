@@ -26,7 +26,7 @@ function pruneExpiredRooms() {
 const server = http.createServer((req, res) => {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -56,14 +56,22 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET') {
     const room = rooms[roomId];
     if (!room) {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'Room introuvable' }));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ offer: null, answer: null }));
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({
       offer: room.offer || null,
       answer: room.answer || null,
     }));
+  }
+
+  // DELETE — supprimer la room (verrouillage)
+  if (req.method === 'DELETE') {
+    delete rooms[roomId];
+    console.log(`[Signal] Room "${roomId}" verrouillée/supprimée`);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ ok: true }));
   }
 
   // POST — déposer une offre ou une réponse

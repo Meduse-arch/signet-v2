@@ -37,7 +37,7 @@ function pruneExpiredRooms(): void {
 function setCorsHeaders(res: VercelResponse): void {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'Content-Type, Accept, X-Requested-With',
@@ -55,9 +55,9 @@ export default function handler(req: VercelRequest, res: VercelResponse): Vercel
     return res.status(204).end();
   }
 
-  // Seules GET et POST sont autorisées
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return res.status(405).json({ error: 'Méthode non autorisée. Utilisez GET ou POST.' });
+  // Seules GET, POST et DELETE sont autorisées
+  if (req.method !== 'GET' && req.method !== 'POST' && req.method !== 'DELETE') {
+    return res.status(405).json({ error: 'Méthode non autorisée. Utilisez GET, POST ou DELETE.' });
   }
 
   // Le roomId est obligatoire dans les query params
@@ -73,13 +73,19 @@ export default function handler(req: VercelRequest, res: VercelResponse): Vercel
   if (req.method === 'GET') {
     const room = rooms[roomId];
     if (!room) {
-      return res.status(404).json({ error: 'Room introuvable.' });
+      return res.status(200).json({ offer: null, answer: null });
     }
     // On renvoie uniquement offer/answer, pas les métadonnées internes
     return res.status(200).json({
       offer: room.offer ?? null,
       answer: room.answer ?? null,
     });
+  }
+
+  // ── DELETE : Supprimer la room (verrouillage) ─────────────────────────
+  if (req.method === 'DELETE') {
+    delete rooms[roomId];
+    return res.status(200).json({ ok: true, message: 'Room verrouillée/supprimée.' });
   }
 
   // ── POST : Déposer une offre (host) ou une réponse (join) ─────────────

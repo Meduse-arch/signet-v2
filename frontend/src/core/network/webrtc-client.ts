@@ -94,6 +94,24 @@ export class VTTNetwork {
   }
 
   /**
+   * Côté Maître du Jeu — verrouille la room en supprimant l'offre SDP du serveur.
+   * La connexion P2P actuelle (si établie) reste active.
+   */
+  public async lockRoom(roomId: string): Promise<void> {
+    const url = `${this.signalUrl}?roomId=${encodeURIComponent(roomId)}`;
+    try {
+      const res = await fetch(url, { method: 'DELETE' });
+      if (!res.ok) {
+        console.warn(`[VTTNetwork] Échec du verrouillage de la room (DELETE HTTP ${res.status})`);
+      } else {
+        console.info(`[VTTNetwork] Room "${roomId}" verrouillée (supprimée du serveur).`);
+      }
+    } catch (err) {
+      console.error('[VTTNetwork] Erreur lors du verrouillage de la room :', err);
+    }
+  }
+
+  /**
    * Côté Joueur — rejoint une room existante créée par le MJ.
    */
   public async joinGame(roomId: string): Promise<void> {
@@ -161,10 +179,15 @@ export class VTTNetwork {
     this.peer.send(JSON.stringify(message));
   }
 
-  /** Ferme la connexion proprement et nettoie les ressources. */
+  /** Ferme la connexion proprement et nettoie les ressources, y compris les écouteurs. */
   public destroy(): void {
     this.cleanup();
     this.listeners.clear();
+  }
+
+  /** Coupe la connexion WebRTC mais conserve l'instance et ses écouteurs pour une reconnexion. */
+  public close(): void {
+    this.cleanup();
   }
 
   /** `true` si le DataChannel WebRTC est ouvert. */
@@ -259,8 +282,6 @@ export class VTTNetwork {
   private async getSignal(roomId: string): Promise<SignalRoomState | null> {
     const url = `${this.signalUrl}?roomId=${encodeURIComponent(roomId)}`;
     const res = await fetch(url);
-
-    if (res.status === 404) return null;
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');

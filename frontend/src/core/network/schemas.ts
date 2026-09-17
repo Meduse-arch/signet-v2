@@ -45,6 +45,7 @@ const LobbyStateSchema = z.object({
   payload: z.object({
     players: z.array(z.string()),
     isGameStarted: z.boolean(),
+    isRoomOpen: z.boolean(),
   }),
 });
 
@@ -57,6 +58,10 @@ const StartGameSchema = z.object({
  * Schéma Zod validant tout message P2P entrant.
  * Discriminated Union sur le champ `type`.
  */
+const PingSchema = z.object({
+  type: z.literal('PING'),
+});
+
 export const P2PMessageSchema = z.discriminatedUnion('type', [
   ChatMessageSchema,
   MoveTokenSchema,
@@ -64,6 +69,7 @@ export const P2PMessageSchema = z.discriminatedUnion('type', [
   PlayerJoinSchema,
   LobbyStateSchema,
   StartGameSchema,
+  PingSchema,
 ]);
 
 // ── Types inférés ─────────────────────────────────────────────────────────
