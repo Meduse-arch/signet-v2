@@ -4,6 +4,7 @@ import { Auth } from './components/Auth';
 import { Hub } from './components/Hub';
 import { GameSession } from './components/GameSession';
 import { TitleBar } from './components/ui/TitleBar';
+import { SplashTransition } from './components/ui/SplashTransition';
 import { t } from './core/locales/fr';
 
 // Différents "écrans" de notre Single Page App
@@ -15,6 +16,8 @@ export default function App() {
   const [isHost, setIsHost] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
+  const [muted] = useState(() => localStorage.getItem('splash-muted') === 'true');
   
   // URL du serveur de signalement partagée entre l'interface réseau et le jeu
   const [signalUrl, setSignalUrl] = useState('http://localhost:3000/api/signal');
@@ -53,6 +56,7 @@ export default function App() {
     setSessionRoomId(roomId);
     setIsHost(host);
     setAppState('game');
+    setShowSplash(true);
   };
 
   const handleLogout = async () => {
@@ -104,6 +108,14 @@ export default function App() {
             />
           </div>
         </div>
+      )}
+
+      {showSplash && (
+        <SplashTransition
+          logoSrc="/logo.svg"
+          muted={muted}
+          onDone={() => setShowSplash(false)}
+        />
       )}
     </div>
   );

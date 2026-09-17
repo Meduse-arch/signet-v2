@@ -18,6 +18,38 @@
     0% { opacity: 0; transform: translateX(30px); }
     100% { opacity: 1; transform: translateX(0); }
   }
+
+  /* Animations SplashTransition */
+  --animate-split-a: splitA 0.9s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+  --animate-split-b: splitB 0.9s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+  --animate-logo-pop: logoPop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+  --animate-hide-logo: hideLogo 0.01s forwards;
+  --animate-crack-flash: crackFlash 0.9s ease forwards;
+
+  @keyframes splitA {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    /* Déplacement précis à 60° (pente hexagonale) vers le haut-gauche */
+    100% { transform: translate(-50vw, -86.6vw) scale(2.6); opacity: 0; }
+  }
+  @keyframes splitB {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    /* Déplacement précis à 60° (pente hexagonale) vers le bas-droite */
+    100% { transform: translate(50vw, 86.6vw) scale(2.6); opacity: 0; }
+  }
+  @keyframes logoPop {
+    0%   { opacity: 0; transform: scale(0.8); }
+    60%  { opacity: 1; transform: scale(1.06); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes hideLogo {
+    to { opacity: 0; visibility: hidden; }
+  }
+  @keyframes crackFlash {
+    0%   { opacity: 0; }
+    8%   { opacity: 1; }
+    30%  { opacity: 0; }
+    100% { opacity: 0; }
+  }
 }
 
 #root, html, body {
@@ -25,78 +57,6 @@
   margin: 0;
   padding: 0;
   background: #050508;
-}
-
-/* =============================================
-   TITLEBAR — Barre de titre custom (remplace Windows)
-   ============================================= */
-.titlebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 32px;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: transparent;
-  user-select: none;
-  color: rgba(255, 255, 255, 0.5);
-  transition: background 0.2s ease;
-}
-.titlebar:hover {
-  background: rgba(0, 0, 0, 0.4);
-}
-
-.titlebar-drag {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-left: 12px;
-  height: 100%;
-}
-.titlebar-logo-img {
-  width: 14px;
-  height: 14px;
-  opacity: 0.7;
-  pointer-events: none;
-}
-.titlebar-logo-text {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-  pointer-events: none;
-}
-
-.titlebar-buttons {
-  display: flex;
-  height: 100%;
-  position: relative;
-  z-index: 10;
-}
-.titlebar-btn {
-  height: 100%;
-  width: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.titlebar-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-.titlebar-btn-close:hover {
-  background: #e81123;
-  color: white;
 }
 
 /* =============================================
