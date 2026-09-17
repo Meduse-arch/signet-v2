@@ -9,7 +9,14 @@ Le but est d'avoir une base de code où il est toujours agréable et facile de t
 - **Factorisation absolue :** Pas de code en doublon. Si une UI ou un hook est utilisé à deux endroits, on crée un fichier partagé (ex: `Carousel.tsx`, `useHorizontalScroll.ts`).
 - **Isolation de la logique :** L'interface React ne doit faire qu'afficher les données. Les appels complexes (comme Supabase) doivent être extraits dans des Services (ex: `AuthService.ts`).
 
-## 2. Penser "Mods" en premier 🧩
+## 2. Le Cœur (Core) vs Les Systèmes (Modules) 🧩
+C'est la règle d'or pour éviter d'avoir un code lourd et des conflits de règles :
+- **Le Core (Le VTT de base) :** Il est "bête". Il ne connaît **aucune** règle de jeu de rôle. Il sait juste afficher une carte, lancer des dés (physiques ou virtuels), envoyer des messages dans un chat, et connecter les joueurs en réseau. C'est le moteur pur.
+- **Les Systèmes (Les Modules) :** Toute logique de jeu (Donjons & Dragons, L'Appel de Cthulhu, Chroniques Oubliées) est un **Module séparé**. 
+  - Quand on lance une partie de D&D, le VTT ne charge **que** le module D&D. Le code des autres jeux n'est même pas importé.
+  - Cela garantit qu'il n'y ait aucun conflit entre les règles, que l'application reste extrêmement légère, et que n'importe quel moddeur puisse créer son propre "Système" en se branchant simplement sur le Core sans risquer de casser le reste de l'application.
+
+## 3. Penser "Mods" en premier 🛠️
 Le projet doit pouvoir accueillir des Mods créés par la communauté. 
 - Rien ne doit être codé "en dur" si cela peut être rendu dynamique.
 - Le cœur de l'application devra exposer des événements (Event Bus) pour que les Mods puissent écouter le réseau (ex: lancers de dés, arrivées de joueurs) sans modifier le code source natif de l'application.

@@ -33,61 +33,64 @@ La méthode des Personas nous permet de garder en tête *pour qui* nous dévelop
 
 ## 2. Découpage des Fonctionnalités (Backlog)
 
-Voici l'état actuel et futur des trois grands piliers du projet : le Serveur, le Core (cœur du VTT) et les Modules.
+Voici l'état actuel des trois grands piliers du projet : le Serveur, le Core (cœur du VTT) et les Modules.
 
-### 🌐 A. Le Serveur (Signalement WebRTC)
-**Rôle :** Il ne fait QUE mettre en relation les joueurs. Une fois connectés, les données transitent en Pair-à-Pair (P2P) entre eux pour des performances optimales.
-- [x] **API de Signalement (Déjà fait) :** Gérer les offres et réponses (`/api/signal`) pour permettre la négociation P2P.
-- [x] **Gestion des "Rooms" (Déjà fait) :** Les joueurs peuvent se rejoindre via un identifiant de salle (`roomId`).
-- [ ] **Nettoyage automatique :** Fermer et nettoyer les salles inactives (partiellement en place).
-- [ ] **STUN/TURN :** Configuration des serveurs de relais pour les joueurs ayant des pare-feux stricts (pour garantir 100% de connexion).
+### 🌐 A. Le Réseau & Serveur (P2P Avancé)
+**Rôle :** Connecter les joueurs et optimiser les transferts.
+- [x] **API de Signalement (LAN/Web) :** Négociation WebRTC fonctionnelle.
+- [x] **Topologie en Étoile :** L'Hôte relaie l'information (anti-triche).
+- [ ] **Transfert Torrent (Nouveau) :** Utilisation de WebTorrent pour le partage de fichiers lourds (cartes, musiques) entre joueurs.
+- [ ] **DataChannels Optimisés :** Modes TCP (Fiable) pour le chat/dés, et UDP (Non-Fiable) pour les pointeurs/tokens.
 
 ### 🎲 B. Le Cœur (Core VTT) - *Frontend React*
-**Rôle :** L'interface commune à tous, le moteur 2D, le chat, et la gestion du réseau P2P.
-- **Réseau P2P :**
-  - [ ] Établir la connexion via `simple-peer`.
-  - [ ] Synchroniser l'état global du jeu (Zustand ou Redux) entre tous les clients en temps réel.
-- **Canvas / Rendu 2D :**
+**Rôle :** L'interface commune à tous, le moteur 2D, le chat, et la gestion des sessions.
+- [x] **UI Premium & Modulaire :** Le Hub, l'Auth et l'interface de base sont terminés (Glassmorphism, animations).
+- [x] **Architecture "Chill" :** Code factorisé en services et petits composants.
+- **Plateau de Jeu (Canvas) :**
   - [ ] Moteur de rendu performant (PixiJS, Konva ou Canvas natif).
   - [ ] Gestion des calques (Background, Tokens, Grille, UI).
-  - [ ] Déplacement fluide des Tokens avec Snap-to-Grid (alignement sur la grille).
-- **Interface Utilisateur (UI) :**
-  - [ ] Système de fenêtres flottantes (Chat, Fiches de perso, Outils).
-  - [ ] Lancer de dés virtuel 3D ou 2D (Dice Roller).
-  - [ ] Gestion des permissions (Ce que le MJ voit vs ce que le Joueur voit).
+  - [ ] Déplacement fluide des Tokens.
+- **Interface de Table (In-Game) :**
+  - [ ] Chat textuel persistant.
+  - [ ] Lancer de dés virtuel.
 
-### 🧩 C. Les Modules (Systèmes de Jeu)
-**Rôle :** La logique spécifique à un jeu de rôle précis (ex: Donjons & Dragons 5e, L'Appel de Cthulhu).
-- [ ] **Architecture Modulaire :** Le Core VTT doit pouvoir charger un fichier JSON/JS définissant les règles.
-- [ ] **Feuilles de Personnages Dynamiques :** Interface générée selon le système de jeu.
-- [ ] **Automatisation :** Résolution des jets d'attaque vs la classe d'armure de la cible.
-- [ ] **Compendium (Encyclopédie) :** Base de données des sorts, objets, monstres.
+### 🧩 C. Les Modules (Systèmes Indépendants)
+**Rôle :** Permettre l'extension infinie du VTT. C'est ici que réside la véritable règle d'or de l'application : **Le "Core" du VTT est un moteur vide qui ne connaît aucune règle. Chaque jeu (D&D, Cthulhu...) est un module indépendant.** Cela évite que les règles entrent en conflit et garde l'application hyper légère, car seul le module auquel on joue est chargé en mémoire.
+- [ ] **Le "Core" Universel :** Une API (`SignetAPI`) qui donne accès à des fonctions génériques (lancer un dé virtuel, écrire un message) sans aucune logique de règles.
+- [ ] **Le Gestionnaire de Modules (`ModManager`) :** Le cerveau qui s'assure de ne charger **QUE** le code du système sélectionné au lancement de la partie.
+- [ ] **L'Event Bus (Système Nerveux) :** Système permettant au module d'écouter les actions réseau (P2P) sans avoir à toucher au code source du VTT.
+- [ ] **Système de "Sandbox" :** Garantir qu'un Module ne puisse pas entrer en conflit avec les composants de base ou faire planter l'application globale.
+- [ ] **Feuilles de Personnages Dynamiques :** Interface entièrement générée à la volée par le code du Module.
 
 ---
 
-## 3. Plan d'Action Agile (Sprints)
+## 3. Plan d'Action Agile (Sprints Actualisés)
 
-Nous allons fonctionner par "Sprints" (cycles de développement itératifs) pour avoir toujours une version fonctionnelle.
+Nous avons inversé les sprints initiaux pour poser de solides bases visuelles et architecturales (UI/UX) avant de faire le moteur de jeu. Voici la nouvelle feuille de route :
 
-### 🎯 Sprint 1 : La Fondation (Minimum Viable Product - MVP)
-*Objectif : Deux joueurs peuvent se connecter et bouger un pion sur une grille.*
-1. Finaliser la connexion P2P (WebRTC avec `simple-peer`) dans React.
-2. Synchroniser de la donnée simple (ex: un simple message de Chat).
-3. Afficher un Canvas basique avec une grille.
-4. Ajouter un pion (Token) et synchroniser sa position (X, Y) chez tout le monde.
+### ✅ Sprint 0 : La Fondation Premium (Terminé)
+*Objectif : Une application magnifique, modulaire et prête pour le réseau.*
+1. [x] Interface d'authentification (Supabase).
+2. [x] Hub de création de session (Carousel, création, paramètres).
+3. [x] Architecture modulaire (Services, composants éclatés, philosophie "Chill Code").
+4. [x] Écran de session avec bascule LAN/WebRTC.
 
-### 🎯 Sprint 2 : Le Plateau et l'Immersion
-*Objectif : Avoir les outils de base d'un vrai VTT.*
-1. Ajouter/Changer l'image de fond (Background Map).
-2. Outils de dessin basiques (dessiner à la souris sur la carte).
-3. Système de lancer de dés dans le chat (`/r 1d20`).
-4. Gérer plusieurs pages/scènes.
+### 🎯 Sprint 1 : Le Moteur de Mods (Event Bus)
+*Objectif : Rendre le cœur de l'application extensible avant d'ajouter les mécaniques de jeu.*
+1. Créer le `ModManager` et le système d'Événements (Event Bus).
+2. Séparer les flux réseau (UDP vs TCP).
+3. Connecter le chat textuel via l'Event Bus (comme si le chat était le premier Mod).
 
-### 🎯 Sprint 3 : L'UI, l'Esthétisme et le Modding
-*Objectif : Rendre le VTT Premium et prêt pour intégrer des règles.*
-1. Refonte visuelle Premium (Animations, Glassmorphism, UI moderne et dynamique).
-2. Mettre en place l'architecture "Système" (permettre de créer une fiche de personnage pour un JDR précis).
-3. Brouillard de guerre (Fog of War) basique.
+### 🎯 Sprint 2 : Le Plateau de Jeu (VTT Canvas)
+*Objectif : Les joueurs interagissent visuellement sur une carte.*
+1. Implémenter un Canvas performant.
+2. Ajouter le système de Grille et l'Image de fond (Map).
+3. Intégrer les Pions (Tokens) synchronisés en temps réel en mode "UDP" (Non-Fiable/Rapide).
+
+### 🎯 Sprint 3 : L'Artillerie Lourde (Torrent & Fichiers)
+*Objectif : Soulager le Maître du Jeu.*
+1. Intégrer WebTorrent ou un système de Chunking P2P avancé.
+2. Permettre au MJ de glisser-déposer des images haute résolution qui se partagent entre joueurs.
 
 ---
 *Document vivant - À mettre à jour à chaque fin de Sprint.*
