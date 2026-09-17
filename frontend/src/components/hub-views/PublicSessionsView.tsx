@@ -8,6 +8,7 @@ export function PublicSessionsView() {
     { id: 2, name: "Cyberpunk: Néon rouge", system: "Cyberpunk RED", players: 3, max: 4 },
     { id: 3, name: "Le Manoir Oublié", system: "Cthulhu", players: 5, max: 5 },
     { id: 4, name: "Aventures en Terre du Milieu", system: "Anneau Unique", players: 2, max: 4 },
+    { id: 5, name: "La Taverne des Héros", system: "Générique", players: 8, max: null },
   ];
 
   return (
@@ -25,14 +26,17 @@ export function PublicSessionsView() {
                 <h4 className="text-white font-bold text-xl group-hover:text-rose-400 transition-colors">{s.name}</h4>
                 <div className="flex items-center gap-4 mt-2 text-sm text-zinc-400">
                   <span className="flex items-center gap-2"><Swords className="w-4 h-4" /> {s.system}</span>
-                  <span className="flex items-center gap-2"><Users className="w-4 h-4" /> {s.players}/{s.max} Joueurs</span>
+                  <span className="flex items-center gap-2" title="L'hôte (MJ) n'est pas compté dans cette limite">
+                    <Users className="w-4 h-4" /> 
+                    {s.max ? `${s.players}/${s.max} Joueurs` : `${s.players} Joueurs`}
+                  </span>
                 </div>
               </div>
               <Button 
-                variant={s.players >= s.max ? "ghost" : "glass"}
-                disabled={s.players >= s.max}
+                variant={s.max && s.players >= s.max ? "ghost" : "glass"}
+                disabled={s.max !== null && s.players >= s.max}
               >
-                {s.players >= s.max ? t('modal_public_full') : t('modal_public_join')}
+                {s.max && s.players >= s.max ? t('modal_public_full') : t('modal_public_join')}
               </Button>
             </div>
           ))}

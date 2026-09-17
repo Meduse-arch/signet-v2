@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useVTTNetwork } from '../core/hooks/useVTTNetwork';
 import { GameBoard } from './GameBoard';
 import { Button } from './ui/Button';
-import { Play, Shield, User, Loader2, LogOut } from 'lucide-react';
+import { Play } from 'lucide-react';
+import { LobbyHeader } from './game/LobbyHeader';
+import { PlayerCarousel } from './game/PlayerCarousel';
 
 interface GameSessionProps {
   roomId: string;
@@ -191,50 +193,15 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
       </div>
 
       {/* Header : Réseau & Quitter */}
-      <div className="relative z-10 w-full p-6 flex justify-between items-start">
-        <div className="bg-black/40 backdrop-blur-md rounded-sm border border-white/10 p-4 w-64 flex flex-col gap-4">
-          {isHost ? (
-            <>
-              {/* Toggle En Ligne */}
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold uppercase tracking-wider ${isOnline ? 'text-white/90' : 'text-zinc-500'}`}>
-                  {isOnline ? 'En Ligne' : 'Hors Ligne'}
-                </span>
-                <button 
-                  onClick={() => setIsOnline(!isOnline)}
-                  className={`w-10 h-5 rounded-sm transition-colors relative focus:outline-none border ${isOnline ? 'bg-white border-white' : 'bg-transparent border-zinc-600'}`}
-                >
-                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-sm bg-black transition-transform ${isOnline ? 'translate-x-5' : 'opacity-50'}`} />
-                </button>
-              </div>
-
-              {/* Toggle Accès Plateau */}
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold uppercase tracking-wider ${isRoomOpen ? 'text-white/90' : 'text-zinc-500'}`}>
-                  {isRoomOpen ? 'Plateau Ouvert' : 'Plateau Fermé'}
-                </span>
-                <button 
-                  onClick={() => setIsRoomOpen(!isRoomOpen)}
-                  className={`w-10 h-5 rounded-sm transition-colors relative focus:outline-none border ${isRoomOpen ? 'bg-white border-white' : 'bg-transparent border-zinc-600'}`}
-                >
-                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-sm bg-black transition-transform ${isRoomOpen ? 'translate-x-5' : 'opacity-50'}`} />
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
-              {connectionState === 'connecting' && <span className="text-zinc-400 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Connexion...</span>}
-              {connectionState === 'connected' && <span className="text-white/80 flex items-center gap-2">Réseau OK</span>}
-              {connectionState === 'disconnected' && <span className="text-zinc-500 flex items-center gap-2">Hors ligne</span>}
-              {connectionState === 'error' && <span className="text-rose-500 flex items-center gap-2">Erreur Réseau</span>}
-            </div>
-          )}
-        </div>
-
-        <Button variant="ghost" onClick={handleQuit} leftIcon={<LogOut className="w-4 h-4" />}>
-          Quitter
-        </Button>
-      </div>
+      <LobbyHeader 
+        isHost={isHost}
+        isOnline={isOnline}
+        setIsOnline={setIsOnline}
+        isRoomOpen={isRoomOpen}
+        setIsRoomOpen={setIsRoomOpen}
+        connectionState={connectionState}
+        onQuit={handleQuit}
+      />
 
       {/* Main Content : Code & Joueurs */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
@@ -248,37 +215,11 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
         </div>
 
         {/* Liste des Joueurs (Carrousel Horizontal) */}
-        <div className="w-full max-w-5xl overflow-hidden mb-12">
-          <div className="flex gap-6 overflow-x-auto pb-6 hide-scrollbar px-4" style={{ scrollSnapType: 'x mandatory' }}>
-            {players.map((p, idx) => (
-              <div key={idx} className={`shrink-0 w-40 h-56 rounded-sm border ${idx === 0 ? 'border-rose-500/50 bg-rose-950/20 shadow-[0_0_30px_rgba(225,29,72,0.15)]' : 'border-white/10 bg-black/40'} backdrop-blur-md flex flex-col items-center justify-center relative overflow-hidden group animate-fade-in`} style={{ animationDelay: `${idx * 0.1}s`, scrollSnapAlign: 'start' }}>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                <div className="relative z-10 flex flex-col items-center gap-4">
-                  <div className={`w-16 h-16 rounded-sm flex items-center justify-center border ${idx === 0 ? 'border-rose-500/50 bg-rose-900/50 text-rose-300' : 'border-white/10 bg-white/5 text-white/50'}`}>
-                    {idx === 0 ? <Shield className="w-8 h-8" /> : <User className="w-8 h-8" />}
-                  </div>
-                  <div className="text-center">
-                    <p className="text-white font-bold text-lg leading-tight truncate w-32">{p}</p>
-                    <p className="text-[10px] text-zinc-400 uppercase tracking-widest mt-1">
-                      {idx === 0 ? 'Maître du Jeu' : 'Joueur'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Ghost slots (toujours afficher au moins 1 slot vide pour inviter) */}
-            {Array.from({ length: Math.max(1, 5 - players.length) }).map((_, i) => (
-              <div key={`ghost-${i}`} className="shrink-0 w-40 h-56 rounded-sm border border-dashed border-white/10 bg-transparent flex flex-col items-center justify-center text-white/20" style={{ scrollSnapAlign: 'start' }}>
-                {connectionState === 'connecting' && i === 0 && !isHost ? (
-                  <Loader2 className="w-8 h-8 animate-spin" />
-                ) : (
-                  <span className="text-sm font-medium uppercase tracking-wider">Vide</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <PlayerCarousel 
+          players={players} 
+          isHost={isHost} 
+          connectionState={connectionState} 
+        />
       </div>
 
       {/* Action Finale */}

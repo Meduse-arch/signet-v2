@@ -10,7 +10,9 @@ import { NotesView } from './hub-views/NotesView';
 import { PublicSessionsView } from './hub-views/PublicSessionsView';
 import { ModsView } from './hub-views/ModsView';
 import { SettingsView } from './hub-views/SettingsView';
-
+import { CreateSessionView } from './hub-views/CreateSessionView';
+import type { SessionCreationData } from './hub-views/CreateSessionView';
+import { Carousel } from './ui/Carousel';
 type HubView = 'main' | 'notes' | 'public' | 'mods' | 'settings' | 'create-session';
 
 interface HubProps {
@@ -25,13 +27,6 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
   const [roomCode, setRoomCode] = useState('');
   const [roleLevel, setRoleLevel] = useState<number>(0);
   const [username, setUsername] = useState<string>('');
-  
-  const [sessionName, setSessionName] = useState('');
-  const [sessionSystem, setSessionSystem] = useState('D&D 5E');
-  const [isPublic, setIsPublic] = useState(false);
-  const [sessionDesc, setSessionDesc] = useState('');
-  const [sessionTags, setSessionTags] = useState('');
-  
   // Vue courante (pour remplacer les modales)
   const [currentView, setCurrentView] = useState<HubView>('main');
   
@@ -64,19 +59,9 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
 
   const handleOpenCreateModal = () => {
     setCurrentView('create-session');
-    setSessionName('');
-    setSessionDesc('');
-    setSessionTags('');
-    setSessionSystem('D&D 5E');
-    setIsPublic(false);
   };
 
-  const handleConfirmCreate = () => {
-    if (!sessionName.trim()) {
-      alert("Erreur: le nom de la session est vide.");
-      return;
-    }
-
+  const handleConfirmCreate = (data: SessionCreationData) => {
     try {
       // Pour l'instant on génère un code aléatoire
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -86,12 +71,13 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
       setCampaigns(prev => [
         { 
           id: newRoom, 
-          name: sessionName, 
+          name: data.name, 
           date: "À l'instant", 
           hue: `${Math.floor(Math.random() * 360)}deg`,
-          system: sessionSystem,
-          isPublic,
-          tags: sessionTags
+          system: data.system,
+          isPublic: data.isPublic,
+          tags: data.tags,
+          maxPlayers: data.maxPlayers
         },
         ...prev
       ]);
@@ -254,7 +240,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
           </div>
           
           {/* Placeholder du carrousel */}
-          <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
+          <Carousel className="gap-4 pb-4">
             
             {/* Rendu dynamique des campagnes */}
             {campaigns.map(camp => (
@@ -284,7 +270,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                 <span className="text-xs font-medium mt-2 opacity-50">En attente d'aventures</span>
               </div>
             )}
-          </div>
+          </Carousel>
         </div>
           </>
         ) : (
@@ -299,83 +285,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
               {currentView === 'public' && <PublicSessionsView />}
               {currentView === 'mods' && <ModsView />}
               {currentView === 'settings' && <SettingsView />}
-              {currentView === 'create-session' && (
-                <div className="w-full max-w-2xl animate-slide-up pb-12">
-                  <h2 className="text-3xl md:text-4xl font-black mb-8 text-white tracking-tight drop-shadow-md">Nouvelle Session</h2>
-                  <div className="space-y-6">
-                      <Input
-                        label="Nom de la session"
-                        type="text"
-                        required
-                        value={sessionName}
-                        onChange={(e) => setSessionName(e.target.value)}
-                        placeholder="Ex: Le Donjon du Dragon Noir"
-                        autoFocus
-                      />
-
-                      <div className="w-full">
-                        <label className="block text-sm font-semibold text-zinc-300 mb-2">Système de jeu</label>
-                        <select 
-                          value={sessionSystem} 
-                          onChange={e => setSessionSystem(e.target.value)}
-                          className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-sm px-4 py-3.5 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 shadow-inner appearance-none cursor-pointer"
-                        >
-                          <option value="D&D 5E">D&D 5E</option>
-                          <option value="Pathfinder 2">Pathfinder 2</option>
-                          <option value="Appel de Cthulhu">L'Appel de Cthulhu</option>
-                          <option value="Chroniques Oubliées">Chroniques Oubliées</option>
-                          <option value="Générique">Générique / Autre</option>
-                        </select>
-                      </div>
-
-                      <Input
-                        label="Ambiance / Tags (séparés par des virgules)"
-                        type="text"
-                        value={sessionTags}
-                        onChange={(e) => setSessionTags(e.target.value)}
-                        placeholder="Ex: Dark Fantasy, Enquête, RP Vocal"
-                      />
-
-                      <div className="w-full">
-                        <label className="block text-sm font-semibold text-zinc-300 mb-2">Description</label>
-                        <textarea
-                          value={sessionDesc}
-                          onChange={e => setSessionDesc(e.target.value)}
-                          rows={3}
-                          placeholder="Décrivez brièvement la campagne..."
-                          className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-sm px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 shadow-inner resize-none"
-                        ></textarea>
-                      </div>
-
-                      <div className="flex items-center gap-3 pt-2 pb-2">
-                        <button 
-                          type="button"
-                          onClick={() => setIsPublic(!isPublic)}
-                          className={`w-12 h-6 rounded-full transition-colors relative focus:outline-none border ${isPublic ? 'bg-rose-500 border-rose-500' : 'bg-zinc-800 border-zinc-600'}`}
-                        >
-                          <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isPublic ? 'translate-x-6' : 'translate-x-0'}`} />
-                        </button>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-white">Session Publique</span>
-                          <span className="text-xs text-zinc-400">Rend la salle visible dans l'onglet Sessions Publiques</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-4 pt-6 mt-6 border-t border-white/10">
-                        <Button 
-                          type="button" 
-                          variant="primary"
-                          disabled={!sessionName.trim()}
-                          onClick={handleConfirmCreate}
-                          leftIcon={<Check className="w-5 h-5" />}
-                          className="flex-1 py-4 text-lg"
-                        >
-                          Lancer la partie
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-              )}
+              {currentView === 'create-session' && <CreateSessionView onConfirm={handleConfirmCreate} />}
             </div>
           </div>
         )}
