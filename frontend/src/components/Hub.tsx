@@ -103,12 +103,12 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
   const isGM = roleLevel >= 10;
 
   return (
-    <div className="min-h-screen bg-[#050508] text-white flex flex-col relative font-sans selection:bg-rose-500/30 overflow-x-hidden w-full">
+    <div className="flex-1 flex flex-col relative bg-[#050508] text-white font-sans selection:bg-rose-500/30 overflow-y-auto hide-scrollbar w-full">
       
-      {/* Background Cinématique */}
-      <div className="absolute inset-0 w-full h-full">
+      {/* Background Cinématique (Fixe) */}
+      <div className="fixed inset-0 w-full h-full pointer-events-none z-0">
         <div 
-          className="absolute inset-0 w-full h-full bg-cover bg-center opacity-60 mix-blend-luminosity" 
+          className="absolute inset-0 w-full h-full bg-cover bg-center opacity-60 mix-blend-luminosity grayscale" 
           style={{ backgroundImage: 'url("/fantasy_vtt_bg.jpg")' }}
         ></div>
         {/* Dégradés façon Netflix pour faire ressortir le texte */}
@@ -116,8 +116,8 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
         <div className="absolute inset-0 bg-gradient-to-r from-[#050508] via-[#050508]/80 to-transparent w-full md:w-2/3"></div>
       </div>
 
-      {/* Header Minimaliste */}
-      <header className="relative w-full flex justify-between items-center p-6 lg:px-12 z-50">
+      {/* Header Minimaliste (Défile avec la page) */}
+      <header className="shrink-0 relative w-full flex justify-between items-center p-6 lg:px-12 pt-10 lg:pt-10 z-50">
         <div className="flex items-center gap-3">
           <img src="/logo.svg" alt="Signet VTT" className="w-8 h-8 lg:w-10 lg:h-10 opacity-90 drop-shadow-lg" />
           <span className="text-xl font-bold tracking-widest uppercase text-white drop-shadow-md">Signet</span>

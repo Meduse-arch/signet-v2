@@ -3,6 +3,7 @@ import { supabase } from './core/supabase';
 import { Auth } from './components/Auth';
 import { Hub } from './components/Hub';
 import { GameSession } from './components/GameSession';
+import { TitleBar } from './components/ui/TitleBar';
 import { t } from './core/locales/fr';
 
 // Différents "écrans" de notre Single Page App
@@ -61,29 +62,34 @@ export default function App() {
   if (isInitializing) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <TitleBar />
         <div className="text-rose-500 animate-pulse font-bold">{t('app_loading')}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 selection:bg-rose-500/30 font-sans">
+    <div className="h-screen w-screen overflow-hidden bg-[#050508] text-zinc-200 selection:bg-rose-500/30 font-sans flex flex-col">
+      <TitleBar />
+      
       {/* Transitions simples gérées par React (montage/démontage avec animations Tailwind) */}
       
       {appState === 'auth' && (
-        <div className="animate-fade-in">
+        <div className="flex-1 animate-fade-in overflow-y-auto hide-scrollbar">
           <Auth onLogin={() => setAppState('hub')} />
         </div>
       )}
 
       {appState === 'hub' && (
-        <Hub 
-          onJoinGame={handleJoinGame} 
-          onLogout={handleLogout} 
-          onSignalUrlChange={setSignalUrl} 
-          isLanMode={isLanMode}
-          onLanModeChange={setIsLanMode}
-        />
+        <div className="flex-1 overflow-hidden animate-fade-in flex flex-col">
+          <Hub 
+            onJoinGame={handleJoinGame} 
+            onLogout={handleLogout} 
+            onSignalUrlChange={setSignalUrl} 
+            isLanMode={isLanMode}
+            onLanModeChange={setIsLanMode}
+          />
+        </div>
       )}
 
       {appState === 'game' && sessionRoomId && (

@@ -20,7 +20,92 @@
   }
 }
 
-#root {
+#root, html, body {
   min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #050508;
 }
 
+/* =============================================
+   TITLEBAR — Barre de titre custom (remplace Windows)
+   ============================================= */
+.titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  user-select: none;
+  color: rgba(255, 255, 255, 0.5);
+  transition: background 0.2s ease;
+}
+.titlebar:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.titlebar-drag {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px;
+  height: 100%;
+}
+.titlebar-logo-img {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.titlebar-logo-text {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+}
+
+.titlebar-buttons {
+  display: flex;
+  height: 100%;
+  position: relative;
+  z-index: 10;
+}
+.titlebar-btn {
+  height: 100%;
+  width: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+.titlebar-btn-close:hover {
+  background: #e81123;
+  color: white;
+}
+
+/* =============================================
+   SCROLLBAR cachée
+   ============================================= */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

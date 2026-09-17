@@ -11,12 +11,12 @@ Ce document définit les règles de design de l'application Signet VTT pour gara
   - Flou : `backdrop-blur-md` à `backdrop-blur-2xl`.
   - Bordures subtiles : `border border-white/10` ou `border-slate-800/80`.
 
-### Couleur Primaire (Accents et Actions) : **Indigo**
-L'Indigo est la couleur directrice. L'utilisation du violet (purple) ou d'autres teintes proches est proscrite pour éviter de se mélanger les pinceaux.
-- **Boutons d'action principale** : `bg-indigo-600` avec survol `hover:bg-indigo-500`.
-- **Boutons secondaires/fantômes** : `bg-indigo-600/20` avec `border-indigo-500/30`.
-- **Textes mis en évidence (Rôles, codes, etc.)** : `text-indigo-400` ou `text-indigo-300`.
-- **Ombres portées (Glow)** : `shadow-[0_0_20px_rgba(79,70,229,0.3)]` pour donner un aspect "néon" discret.
+### Couleur Primaire (Accents et Actions) : **Rose (Rouge Cramoisi)**
+Le Rose (Rose/Crimson dans Tailwind) est la couleur directrice. L'utilisation de teintes proches (orange, violet) est proscrite pour éviter de se mélanger les pinceaux.
+- **Boutons d'action principale** : `bg-rose-600` avec survol `hover:bg-rose-500`.
+- **Boutons secondaires/fantômes** : `bg-rose-600/20` avec `border-rose-500/30`.
+- **Textes mis en évidence (Rôles, codes, etc.)** : `text-rose-400` ou `text-rose-300`.
+- **Ombres portées (Glow)** : `shadow-[0_0_20px_rgba(225,29,72,0.3)]` pour donner un aspect "néon" discret.
 
 ### Typographie et Textes
 - **Titres (h1, h2)** : `text-white font-black` (souvent avec un `tracking-tight` pour un effet moderne et `drop-shadow-lg` sur les images).
@@ -34,7 +34,7 @@ Pour éviter que les mots ne "sortent" de leurs boutons sur les petits écrans o
 
 ### Champs de Texte (Inputs)
 - Fond transparent ou semi-transparent : `bg-slate-900/80` ou `bg-transparent`.
-- Focus : `focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500`.
+- Focus : `focus-within:border-rose-500 focus-within:ring-1 focus-within:ring-rose-500`.
 - Placeholder : `placeholder-slate-600` ou `placeholder-white/30`.
 
 ## 3. Effets et Animations
@@ -43,4 +43,4 @@ Pour éviter que les mots ne "sortent" de leurs boutons sur les petits écrans o
 - **Fond de page animé** : Les images d'arrière-plan doivent souvent avoir un mix-blend (ex: `mix-blend-luminosity`) ou être assombries par un dégradé (`bg-gradient-to-t from-black`) pour garantir la lisibilité absolue des textes par-dessus.
 
 ## 4. Règle d'or : La Lisibilité Avant Tout
-Rien ne doit entraver la lecture. Si une image est placée derrière du texte, elle doit être obligatoirement couverte par un overlay (ex: `bg-black/60` ou un dégradé). La charte est "stricte" : on ne dévie pas de l'Indigo pour les accents, et le texte reste blanc/gris.
+Rien ne doit entraver la lecture. Si une image est placée derrière du texte, elle doit être obligatoirement couverte par un overlay (ex: `bg-black/60` ou un dégradé). La charte est "stricte" : on ne dévie pas du Rouge Cramoisi (Rose) pour les accents, et le texte reste blanc/gris.
