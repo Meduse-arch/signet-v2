@@ -60,7 +60,7 @@
 }
 
 /* =============================================
-   SCROLLBAR cachée
+   SCROLLBAR cachée & custom
    ============================================= */
 .hide-scrollbar {
   -ms-overflow-style: none;
@@ -68,4 +68,24 @@
 }
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Custom Scrollbar Premium pour tout le site */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(225, 29, 72, 0.3); /* rose-500 / 30% */
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(225, 29, 72, 0.7);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(225, 29, 72, 0.3) transparent;
 }

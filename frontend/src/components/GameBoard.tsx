@@ -24,9 +24,9 @@ const GRID_SIZE = 50;
 export function GameBoard({ isHost, username, messages, sendMessage, onReturn }: GameBoardProps) {
   // Liste de pions par défaut pour tester
   const [tokens, setTokens] = useState<Token[]>([
-    { id: 'hero', name: username.substring(0, 2).toUpperCase(), x: 3, y: 3, color: 'bg-blue-500' },
-    { id: 'goblin1', name: 'GB', x: 8, y: 4, color: 'bg-red-500' },
-    { id: 'goblin2', name: 'GB', x: 8, y: 6, color: 'bg-red-500' },
+    { id: 'hero', name: username.substring(0, 2).toUpperCase(), x: 3, y: 3, color: 'bg-zinc-800 text-white border-zinc-500' },
+    { id: 'goblin1', name: 'GB', x: 8, y: 4, color: 'bg-rose-950 text-rose-200 border-rose-800' },
+    { id: 'goblin2', name: 'GB', x: 8, y: 6, color: 'bg-rose-950 text-rose-200 border-rose-800' },
   ]);
 
   const [draggingToken, setDraggingToken] = useState<string | null>(null);
@@ -114,8 +114,8 @@ export function GameBoard({ isHost, username, messages, sendMessage, onReturn }:
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         style={{
-          // Motif de grille (50x50 pixels)
-          backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)',
+          // Motif de grille (50x50 pixels) très subtil et teinté de rouge (sang)
+          backgroundImage: 'linear-gradient(to right, rgba(225,29,72,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(225,29,72,0.05) 1px, transparent 1px)',
           backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
         }}
       >
@@ -123,7 +123,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, onReturn }:
           <div
             key={token.id}
             onPointerDown={(e) => handlePointerDown(e, token.id)}
-            className={`absolute flex items-center justify-center font-bold text-white text-sm rounded-full shadow-lg border-2 cursor-grab active:cursor-grabbing hover:scale-110 transition-transform ${token.color} ${draggingToken === token.id ? 'border-white z-10' : 'border-black/50 z-0'}`}
+            className={`absolute flex items-center justify-center font-bold text-sm rounded-sm shadow-lg border-2 cursor-grab active:cursor-grabbing hover:scale-110 transition-transform ${token.color} ${draggingToken === token.id ? 'border-white z-10' : 'z-0'}`}
             style={{
               width: GRID_SIZE - 4, // Laisse un petit espace
               height: GRID_SIZE - 4,

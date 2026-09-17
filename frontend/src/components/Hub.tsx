@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../core/supabase';
 // import { t } from '../core/locales/fr'; // plus utilisé ici
-import { Play, Plus, Clock, LogOut, Check, BookOpen, Globe, Puzzle, Settings } from 'lucide-react';
+import { Play, Plus, Clock, LogOut, Check, BookOpen, Globe, Puzzle, Settings, ArrowLeft } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Modal } from './ui/Modal';
 import { Input } from './ui/Input';
 import { NetworkToggle } from './NetworkToggle';
+import { NotesView } from './hub-views/NotesView';
+import { PublicSessionsView } from './hub-views/PublicSessionsView';
+import { ModsView } from './hub-views/ModsView';
+import { SettingsView } from './hub-views/SettingsView';
+
+type HubView = 'main' | 'notes' | 'public' | 'mods' | 'settings';
 
 interface HubProps {
   onJoinGame: (roomId: string, isHost: boolean) => void;
@@ -24,6 +30,9 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
   // États pour la création de session
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sessionName, setSessionName] = useState('');
+  
+  // Vue courante (pour remplacer les modales)
+  const [currentView, setCurrentView] = useState<HubView>('main');
   
   // État local pour les campagnes
   const [campaigns, setCampaigns] = useState([
@@ -148,10 +157,13 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
 
       {/* Contenu Principal */}
       <main className="flex-1 flex flex-col justify-end p-6 lg:p-12 z-20 pb-12 w-full min-w-0">
-        <div className="flex flex-col xl:flex-row gap-12 w-full xl:items-end justify-between">
-          
-          {/* Section Gauche : Héro */}
-          <div className="max-w-3xl animate-slide-up flex-1">
+        
+        {currentView === 'main' ? (
+          <>
+            <div className="flex flex-col xl:flex-row gap-12 w-full xl:items-end justify-between">
+              
+              {/* Section Gauche : Héro */}
+              <div className="max-w-3xl animate-slide-up flex-1">
             <h1 className="text-4xl md:text-6xl font-black mb-3 tracking-tight drop-shadow-2xl">
               L'Aventure vous attend.
             </h1>
@@ -169,7 +181,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value)}
                   placeholder="CODE (EX: A4B9F2)"
-                  className="w-48 sm:w-56 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
+                  className="w-48 sm:w-56 bg-black/40 backdrop-blur-md border border-white/20 rounded-sm px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
                 />
                 <Button
                   type="submit"
@@ -197,22 +209,22 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
           {/* Section Droite : Carré Magique de 4 Cartes (Caché sur mobile, visible sur grand écran) */}
           <div className="hidden xl:grid grid-cols-2 gap-4 w-[380px] shrink-0 animate-fade-in" style={{ animationDelay: '0.2s' }}>
             
-            <div className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Bientôt disponible">
+            <div onClick={() => setCurrentView('notes')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Ouvrir le Carnet de Notes">
               <BookOpen className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Carnet de Notes</span>
             </div>
 
-            <div className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Bientôt disponible">
+            <div onClick={() => setCurrentView('public')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Voir les sessions publiques">
               <Globe className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Sessions Publiques</span>
             </div>
 
-            <div className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Bientôt disponible">
+            <div onClick={() => setCurrentView('mods')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Gérer les Mods">
               <Puzzle className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Mods / Extensions</span>
             </div>
 
-            <div className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Bientôt disponible">
+            <div onClick={() => setCurrentView('settings')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Ouvrir les paramètres">
               <Settings className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Paramètres & Actu</span>
             </div>
@@ -248,19 +260,35 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
             {isGM ? (
               <div 
                 onClick={handleOpenCreateModal}
-                className="min-w-[250px] h-[150px] bg-black/20 border border-white/5 border-dashed rounded-xl flex flex-col items-center justify-center text-white/30 hover:text-white/80 hover:border-rose-500/50 cursor-pointer transition-all hover:bg-white/5 group"
+                className="min-w-[250px] h-[150px] bg-black/20 border border-zinc-800 border-dashed rounded-sm flex flex-col items-center justify-center text-white/30 hover:text-white/80 hover:border-rose-500/50 cursor-pointer transition-all hover:bg-white/5 group"
               >
                 <Plus className="w-6 h-6 mb-2 group-hover:scale-110 group-hover:text-rose-400 transition-transform" />
                 <span className="text-sm font-medium group-hover:text-rose-300">Créer une session</span>
               </div>
             ) : (
-              <div className="min-w-[250px] h-[150px] bg-black/20 border border-white/5 border-dashed rounded-xl flex flex-col items-center justify-center text-white/20">
+              <div className="min-w-[250px] h-[150px] bg-black/20 border border-zinc-800 border-dashed rounded-sm flex flex-col items-center justify-center text-white/20">
                 <span className="text-2xl tracking-widest opacity-50">...</span>
                 <span className="text-xs font-medium mt-2 opacity-50">En attente d'aventures</span>
               </div>
             )}
           </div>
         </div>
+          </>
+        ) : (
+          <div className="flex-1 w-full h-full pt-4 flex flex-col max-h-[85vh]">
+            <div className="mb-4">
+              <Button variant="ghost" onClick={() => setCurrentView('main')} leftIcon={<ArrowLeft className="w-5 h-5" />}>
+                Retour à l'accueil
+              </Button>
+            </div>
+            <div className="flex-1 w-full h-full min-h-0">
+              {currentView === 'notes' && <NotesView />}
+              {currentView === 'public' && <PublicSessionsView />}
+              {currentView === 'mods' && <ModsView />}
+              {currentView === 'settings' && <SettingsView />}
+            </div>
+          </div>
+        )}
 
       </main>
       <Modal 
@@ -299,7 +327,6 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
           </div>
         </div>
       </Modal>
-
     </div>
   );
 }

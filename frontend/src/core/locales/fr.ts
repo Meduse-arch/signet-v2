@@ -44,6 +44,26 @@ export const fr = {
   app_loading: "Chargement de l'application...",
   app_room_label: "Salle :",
   app_leave_room: "Quitter la session",
+
+  // --- Modals (Hub) ---
+  modal_notes_title: "Carnet de Notes",
+  modal_notes_desc: "Prenez des notes rapides, elles seront conservées pour vos prochaines parties.",
+  modal_notes_placeholder: "Commencez à écrire ici...",
+  modal_notes_save: "Sauvegarder",
+
+  modal_public_title: "Sessions Publiques",
+  modal_public_desc: "Rejoignez une aventure ouverte et rencontrez de nouveaux joueurs.",
+  modal_public_join: "Rejoindre",
+  modal_public_full: "Complet",
+
+  modal_mods_title: "Mods & Extensions",
+  modal_mods_desc: "Personnalisez votre VTT avec des modules créés par la communauté.",
+  modal_mods_active: "Actif",
+  modal_mods_activate: "Activer",
+
+  modal_settings_title: "Paramètres",
+  modal_settings_language: "Langue",
+  modal_settings_lang_fr: "Français",
 };
 
 // Fonction utilitaire temporaire (pourra être remplacée par react-i18next plus tard)

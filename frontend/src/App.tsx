@@ -97,7 +97,7 @@ export default function App() {
       )}
 
       {appState === 'game' && sessionRoomId && (
-        <div className="animate-fade-in h-screen flex flex-col">
+        <div className="animate-fade-in h-screen flex flex-col pt-8">
           <div className="flex-1 overflow-hidden relative">
             <GameSession 
               roomId={sessionRoomId} 

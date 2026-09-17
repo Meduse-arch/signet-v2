@@ -32,7 +32,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
       
       {/* Contenu de la modal */}
-      <div className="relative w-full max-w-md bg-zinc-950/80 border border-white/10 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col animate-slide-up">
+      <div className="relative w-full max-w-md bg-zinc-950/80 border border-zinc-800 rounded-sm shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col animate-slide-up">
         
         {/* Header de la modal */}
         <div className="flex items-center justify-between p-6 border-b border-white/5">

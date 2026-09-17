@@ -96,14 +96,14 @@ export function Auth({ onLogin }: { onLogin: () => void }) {
         <div className="absolute top-1/2 left-1/4 w-[300px] lg:w-[500px] h-[300px] lg:h-[500px] bg-amber-700/5 rounded-full blur-[80px] lg:blur-[100px] mix-blend-screen pointer-events-none"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-[1100px] flex flex-col lg:flex-row rounded-2xl sm:rounded-[2rem] overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.7)] border border-zinc-800/80 bg-zinc-950/80 backdrop-blur-2xl min-h-[500px] lg:min-h-[650px]">
+      <div className="relative z-10 w-full max-w-[1100px] flex flex-col lg:flex-row rounded-sm overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.7)] border border-zinc-800/80 bg-zinc-950/80 backdrop-blur-2xl min-h-[500px] lg:min-h-[650px]">
         
         <div className="hidden lg:flex flex-col justify-between w-full lg:w-1/2 p-8 lg:p-14 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-tr from-rose-950/90 via-zinc-900/40 to-transparent z-10 mix-blend-multiply"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent z-10"></div>
           <img src="/fantasy_vtt_bg.jpg" alt="Fantasy Landscape" className="absolute inset-0 w-full h-full object-cover z-0" />
           
-          <div className="relative z-20 mt-auto bg-zinc-950/40 backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative z-20 mt-auto bg-zinc-950/40 backdrop-blur-md p-6 rounded-sm border border-white/10 shadow-2xl">
             <div className="flex items-center gap-4 mb-3">
               <img src="/logo.svg" alt="Signet VTT" className="w-16 h-16 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]" />
               <h1 className="text-4xl font-black text-white leading-tight drop-shadow-lg tracking-tight">

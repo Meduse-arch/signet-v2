@@ -20,7 +20,7 @@ export function Card({
 }: CardProps) {
   return (
     <div 
-      className={`group relative min-w-[250px] sm:min-w-[280px] h-[150px] rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02] border border-white/10 hover:border-white/30 shadow-lg ${className}`}
+      className={`group relative min-w-[250px] sm:min-w-[280px] h-[150px] rounded-sm overflow-hidden cursor-pointer transition-all hover:scale-[1.02] border border-zinc-800 hover:border-zinc-500 shadow-lg ${className}`}
       {...props}
     >
       {imageUrl && (
