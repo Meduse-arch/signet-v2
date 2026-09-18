@@ -62,6 +62,13 @@ const PingSchema = z.object({
   type: z.literal('PING'),
 });
 
+const ModEventSchema = z.object({
+  type: z.literal('MOD_EVENT'),
+  _sourceMod: z.string(),
+  modEventType: z.string(),
+  payload: z.any(),
+});
+
 export const P2PMessageSchema = z.discriminatedUnion('type', [
   ChatMessageSchema,
   MoveTokenSchema,
@@ -70,6 +77,7 @@ export const P2PMessageSchema = z.discriminatedUnion('type', [
   LobbyStateSchema,
   StartGameSchema,
   PingSchema,
+  ModEventSchema,
 ]);
 
 // ── Types inférés ─────────────────────────────────────────────────────────
@@ -81,5 +89,6 @@ export type RollDiceMessage = z.infer<typeof RollDiceSchema>;
 export type PlayerJoinMessage = z.infer<typeof PlayerJoinSchema>;
 export type LobbyStateMessage = z.infer<typeof LobbyStateSchema>;
 export type StartGameMessage = z.infer<typeof StartGameSchema>;
+export type ModEventMessage = z.infer<typeof ModEventSchema>;
 
-export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, StartGameSchema };
+export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, StartGameSchema, ModEventSchema };

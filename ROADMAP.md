@@ -77,9 +77,9 @@ Nous avons inversé les sprints initiaux pour poser de solides bases visuelles e
 
 ### 🎯 Sprint 1 : Le Moteur de Mods (Event Bus)
 *Objectif : Rendre le cœur de l'application extensible avant d'ajouter les mécaniques de jeu.*
-1. Créer le `ModManager` et le système d'Événements (Event Bus).
-2. Séparer les flux réseau (UDP vs TCP).
-3. Connecter le chat textuel via l'Event Bus (comme si le chat était le premier Mod).
+1. [x] Créer le `ModManager` et le système d'Événements (Event Bus).
+2. [ ] Séparer les flux réseau (UDP vs TCP). *(Repoussé à plus tard pour se concentrer sur l'Event Bus)*
+3. [x] Connecter le chat textuel via l'Event Bus (comme si le chat était le premier Mod).
 
 ### 🎯 Sprint 2 : Le Plateau de Jeu (VTT Canvas)
 *Objectif : Les joueurs interagissent visuellement sur une carte.*

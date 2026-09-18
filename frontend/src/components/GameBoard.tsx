@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { P2PMessage } from '../core/network/schemas';
 import { Button } from './ui/Button';
 import { LogOut } from 'lucide-react';
+import { ModuleOverlays } from './game/ModuleOverlays';
+import { ModManager } from '../core/services/ModManager';
+import { CoreChatModule } from '../core/modules/ChatModule';
+import { coreEventBus } from '../core/services/EventBus';
 
 interface Token {
   id: string;
@@ -32,7 +36,13 @@ export function GameBoard({ isHost, username, messages, sendMessage, onReturn }:
   const [draggingToken, setDraggingToken] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
-  // Synchronisation des positions P2P
+  // Initialisation des modules au lancement du plateau
+  useEffect(() => {
+    ModManager.setContext(username);
+    ModManager.registerMod(CoreChatModule);
+  }, [username]);
+
+  // Pont 1 : Réseau (Props) -> EventBus (Modules)
   useEffect(() => {
     if (messages.length === 0) return;
     const lastMsg = messages[messages.length - 1];
@@ -42,8 +52,24 @@ export function GameBoard({ isHost, username, messages, sendMessage, onReturn }:
       setTokens((prev) => 
         prev.map(t => (t.id === tokenId ? { ...t, x, y } : t))
       );
+    } else {
+      // Tous les autres types de messages (ex: CHAT) sont transférés aux modules
+      coreEventBus.emit('NETWORK_INCOMING', lastMsg);
     }
   }, [messages]);
+
+  // Pont 2 : EventBus (Modules) -> Réseau (Props)
+  useEffect(() => {
+    const handleOutgoing = (msg: any) => {
+      sendMessage(msg);
+    };
+
+    coreEventBus.on('NETWORK_OUTGOING', handleOutgoing);
+
+    return () => {
+      coreEventBus.off('NETWORK_OUTGOING', handleOutgoing);
+    };
+  }, [sendMessage]);
 
   const handlePointerDown = (e: React.PointerEvent, tokenId: string) => {
     // Prevent default to avoid text selection while dragging
@@ -119,6 +145,8 @@ export function GameBoard({ isHost, username, messages, sendMessage, onReturn }:
           backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
         }}
       >
+        <ModuleOverlays />
+
         {tokens.map((token) => (
           <div
             key={token.id}

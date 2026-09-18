@@ -21,7 +21,7 @@ Le projet doit pouvoir accueillir des Mods créés par la communauté.
 - Rien ne doit être codé "en dur" si cela peut être rendu dynamique.
 - Le cœur de l'application devra exposer des événements (Event Bus) pour que les Mods puissent écouter le réseau (ex: lancers de dés, arrivées de joueurs) sans modifier le code source natif de l'application.
 
-## 3. Stratégie Réseau : L'optimisation intelligente 🌐
+## 4. Stratégie Réseau : L'optimisation intelligente 🌐
 Dans un VTT (Virtual Tabletop) P2P, le réseau est le nerf de la guerre. La règle est de **"choisir la méthode la plus optimisée selon l'action"**.
 
 - **Les actions critiques (Dés, Chat, Commandes) :** 
@@ -34,6 +34,18 @@ Dans un VTT (Virtual Tabletop) P2P, le réseau est le nerf de la guerre. La règ
   - Utilisation du principe **Torrent (ex: WebTorrent)**.
   - Le Maître du Jeu n'envoie pas le fichier complet de 10 Mo à ses 5 joueurs (ce qui ferait 50 Mo d'upload). Il commence à envoyer des petits "morceaux" (chunks).
   - Dès qu'un joueur reçoit un morceau, il se met à le partager (seeder) avec les autres joueurs. L'upload est ainsi réparti sur tout le groupe, soulageant le réseau de l'hôte.
+
+---
+
+## 5. L'Architecture Hybride : Le Moteur et la Carrosserie 🏎️
+La séparation stricte entre le Backend (Rust) et le Frontend (TypeScript/React) est le cœur de notre performance. Nous utilisons la métaphore de la voiture :
+
+- **Le Backend Rust (Le moteur V12) :**
+  C'est la puissance brute "sous le capot". Il est totalement invisible pour l'utilisateur, mais c'est lui qui gère toutes les opérations mathématiques lourdes, le découpage des images volumineuses, le calcul des lignes de vue, et les négociations réseau complexes. Rust est le cerveau analytique et la force motrice.
+- **Le Frontend TypeScript/React (La Carrosserie et le Tableau de bord) :**
+  C'est l'interface magnifique et modulaire. C'est ici que vit le `Core` du VTT, le `ModManager`, et l'UI. Le TypeScript permet de créer une interface fluide et d'offrir un environnement très accessible pour la communauté des moddeurs (comme brancher un nouvel autoradio sans être mécanicien).
+
+Cette approche hybride garantit que notre VTT est **infiniment personnalisable** par la communauté (grâce à TypeScript) tout en conservant une **puissance inégalée** pour les calculs lourds (grâce à Rust).
 
 ---
 *Document évolutif : à mettre à jour à chaque nouvelle grande décision architecturale.*
