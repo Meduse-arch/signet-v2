@@ -3,16 +3,18 @@ import { supabase } from './core/supabase';
 import { Auth } from './components/Auth';
 import { Hub } from './components/Hub';
 import { GameSession } from './components/GameSession';
+import { PopoutSession } from './components/PopoutSession';
 import { TitleBar } from './components/ui/TitleBar';
 import { SplashTransition } from './components/ui/SplashTransition';
 import { t } from './core/locales/fr';
 
 // Différents "écrans" de notre Single Page App
-type AppState = 'auth' | 'hub' | 'game';
+type AppState = 'auth' | 'hub' | 'game' | 'popout';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>('auth');
   const [sessionRoomId, setSessionRoomId] = useState<string | null>(null);
+  const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
@@ -25,14 +27,32 @@ export default function App() {
 
   // Vérifier la session Supabase au démarrage (une seule fois)
   useEffect(() => {
+    // Check routing first
+    const hash = window.location.hash;
+    let isPopoutMode = false;
+    
+    if (hash.startsWith('#/popout/')) {
+      const parts = hash.split('?');
+      const roomId = parts[0].replace('#/popout/', '');
+      const searchParams = new URLSearchParams(parts[1] || '');
+      const moduleId = searchParams.get('module');
+      
+      if (roomId && moduleId) {
+        setSessionRoomId(roomId);
+        setPopoutModuleId(moduleId);
+        setAppState('popout');
+        isPopoutMode = true;
+      }
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setAppState(current => current === 'auth' ? 'hub' : current);
+        if (!isPopoutMode) setAppState(current => current === 'auth' ? 'hub' : current);
         // Récupérer le pseudo
         supabase.from('users_profile').select('username').eq('id', session.user.id).single()
           .then(({ data }) => { if (data?.username) setUsername(data.username); });
       } else {
-        setAppState('auth');
+        if (!isPopoutMode) setAppState('auth');
       }
       setIsInitializing(false);
     });
@@ -43,7 +63,7 @@ export default function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session && appState === 'auth') {
         setAppState('hub');
-      } else if (!session) {
+      } else if (!session && appState !== 'popout') {
         setAppState('auth');
         setSessionRoomId(null);
       }
@@ -53,6 +73,7 @@ export default function App() {
   }, []); // <--- Dépendance vide pour ne pas relancer à chaque changement d'écran !
 
   const handleJoinGame = (roomId: string, host: boolean) => {
+    sessionStorage.setItem('signet_room_id', roomId);
     setSessionRoomId(roomId);
     setIsHost(host);
     setAppState('game');
@@ -107,6 +128,16 @@ export default function App() {
               onLeave={() => setAppState('hub')}
             />
           </div>
+        </div>
+      )}
+
+      {appState === 'popout' && sessionRoomId && popoutModuleId && (
+        <div className="animate-fade-in h-screen flex flex-col">
+          <PopoutSession 
+            roomId={sessionRoomId}
+            moduleId={popoutModuleId}
+            signalUrl={signalUrl}
+          />
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { coreEventBus, EventBus } from './EventBus';
+import type { WindowPosition } from './ModManager';
 
 /**
  * L'API Signet officielle fournie à chaque Module.
@@ -10,6 +11,7 @@ export class SignetAPI {
   public readonly events: EventBus;
   public readonly ui: {
     registerOverlay: (overlayId: string, component: React.ReactNode) => void;
+    registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, icon?: React.ReactNode }) => void;
     registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => void;
     setActionState: (actionId: string, isActive: boolean) => void;
   };
@@ -33,6 +35,16 @@ export class SignetAPI {
           modId: this.modId,
           overlayId,
           component
+        });
+      },
+      registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, icon?: React.ReactNode }) => {
+        this.events.emit('SYSTEM_UI_REGISTER_WINDOW', {
+          modId: this.modId,
+          windowId,
+          title,
+          component,
+          defaultPosition: options?.defaultPosition || 'floating',
+          icon: options?.icon
         });
       },
       registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => {

@@ -23,6 +23,17 @@ export interface UIOverlay {
   component: React.ReactNode;
 }
 
+export type WindowPosition = 'left' | 'right' | 'top' | 'bottom' | 'floating' | 'fullscreen';
+
+export interface RegisteredWindow {
+  modId: string;
+  windowId: string;
+  title: string;
+  icon?: React.ReactNode;
+  component: React.ReactNode;
+  defaultPosition: WindowPosition;
+}
+
 export interface RegisteredAction {
   modId: string;
   actionId: string;
@@ -51,6 +62,7 @@ class ModManagerService {
   private activeMods: Map<string, SignetModule> = new Map();
   private apis: Map<string, SignetAPI> = new Map();
   private overlays: Map<string, UIOverlay> = new Map();
+  private windows: Map<string, RegisteredWindow> = new Map();
   private actions: Map<string, RegisteredAction> = new Map();
   private username: string = 'Anonyme';
 
@@ -72,6 +84,13 @@ class ModManagerService {
       coreEventBus.emit('SYSTEM_UI_UPDATED');
     });
 
+    coreEventBus.on('SYSTEM_UI_REGISTER_WINDOW', (data: RegisteredWindow) => {
+      const key = `${data.modId}:${data.windowId}`;
+      this.windows.set(key, data);
+      console.log(`[ModManager] Window registered: ${key}`);
+      coreEventBus.emit('SYSTEM_UI_UPDATED');
+    });
+
     coreEventBus.on('SYSTEM_UI_REGISTER_ACTION', (data: RegisteredAction) => {
       this.actions.set(data.actionId, data);
       console.log(`[ModManager] Action registered: ${data.actionId}`);
@@ -90,6 +109,13 @@ class ModManagerService {
    */
   public getOverlays(): UIOverlay[] {
     return Array.from(this.overlays.values());
+  }
+
+  /**
+   * Récupère toutes les fenêtres (Managed Windows)
+   */
+  public getWindows(): RegisteredWindow[] {
+    return Array.from(this.windows.values());
   }
 
   /**

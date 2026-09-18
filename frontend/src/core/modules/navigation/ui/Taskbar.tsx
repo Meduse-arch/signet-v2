@@ -33,7 +33,7 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
           return (
             <button 
               key={action.actionId}
-              onClick={() => coreEventBus.emit(action.onClickEvent)}
+              onClick={() => coreEventBus.emit(action.onClickEvent, action.actionId)}
               className={`relative group w-12 h-12 flex items-center justify-center rounded-2xl transition-all ${
                 isActive
                   ? 'bg-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.15)] scale-105'

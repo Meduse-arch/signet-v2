@@ -3,6 +3,7 @@ import type { P2PMessage } from '../core/network/schemas';
 import { Button } from './ui/Button';
 import { LogOut } from 'lucide-react';
 import { ModuleOverlays } from './game/ModuleOverlays';
+import { DockManager } from './game/DockManager';
 import { ModManager } from '../core/services/ModManager';
 import { CoreChatModule } from '../core/modules/chat';
 import { CoreNavigationModule } from '../core/modules/navigation';
@@ -149,6 +150,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, onReturn }:
         }}
       >
         <ModuleOverlays />
+        <DockManager />
 
         {tokens.map((token) => (
           <div

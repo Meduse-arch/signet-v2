@@ -16,7 +16,7 @@ export function MenuOverlay({ isOpen, onClose, onReturnToHub, actions, pinnedIds
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center animate-fade-in pointer-events-auto">
+    <div className="absolute inset-0 z-[100] flex items-center justify-center animate-fade-in pointer-events-auto">
       {/* Background with heavy blur */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-2xl" onClick={onClose} />
 
@@ -63,7 +63,7 @@ export function MenuOverlay({ isOpen, onClose, onReturnToHub, actions, pinnedIds
 
                   <button 
                     onClick={() => {
-                      coreEventBus.emit(action.onClickEvent);
+                      coreEventBus.emit(action.onClickEvent, action.actionId);
                       onClose(); // Ferme le menu après avoir cliqué
                     }}
                     className={`w-full flex flex-col items-center justify-center gap-6 p-10 rounded-3xl transition-all shadow-xl group ${

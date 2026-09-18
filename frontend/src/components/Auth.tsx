@@ -125,7 +125,7 @@ export function Auth({ onLogin }: { onLogin: () => void }) {
               type="submit"
               variant="primary"
               loading={loading}
-              className="mt-8"
+              className="mt-8 w-full"
               rightIcon={<ArrowRight className="w-5 h-5 text-rose-200 group-hover:translate-x-1 group-hover:text-white transition-all" />}
             >
               {isLogin ? t('auth_btn_login') : t('auth_btn_register')}

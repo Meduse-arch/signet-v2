@@ -51,27 +51,27 @@ export function NotesView() {
 
   return (
     <div className="w-full h-full flex flex-col animate-fade-in px-4 lg:px-8 mt-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
-        <div>
+      <div className="flex flex-wrap justify-between items-start mb-10 gap-4">
+        <div className="min-w-[200px] flex-1">
           {currentFolderId && currentFolder ? (
             <div className="flex items-center gap-4">
               <Button variant="ghost" onClick={handleBack} leftIcon={<ArrowLeft className="w-5 h-5" />}>
                 Retour
               </Button>
-              <h2 className="text-4xl font-black text-white drop-shadow-xl">{currentFolder.name}</h2>
+              <h2 className="text-3xl sm:text-4xl font-black text-white drop-shadow-xl truncate">{currentFolder.name}</h2>
             </div>
           ) : (
             <>
-              <h2 className="text-4xl font-black text-white mb-2 drop-shadow-xl">{t('modal_notes_title')}</h2>
-              <p className="text-zinc-300 font-medium text-sm drop-shadow-md">{t('modal_notes_desc')}</p>
+              <h2 className="text-3xl sm:text-4xl font-black text-white mb-2 drop-shadow-xl">{t('modal_notes_title')}</h2>
+              <p className="text-zinc-300 font-medium text-sm drop-shadow-md break-words">{t('modal_notes_desc')}</p>
             </>
           )}
         </div>
-        <div className="flex flex-wrap gap-3 mt-4 sm:mt-0 justify-start sm:justify-end shrink-0">
-          <Button variant="glass" leftIcon={<FolderPlus className="w-4 h-4" />}>
+        <div className="flex flex-wrap gap-2 justify-start shrink-0">
+          <Button variant="glass" size="sm" leftIcon={<FolderPlus className="w-4 h-4" />}>
             Nouveau Dossier
           </Button>
-          <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
+          <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />}>
             Nouvelle Note
           </Button>
         </div>
@@ -84,24 +84,24 @@ export function NotesView() {
         )}
 
         {sortedLetters.map(letter => (
-          <div key={letter} className="mb-10 animate-fade-in">
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-5xl font-black text-rose-500/30 drop-shadow-lg">{letter}</span>
+          <div key={letter} className="mb-8 animate-fade-in">
+            <div className="flex items-center gap-4 mb-4">
+              <span className="text-3xl font-black text-rose-500/30 drop-shadow-lg">{letter}</span>
               <div className="h-[1px] flex-1 bg-gradient-to-r from-rose-500/30 to-transparent"></div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))' }}>
               {groupedItems[letter].map(item => (
                 <div 
                   key={item.id} 
                   onClick={() => handleItemClick(item)}
-                  className="flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-sm hover:bg-white/10 rounded-lg cursor-pointer transition-all hover:scale-105 border border-white/5 hover:border-white/20 group shadow-xl"
+                  className="flex flex-col items-center justify-center p-4 bg-black/40 backdrop-blur-sm hover:bg-white/10 rounded-lg cursor-pointer transition-all hover:scale-105 border border-white/5 hover:border-white/20 group shadow-xl"
                 >
                   {item.type === 'folder' ? (
-                    <Folder className="w-16 h-16 text-rose-400/80 group-hover:text-rose-400 mb-3 drop-shadow-lg transition-colors" />
+                    <Folder className="w-10 h-10 text-rose-400/80 group-hover:text-rose-400 mb-2 drop-shadow-lg transition-colors" />
                   ) : (
-                    <FileText className="w-16 h-16 text-zinc-300/80 group-hover:text-white mb-3 drop-shadow-lg transition-colors" />
+                    <FileText className="w-10 h-10 text-zinc-300/80 group-hover:text-white mb-2 drop-shadow-lg transition-colors" />
                   )}
-                  <span className="text-white text-sm text-center font-bold tracking-wide">{item.name}</span>
+                  <span className="text-white text-xs text-center font-bold tracking-wide leading-tight break-words w-full">{item.name}</span>
                 </div>
               ))}
             </div>

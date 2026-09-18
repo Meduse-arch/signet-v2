@@ -72,6 +72,7 @@ function NavigationWrapper() {
       <Taskbar 
         onOpenMenu={() => setIsMenuOpen(true)} 
         pinnedActions={pinnedActions}
+        activeIds={activeActionIds}
       />
       <MenuOverlay 
         isOpen={isMenuOpen} 
