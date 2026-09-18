@@ -57,20 +57,22 @@ export default function App() {
       setIsInitializing(false);
     });
 
-    // Écouter les changements de connexion
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && appState === 'auth') {
-        setAppState('hub');
-      } else if (!session && appState !== 'popout') {
-        setAppState('auth');
-        setSessionRoomId(null);
-      }
+      setAppState(current => {
+        if (session && current === 'auth') {
+          return 'hub';
+        } else if (!session && current !== 'popout') {
+          setSessionRoomId(null);
+          return 'auth';
+        }
+        return current;
+      });
     });
 
     return () => subscription.unsubscribe();
-  }, []); // <--- Dépendance vide pour ne pas relancer à chaque changement d'écran !
+  }, []);
 
   const handleJoinGame = (roomId: string, host: boolean) => {
     sessionStorage.setItem('signet_room_id', roomId);

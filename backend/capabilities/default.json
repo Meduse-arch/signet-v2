@@ -3,7 +3,7 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": [
-    "main"
+    "*"
   ],
   "permissions": [
     "core:default",
@@ -14,6 +14,8 @@
     "core:window:allow-start-dragging",
     "core:window:allow-set-fullscreen",
     "core:window:allow-is-fullscreen",
-    "core:window:allow-show"
+    "core:window:allow-show",
+    "core:window:allow-create",
+    "core:webview:allow-create-webview-window"
   ]
 }

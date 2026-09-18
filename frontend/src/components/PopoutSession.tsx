@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useVTTNetwork } from '../core/hooks/useVTTNetwork';
 import { ModManager } from '../core/services/ModManager';
 import { Loader2 } from 'lucide-react';
+import { CoreChatModule } from '../core/modules/chat';
+import { CoreNavigationModule } from '../core/modules/navigation';
+import { CoreSystemWindowsModule } from '../core/modules/system-windows';
 
 interface PopoutSessionProps {
   roomId: string;
@@ -19,6 +22,8 @@ export function PopoutSession({ roomId, moduleId, signalUrl }: PopoutSessionProp
 
   const [error, setError] = useState<string | null>(null);
 
+  const [modulesLoaded, setModulesLoaded] = useState(false);
+
   // Auto-connect as a "client" (even if the user is the Host in the main window,
   // the popout acts as a lightweight client connecting to the room)
   useEffect(() => {
@@ -28,13 +33,29 @@ export function PopoutSession({ roomId, moduleId, signalUrl }: PopoutSessionProp
     return () => clearTimeout(timer);
   }, [roomId, joinGame]);
 
-  const moduleDef = ModManager.getEnabledModules().find(m => m.id === moduleId);
+  useEffect(() => {
+    // Initialiser les modules pour que la fenêtre puisse être récupérée
+    ModManager.setContext('Popout');
+    if (ModManager.isItemEnabled('mod-chat')) {
+      ModManager.registerMod(CoreChatModule);
+    }
+    ModManager.registerMod(CoreNavigationModule);
+    ModManager.registerMod(CoreSystemWindowsModule);
+    
+    setModulesLoaded(true);
+  }, []);
+
+  const windowDef = ModManager.getWindows().find(w => w.windowId === moduleId);
 
   useEffect(() => {
-    if (!moduleDef) {
-      setError(`Module introuvable ou désactivé: ${moduleId}`);
+    if (modulesLoaded && !windowDef) {
+      setError(`Fenêtre introuvable: ${moduleId}`);
     }
-  }, [moduleDef, moduleId]);
+  }, [windowDef, moduleId, modulesLoaded]);
+
+  if (!modulesLoaded) {
+    return null; // Wait for modules to register
+  }
 
   if (error) {
     return (
@@ -44,31 +65,29 @@ export function PopoutSession({ roomId, moduleId, signalUrl }: PopoutSessionProp
     );
   }
 
-  if (connectionState !== 'connected') {
-    return (
-      <div className="w-full h-screen bg-[#050508] text-white flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
-        <p className="text-zinc-400 font-medium animate-pulse">Connexion à la partie en cours...</p>
-      </div>
-    );
-  }
+  if (!windowDef) return null;
 
-  if (!moduleDef) return null;
-
-  const ModuleComponent = moduleDef.component;
+  const WindowComponent = windowDef.component;
 
   // The popout is a fullscreen container for the module
   return (
     <div className="w-full h-screen bg-[#050508] text-white overflow-hidden flex flex-col">
       {/* Title bar for desktop drag region */}
       <div data-tauri-drag-region className="w-full h-8 bg-black/40 flex items-center px-4 shrink-0 border-b border-white/5">
-         <span className="text-xs font-bold text-white/50 tracking-widest uppercase">{moduleDef.name} (Pop-out)</span>
+         <span className="text-xs font-bold text-white/50 tracking-widest uppercase">{windowDef.title} (Pop-out)</span>
       </div>
       <div className="flex-1 relative overflow-hidden">
-        <ModuleComponent 
-          messages={messages}
-          sendMessage={rawSendMessage}
-        />
+        {React.isValidElement(WindowComponent) ? (
+          React.cloneElement(WindowComponent as React.ReactElement, {
+            messages,
+            sendMessage: rawSendMessage
+          })
+        ) : (
+          <WindowComponent 
+            messages={messages}
+            sendMessage={rawSendMessage}
+          />
+        )}
       </div>
     </div>
   );

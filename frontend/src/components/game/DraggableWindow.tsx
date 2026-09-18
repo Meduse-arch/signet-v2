@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, GripHorizontal, ArrowRightToLine, ArrowLeftToLine, ChevronRight, ChevronLeft, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
 import { coreEventBus } from '../../core/services/EventBus';
+import { PopoutButton } from './PopoutButton';
 import type { WindowPosition } from '../../core/services/ModManager';
 
 interface DraggableWindowProps {
@@ -344,65 +345,40 @@ export function DraggableWindow({
             <h3 className="text-zinc-300 text-sm font-bold tracking-widest uppercase">{title}</h3>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pointer-events-auto">
             {/* Boutons d'état (Plein écran / Flottant) */}
             {dockState !== 'fullscreen' && (
                <button 
                  onClick={(e) => { e.stopPropagation(); setDockState('fullscreen'); }}
-                 className="text-white/30 hover:text-white transition-colors p-1 no-drag"
+                 className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
                  title="Plein Écran"
                >
-                 <Maximize2 className="w-4 h-4" />
+                 <Maximize2 className="w-4 h-4 pointer-events-none" />
                </button>
             )}
 
             {dockState === 'fullscreen' && (
                <button 
                  onClick={(e) => { e.stopPropagation(); setDockState('floating'); }}
-                 className="text-white/30 hover:text-white transition-colors p-1 no-drag"
+                 className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
                  title="Réduire en fenêtre"
                >
-                 <Minimize2 className="w-4 h-4" />
+                 <Minimize2 className="w-4 h-4 pointer-events-none" />
                </button>
             )}
 
-            <button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                const roomId = sessionStorage.getItem('signet_room_id');
-                if (!roomId) {
-                  alert("Impossible de déterminer la session actuelle.");
-                  return;
-                }
-                const popoutUrl = `/#/popout/${roomId}?module=${windowId}`;
-                
-                if ((window as any).__TAURI__ || (window as any).__TAURI_INTERNALS__) {
-                  import('@tauri-apps/api/webviewWindow').then(({ WebviewWindow }) => {
-                    new WebviewWindow(`popout-${windowId}-${Date.now()}`, {
-                      url: popoutUrl,
-                      title: `${title} (Pop-out)`,
-                      width: 500,
-                      height: 700
-                    });
-                  }).catch(err => {
-                    console.error("Erreur Tauri", err);
-                    window.open(popoutUrl, '_blank', `width=${size.w},height=${size.h}`);
-                  });
-                } else {
-                  window.open(popoutUrl, '_blank', `width=${size.w},height=${size.h}`);
-                }
-              }}
-              className="text-white/30 hover:text-white transition-colors p-1 no-drag"
-              title="Ouvrir dans une nouvelle fenêtre (Pop-out)"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </button>
+            <PopoutButton 
+              windowId={windowId} 
+              title={title} 
+              size={size} 
+              onPopout={() => handleClose()} 
+            />
 
             <button 
               onClick={(e) => { e.stopPropagation(); handleClose(); }} 
-              className="text-white/30 hover:text-rose-400 transition-colors p-1 no-drag"
+              className="text-white/30 hover:text-rose-400 transition-colors p-1 no-drag cursor-pointer relative z-[100]"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 pointer-events-none" />
             </button>
           </div>
         </div>
