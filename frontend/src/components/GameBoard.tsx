@@ -4,7 +4,9 @@ import { Button } from './ui/Button';
 import { LogOut } from 'lucide-react';
 import { ModuleOverlays } from './game/ModuleOverlays';
 import { ModManager } from '../core/services/ModManager';
-import { CoreChatModule } from '../core/modules/ChatModule';
+import { CoreChatModule } from '../core/modules/chat';
+import { CoreNavigationModule } from '../core/modules/navigation';
+import { CoreSystemWindowsModule } from '../core/modules/system-windows';
 import { coreEventBus } from '../core/services/EventBus';
 
 interface Token {
@@ -39,8 +41,24 @@ export function GameBoard({ isHost, username, messages, sendMessage, onReturn }:
   // Initialisation des modules au lancement du plateau
   useEffect(() => {
     ModManager.setContext(username);
-    ModManager.registerMod(CoreChatModule);
+    if (ModManager.isItemEnabled('mod-chat')) {
+      ModManager.registerMod(CoreChatModule);
+    }
+    ModManager.registerMod(CoreNavigationModule);
+    ModManager.registerMod(CoreSystemWindowsModule);
   }, [username]);
+
+  // Écoute des événements système globaux
+  useEffect(() => {
+    const handleReturnToHub = () => {
+      onReturn();
+    };
+
+    coreEventBus.on('SYSTEM_RETURN_TO_HUB', handleReturnToHub);
+    return () => {
+      coreEventBus.off('SYSTEM_RETURN_TO_HUB', handleReturnToHub);
+    };
+  }, [onReturn]);
 
   // Pont 1 : Réseau (Props) -> EventBus (Modules)
   useEffect(() => {
@@ -118,22 +136,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, onReturn }:
 
   return (
     <div className="h-full flex flex-col bg-zinc-950">
-      {/* Barre d'outils */}
-      <div className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6 shrink-0">
-        <h1 className="text-white font-bold tracking-wider">
-          Plateau <span className="text-rose-400">SIGNET</span>
-        </h1>
-        <div className="flex items-center gap-4">
-          <span className="text-zinc-400 text-sm">
-            {isHost ? 'Maître du Jeu' : 'Joueur'}
-          </span>
-          <Button variant="ghost" size="sm" onClick={onReturn} leftIcon={<LogOut className="w-4 h-4" />}>
-            Retour
-          </Button>
-        </div>
-      </div>
-
-      {/* Zone du plateau */}
+      {/* Zone du plateau (prend maintenant tout l'écran) */}
       <div 
         ref={boardRef}
         className="flex-1 relative overflow-hidden touch-none"

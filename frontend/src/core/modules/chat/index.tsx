@@ -1,7 +1,8 @@
 import React from 'react';
-import type { SignetModule } from '../services/ModManager';
-import { SignetAPI } from '../services/SignetAPI';
-import { ChatUI } from '../../components/game/ChatUI';
+import { MessageSquare } from 'lucide-react';
+import type { SignetModule } from '../../services/ModManager';
+import { SignetAPI } from '../../services/SignetAPI';
+import { ChatUI } from './ui/ChatUI';
 
 /**
  * Le module officiel de Chat.
@@ -17,6 +18,14 @@ export const CoreChatModule: SignetModule = {
 
     // 1. On injecte l'interface graphique du chat dans le système
     api.ui.registerOverlay('chat-window', <ChatUI />);
+
+    // 1b. On enregistre notre action dans le Menu Principal / Barre des tâches
+    api.ui.registerAction(
+      'toggle-chat',
+      'Chat Universel',
+      <MessageSquare className="w-5 h-5" />,
+      'CHAT_TOGGLE_WINDOW'
+    );
 
     // 2. On écoute l'UI (quand l'utilisateur clique sur "Envoyer" dans ChatUI)
     api.on('CHAT_UI_SEND', (text: string) => {

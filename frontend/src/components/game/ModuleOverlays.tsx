@@ -31,11 +31,9 @@ export function ModuleOverlays() {
   return (
     <div className="absolute inset-0 pointer-events-none z-50">
       {overlays.map((overlay) => (
-        // Chaque overlay récupère les événements souris (pointer-events-auto)
-        // alors que le conteneur global laisse passer les clics vers le plateau
-        <div key={`${overlay.modId}:${overlay.overlayId}`} className="pointer-events-auto w-full h-full">
+        <React.Fragment key={`${overlay.modId}:${overlay.overlayId}`}>
           {overlay.component}
-        </div>
+        </React.Fragment>
       ))}
     </div>
   );

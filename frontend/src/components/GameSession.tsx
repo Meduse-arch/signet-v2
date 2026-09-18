@@ -166,10 +166,38 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
     setIsInGameView(false);
   };
 
-  const handleQuit = () => {
+  const handleQuit = useCallback(() => {
     disconnect();
     onLeave();
-  };
+  }, [disconnect, onLeave]);
+
+  // Panic Escape (3x Echap rapide pour quitter en urgence)
+  useEffect(() => {
+    if (!isInGameView) return;
+
+    let escapeCount = 0;
+    let lastEscapeTime = 0;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        const now = Date.now();
+        if (now - lastEscapeTime < 600) { // 600ms maximum entre deux appuis
+          escapeCount++;
+        } else {
+          escapeCount = 1;
+        }
+        lastEscapeTime = now;
+
+        if (escapeCount >= 3) {
+          console.log('[Panic] 3x Échap détecté. Sortie de secours activée.');
+          handleQuit();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isInGameView, handleQuit]);
 
   if (isInGameView) {
     return (

@@ -220,7 +220,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
 
             <div onClick={() => setCurrentView('mods')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Gérer les Mods">
               <Puzzle className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
-              <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Mods / Extensions</span>
+              <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Mods / Systèmes</span>
             </div>
 
             <div onClick={() => setCurrentView('settings')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Ouvrir les paramètres">

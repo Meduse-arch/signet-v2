@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Check } from 'lucide-react';
+import { ModManager } from '../../core/services/ModManager';
 
 export interface SessionCreationData {
   name: string;
@@ -17,8 +18,9 @@ interface CreateSessionViewProps {
 }
 
 export function CreateSessionView({ onConfirm }: CreateSessionViewProps) {
+  const enabledSystems = ModManager.getEnabledSystems();
   const [sessionName, setSessionName] = useState('');
-  const [sessionSystem, setSessionSystem] = useState('D&D 5E');
+  const [sessionSystem, setSessionSystem] = useState(enabledSystems[0]?.id || '');
   const [sessionTags, setSessionTags] = useState('');
   const [sessionDesc, setSessionDesc] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -60,11 +62,12 @@ export function CreateSessionView({ onConfirm }: CreateSessionViewProps) {
             onChange={e => setSessionSystem(e.target.value)}
             className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-sm px-4 py-3.5 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 shadow-inner appearance-none cursor-pointer"
           >
-            <option value="D&D 5E">D&D 5E</option>
-            <option value="Pathfinder 2">Pathfinder 2</option>
-            <option value="Appel de Cthulhu">L'Appel de Cthulhu</option>
-            <option value="Chroniques Oubliées">Chroniques Oubliées</option>
-            <option value="Générique">Générique / Autre</option>
+            {enabledSystems.length === 0 && (
+              <option value="" disabled>Aucun système activé...</option>
+            )}
+            {enabledSystems.map(sys => (
+              <option key={sys.id} value={sys.id}>{sys.name}</option>
+            ))}
           </select>
         </div>
 

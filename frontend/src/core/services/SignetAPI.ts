@@ -10,6 +10,8 @@ export class SignetAPI {
   public readonly events: EventBus;
   public readonly ui: {
     registerOverlay: (overlayId: string, component: React.ReactNode) => void;
+    registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => void;
+    setActionState: (actionId: string, isActive: boolean) => void;
   };
   public readonly user: {
     getName: () => string;
@@ -32,6 +34,18 @@ export class SignetAPI {
           overlayId,
           component
         });
+      },
+      registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => {
+        this.events.emit('SYSTEM_UI_REGISTER_ACTION', {
+          modId: this.modId,
+          actionId,
+          label,
+          icon,
+          onClickEvent
+        });
+      },
+      setActionState: (actionId: string, isActive: boolean) => {
+        this.events.emit('SYSTEM_UI_ACTION_STATE_CHANGED', { actionId, isActive });
       }
     };
   }
