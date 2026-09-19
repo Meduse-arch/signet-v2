@@ -81,11 +81,12 @@ Nous avons inversé les sprints initiaux pour poser de solides bases visuelles e
 2. [ ] Séparer les flux réseau (UDP vs TCP). *(Repoussé à plus tard pour se concentrer sur l'Event Bus)*
 3. [x] Connecter le chat textuel via l'Event Bus (comme si le chat était le premier Mod).
 
-### 🎯 Sprint 1.5 : L'Interface Modulaire (UI/Dock)
+### ✅ Sprint 1.5 : L'Interface Modulaire (UI/Dock) (Terminé)
 *Objectif : Créer un environnement de bureau ergonomique pour accueillir de multiples modules sans polluer l'écran.*
-1. [ ] Ajouter une barre d'outils dynamique (Dock Latéral).
-2. [ ] Permettre aux modules d'enregistrer des "Apps" avec Icône et Nom.
-3. [ ] Gérer l'ouverture/fermeture des fenêtres de modules sans perdre leur état (messages, etc).
+1. [x] Ajouter une barre d'outils dynamique (Dock Latéral).
+2. [x] Permettre aux modules d'enregistrer des "Apps" avec Icône et Nom.
+3. [x] Gérer l'ouverture/fermeture des fenêtres de modules sans perdre leur état (messages, etc).
+4. [x] Système de Pop-out multi-fenêtres natif (Tauri WebviewWindow).
 
 ### 🎯 Sprint 2 : Le Plateau de Jeu (VTT Canvas)
 *Objectif : Les joueurs interagissent visuellement sur une carte.*
