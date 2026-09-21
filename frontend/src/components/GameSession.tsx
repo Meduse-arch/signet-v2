@@ -22,6 +22,7 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
     joinGame,
     lockRoom,
     sendMessage: rawSendMessage,
+    sendBinary,
     disconnect,
   } = useVTTNetwork(signalUrl);
 
@@ -206,6 +207,7 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
         username={username}
         messages={messages}
         sendMessage={sendMessage}
+        sendBinary={sendBinary}
         onReturn={handleReturnToLobby}
       />
     );

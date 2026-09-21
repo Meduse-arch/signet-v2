@@ -16,6 +16,7 @@ export type VTTNetworkEvent =
   | { kind: 'connected' }
   | { kind: 'disconnected' }
   | { kind: 'data'; payload: unknown }
+  | { kind: 'binary'; payload: Uint8Array }
   | { kind: 'error'; error: Error };
 
 export type VTTNetworkListener = (event: VTTNetworkEvent) => void;
@@ -169,7 +170,7 @@ export class VTTNetwork {
   }
 
   /**
-   * Envoie un message à travers le canal P2P (DataChannel WebRTC).
+   * Envoie un message JSON à travers le canal P2P (DataChannel WebRTC).
    */
   public send(message: unknown): void {
     if (!this.peer || !this.peer.connected) {
@@ -177,6 +178,17 @@ export class VTTNetwork {
       return;
     }
     this.peer.send(JSON.stringify(message));
+  }
+
+  /**
+   * Envoie des données binaires brutes (ex: Chunk de fichier).
+   */
+  public sendBinary(data: Uint8Array): void {
+    if (!this.peer || !this.peer.connected) {
+      console.warn('[VTTNetwork] sendBinary() appelé alors que le peer n\'est pas connecté.');
+      return;
+    }
+    this.peer.send(data);
   }
 
   /** Ferme la connexion proprement et nettoie les ressources, y compris les écouteurs. */
@@ -235,11 +247,17 @@ export class VTTNetwork {
     });
 
     peer.on('data', (raw: Uint8Array) => {
+      // Signature d'un fichier binaire: F I L E (70, 73, 76, 69)
+      if (raw.length > 4 && raw[0] === 70 && raw[1] === 73 && raw[2] === 76 && raw[3] === 69) {
+        this.emit({ kind: 'binary', payload: raw });
+        return;
+      }
+
       try {
         const payload: unknown = JSON.parse(new TextDecoder().decode(raw));
         this.emit({ kind: 'data', payload });
       } catch {
-        console.warn('[VTTNetwork] Message reçu non-JSON, ignoré.');
+        console.warn('[VTTNetwork] Message reçu non reconnu, ignoré.');
       }
     });
 

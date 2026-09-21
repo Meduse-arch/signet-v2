@@ -28,11 +28,18 @@ export const CoreChatModule: SignetModule = {
 
     // 2. On écoute l'UI (quand l'utilisateur clique sur "Envoyer" dans ChatUI)
     api.on('CHAT_UI_SEND', (text: string) => {
+      // Interception des commandes (si ça commence par un '/')
+      if (text.startsWith('/')) {
+        api.emit('CHAT_COMMAND', { command: text });
+        return;
+      }
+
       // Formatage du message
       const payload = {
         author: api.user.getName(),
         text: text,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        type: 'standard'
       };
 
       // On affiche le message localement (retour visuel immédiat)

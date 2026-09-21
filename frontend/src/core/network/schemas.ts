@@ -81,6 +81,20 @@ const ModEventSchema = z.object({
   payload: z.any(),
 });
 
+const SetMapSchema = z.object({
+  type: z.literal('SET_MAP'),
+  payload: z.object({
+    url: z.string(),
+  }),
+});
+
+const RequestFileSchema = z.object({
+  type: z.literal('REQUEST_FILE'),
+  payload: z.object({
+    hash: z.string().min(1),
+  }),
+});
+
 export const P2PMessageSchema = z.discriminatedUnion('type', [
   ChatMessageSchema,
   MoveTokenSchema,
@@ -91,6 +105,8 @@ export const P2PMessageSchema = z.discriminatedUnion('type', [
   PingSchema,
   ModEventSchema,
   TransformTokenSchema,
+  SetMapSchema,
+  RequestFileSchema,
 ]);
 
 // ── Types inférés ─────────────────────────────────────────────────────────
@@ -104,5 +120,7 @@ export type LobbyStateMessage = z.infer<typeof LobbyStateSchema>;
 export type StartGameMessage = z.infer<typeof StartGameSchema>;
 export type ModEventMessage = z.infer<typeof ModEventSchema>;
 export type TransformTokenMessage = z.infer<typeof TransformTokenSchema>;
+export type SetMapMessage = z.infer<typeof SetMapSchema>;
+export type RequestFileMessage = z.infer<typeof RequestFileSchema>;
 
-export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema };
+export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema, SetMapSchema, RequestFileSchema };

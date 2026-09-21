@@ -88,16 +88,19 @@ Nous avons inversé les sprints initiaux pour poser de solides bases visuelles e
 3. [x] Gérer l'ouverture/fermeture des fenêtres de modules sans perdre leur état (messages, etc).
 4. [x] Système de Pop-out multi-fenêtres natif (Tauri WebviewWindow).
 
-### 🎯 Sprint 2 : Le Plateau de Jeu (VTT Canvas)
-*Objectif : Les joueurs interagissent visuellement sur une carte.*
-1. Implémenter un Canvas performant.
-2. Ajouter le système de Grille et l'Image de fond (Map).
-3. Intégrer les Pions (Tokens) synchronisés en temps réel en mode "UDP" (Non-Fiable/Rapide).
+### 🎯 Sprint 2 : Le Plateau de Jeu (VTT Canvas) & Interactions
+*Objectif : Les joueurs interagissent visuellement sur une carte de manière fluide.*
+1. [ ] Ajouter le Zoom (Molette) et le Pan (Drag de caméra) sur le Canvas.
+2. [ ] Rendu performant de la Grille avec prise en charge du Magnétisme (Snap to grid).
+3. [ ] Drag & Drop fluide des Pions (Tokens) et synchronisation réseau en temps réel.
+4. [ ] Gestion des calques (Background Map, Grille, Tokens).
 
-### 🎯 Sprint 3 : L'Artillerie Lourde (Torrent & Fichiers)
-*Objectif : Soulager le Maître du Jeu.*
-1. Intégrer WebTorrent ou un système de Chunking P2P avancé.
-2. Permettre au MJ de glisser-déposer des images haute résolution qui se partagent entre joueurs.
+### ✅ Sprint 3 : L'Artillerie Lourde (Bibliothèque & CAS) (Partiellement Terminé)
+*Objectif : Soulager le Maître du Jeu pour la gestion des assets.*
+1. [x] Créer le système de stockage local avec hachage SHA-256 (Content-Addressable Storage en Rust).
+2. [x] Interface de glisser-déposer intégrée à la Toolbar pour gérer les Maps.
+3. [x] Protocole personnalisé (`signet://`) pour servir les images locales via Tauri.
+4. [ ] Intégrer WebTorrent / Transfert de Chunks P2P pour envoyer ces images locales aux joueurs automatiquement.
 
 ---
 *Document vivant - À mettre à jour à chaque fin de Sprint.*

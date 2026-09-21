@@ -77,17 +77,7 @@ export function PopoutSession({ roomId, moduleId, signalUrl }: PopoutSessionProp
          <span className="text-xs font-bold text-white/50 tracking-widest uppercase">{windowDef.title} (Pop-out)</span>
       </div>
       <div className="flex-1 relative overflow-hidden">
-        {React.isValidElement(WindowComponent) ? (
-          React.cloneElement(WindowComponent as React.ReactElement, {
-            messages,
-            sendMessage: rawSendMessage
-          })
-        ) : (
-          <WindowComponent 
-            messages={messages}
-            sendMessage={rawSendMessage}
-          />
-        )}
+        {WindowComponent}
       </div>
     </div>
   );

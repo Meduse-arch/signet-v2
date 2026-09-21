@@ -77,7 +77,9 @@ class ModManagerService {
     { id: 'mod-chat', name: 'Chat Universel', author: 'Signet Team', description: 'Module de chat officiel pour toutes les parties.', category: 'mod-signet' },
     { id: 'mod-nav', name: 'Navigation Principale', author: 'Signet Team', description: 'La barre des tâches et le Menu de base.', category: 'mod-signet' },
     { id: 'core-system-windows', name: 'Outils Système', author: 'Signet Team', description: 'Fenêtres système (Paramètres, Notes Globales).', category: 'mod-signet' },
-    { id: 'core-toolbar', name: 'Barre d\'outils VTT', author: 'Signet Team', description: 'Outils du plateau virtuel (Caméra, Sélection, Grille).', category: 'mod-signet' }
+    { id: 'core-toolbar', name: 'Barre d\'outils VTT', author: 'Signet Team', description: 'Outils du plateau virtuel (Caméra, Sélection, Grille, Cartes).', category: 'mod-signet' },
+    { id: 'core-dice-roller', name: 'Dé Classique', author: 'Signet Team', description: 'Moteur de dés 3D classique et personnalisé.', category: 'mod-signet' },
+    { id: 'core-chat-roll', name: 'Dés dans le Chat', author: 'Signet Team', description: 'Permet de lancer des dés textuels via les commandes /roll ou /r.', category: 'mod-signet' }
   ];
 
   constructor() {

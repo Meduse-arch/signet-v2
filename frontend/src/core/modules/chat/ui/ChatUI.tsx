@@ -6,6 +6,7 @@ export interface ChatMessage {
   author: string;
   text: string;
   timestamp: number;
+  type?: 'standard' | 'roll' | 'system';
 }
 
 export function ChatUI() {
@@ -65,9 +66,12 @@ export function ChatUI() {
           </div>
         )}
         {messages.map((msg, idx) => (
-          <div key={idx} className="text-sm leading-relaxed bg-white/5 p-3 rounded-lg border border-white/5">
-            <div className="text-[#e11d48] font-bold mb-1">{msg.author}</div>
-            <div className="text-zinc-300 break-words">{msg.text}</div>
+          <div key={idx} className={`text-sm leading-relaxed p-3 rounded-lg border ${msg.type === 'roll' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-white/5 border-white/5'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              {msg.type === 'roll' && <span className="text-xl">🎲</span>}
+              <div className="text-[#e11d48] font-bold">{msg.author}</div>
+            </div>
+            <div className="text-zinc-300 break-words font-medium">{msg.text}</div>
           </div>
         ))}
         <div ref={endOfMessagesRef} />

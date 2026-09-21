@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ModManager } from '../../core/services/ModManager';
-import type { RegisteredWindow } from '../../core/services/ModManager';
+import type { RegisteredWindow, WindowPosition } from '../../core/services/ModManager';
 import { coreEventBus } from '../../core/services/EventBus';
 import { DraggableWindow } from './DraggableWindow';
 

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { VTTNetwork } from '../network/webrtc-client';
 import { P2PMessageSchema, type P2PMessage } from '../network/schemas';
+import { FileTransferService } from '../services/FileTransferService';
+import { coreEventBus } from '../services/EventBus';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -16,6 +18,7 @@ export interface UseVTTNetworkReturn {
   joinGame: (roomId: string) => void;
   lockRoom: (roomId: string) => void;
   sendMessage: (payload: P2PMessage) => void;
+  sendBinary: (data: Uint8Array) => void;
   disconnect: () => void;
 }
 
@@ -59,6 +62,13 @@ export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
         case 'error':
           console.error('[useVTTNetwork] Erreur réseau :', event.error);
           setConnectionState('error');
+          break;
+
+        case 'binary':
+          FileTransferService.receiveChunk(event.payload, (filename, blobUrl) => {
+            console.log(`[useVTTNetwork] Fichier P2P reçu et sauvegardé : ${filename}`);
+            coreEventBus.emit('FILE_TRANSFER_COMPLETE', { filename, blobUrl });
+          });
           break;
 
         case 'data': {
@@ -124,6 +134,13 @@ export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
     [getNetwork],
   );
 
+  const sendBinary = useCallback(
+    (data: Uint8Array) => {
+      getNetwork().sendBinary(data);
+    },
+    [getNetwork],
+  );
+
   const disconnect = useCallback(() => {
     networkRef.current?.close(); // Keep the instance and listeners alive
     setConnectionState('disconnected');
@@ -139,6 +156,7 @@ export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
     joinGame,
     lockRoom,
     sendMessage,
+    sendBinary,
     disconnect,
   };
 }

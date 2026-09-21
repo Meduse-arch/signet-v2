@@ -21,7 +21,7 @@ interface VTTCanvasProps {
   gridSize?: number;
   isHost: boolean;
   username: string;
-  activeTool?: 'pan' | 'select' | 'duo';
+  activeTool?: 'pan' | 'select' | 'duo' | 'ruler';
   showGrid?: boolean;
   snapToGrid?: boolean;
   mapUrl?: string | null;

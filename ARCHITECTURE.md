@@ -47,5 +47,40 @@ La séparation stricte entre le Backend (Rust) et le Frontend (TypeScript/React)
 
 Cette approche hybride garantit que notre VTT est **infiniment personnalisable** par la communauté (grâce à TypeScript) tout en conservant une **puissance inégalée** pour les calculs lourds (grâce à Rust).
 
+## 6. L'Architecture des Dés (Core vs Module vs Backend) 🎲
+
+Pour garantir un lancer de dés sécurisé (anti-triche), esthétique et modulaire, l'architecture se divise en 3 couches :
+
+1. **Le Backend (Rust) - Le Garant de l'Aléatoire :**
+   - C'est le backend qui génère les nombres aléatoires (RNG) de manière sécurisée. Cela évite qu'un joueur ne triche en modifiant le code JavaScript de son navigateur.
+   - Le Frontend lui demande "Donne-moi le résultat d'un d20 et d'un d6", et Rust répond `[14, 5]`.
+
+2. **Le Frontend Core (React/Canvas) - Le Visuel :**
+   - Il reçoit les résultats du Backend et lance l'animation (ex: des dés 3D qui roulent sur l'écran et s'arrêtent sur 14 et 5).
+   - Le Core est "stupide" : il ne sait pas à quoi sert ce 14, il sait juste l'afficher.
+
+3. **Le Module de Jeu (TypeScript) - Les Règles :**
+   - Le module de jeu (ex: D&D) demande le lancer via une API (`SignetAPI.requestRoll(['d20'])`).
+   - Une fois l'animation terminée, le module récupère le résultat (14), y ajoute les statistiques du joueur (ex: +3 Force) et vérifie si c'est une réussite ou un échec critique.
+   - C'est le module qui formate le message final et l'envoie dans le chat.
+
+*Pourquoi ?* Les moddeurs (la communauté) utiliseront du TypeScript/JavaScript pour créer leurs systèmes. Si on met la logique des règles dans le Backend Rust, ce sera un cauchemar pour eux à modifier. En gardant le calcul dans Rust mais les règles dans TS, on a le meilleur des deux mondes.
+
+## 7. La Bibliothèque (Gestion des Fichiers et Assets) 📁
+
+Pour stocker et partager les images, cartes et musiques, nous utilisons une approche **Content-Addressable Storage (CAS)**, similaire à Git ou BitTorrent, que nous appellerons la **"Bibliothèque"**.
+
+- **Hachage plutôt que nommage :** Lorsqu'une image (ex: `carte_foret.png`) est glissée-déposée par le Maître du Jeu, le Backend Rust lit le fichier et calcule son Hash unique (ex: SHA-256). L'image est stockée localement dans le dossier de la Bibliothèque sous ce Hash (`/Bibliotheque/a1b2c3d4...`).
+- **Déduplication absolue :** Si deux campagnes différentes utilisent la même image de Gobelin, le Hash sera identique. Le jeu des joueurs ne la téléchargera jamais deux fois. Si le fichier est déjà sur leur disque, il est chargé instantanément.
+- **Système de Chunks :** Les fichiers lourds (comme les grandes cartes) sont découpés en sous-parties (chunks). Chaque chunk est haché. Cela permet aux joueurs de se partager les morceaux en P2P (comme un essaim Torrent) pour soulager la connexion du Maître du Jeu.
+- **Installation Passive (Pre-loading) :** Au lancement d'une session, l'hôte envoie simplement la liste des Hashes nécessaires pour la partie. Le client des joueurs vérifie sa Bibliothèque locale et commence à télécharger silencieusement en arrière-plan les fichiers manquants. Quand le MJ révèle une carte, elle s'affiche instantanément.
+
+## 8. Rôles et Sauvegardes (Multi-MJ & Import/Export) 👑
+
+Afin d'offrir une flexibilité maximale, le système sépare la logique réseau de la logique de permission :
+
+- **Rôles découplés du Réseau (Co-MJs) :** Il n'y a qu'un seul "Hôte" réseau (le serveur Rust qui héberge la connexion et la base de données). Cependant, la permission "Maître du Jeu" est un simple rôle (ex: `role_level >= 10`). L'Hôte peut accorder ce rôle à un ou plusieurs joueurs connectés. Ces "Co-MJs" auront accès aux mêmes outils de MJ (Toolbar, changement de carte) et l'Hôte acceptera leurs commandes.
+- **Import / Export de Campagne (Le format `.signet`) :** Puisque toute l'architecture repose sur des stockages locaux (Base de données SQLite et Bibliothèque CAS), l'export d'une partie consiste simplement à archiver la base de données et les hashes d'images utilisés dans un fichier compressé (ex: `MaCampagne.signet`). L'import extrait ces fichiers, insère les images inconnues dans la Bibliothèque locale, et charge la base de données.
+
 ---
 *Document évolutif : à mettre à jour à chaque nouvelle grande décision architecturale.*
