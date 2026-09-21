@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Circle, Text, Group, Line, Image, Transformer } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
+import { coreEventBus } from '../../core/services/EventBus';
+import { FileTransferService } from '../../core/services/FileTransferService';
 
 export interface TokenData {
   id: string;
@@ -12,6 +14,7 @@ export interface TokenData {
   scaleX?: number;
   scaleY?: number;
   rotation?: number;
+  avatarUrl?: string; // Ajout de l'avatar
 }
 
 interface VTTCanvasProps {
@@ -25,12 +28,14 @@ interface VTTCanvasProps {
   showGrid?: boolean;
   snapToGrid?: boolean;
   mapUrl?: string | null;
+  onTokenDelete?: (tokenId: string) => void; // Prop pour supprimer
 }
 
-export function VTTCanvas({ 
+export const VTTCanvas: React.FC<VTTCanvasProps> = ({ 
   tokens, 
   onTokenMove, 
   onTokenTransform,
+  onTokenDelete,
   gridSize = 50, 
   isHost, 
   username,
@@ -38,11 +43,94 @@ export function VTTCanvas({
   showGrid = true,
   snapToGrid = true,
   mapUrl = null
-}: VTTCanvasProps) {
+}) => {
   const [stageScale, setStageScale] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
+
+  // Fonction utilitaire pour Tailwind vers Hex (très basique pour l'exemple)
+  const getColor = (twClass: string) => {
+    if (twClass.includes('rose')) return { fill: '#4c0519', stroke: '#9f1239' };
+    if (twClass.includes('indigo')) return { fill: '#312e81', stroke: '#4f46e5' };
+    return { fill: '#27272a', stroke: '#71717a' };
+  };
+
+  const TokenAvatar = ({ url, radius, name, colorClass }: { url?: string, radius: number, name: string, colorClass: string }) => {
+    const [img, setImg] = useState<HTMLImageElement | null>(null);
+    const colors = getColor(colorClass);
+
+    useEffect(() => {
+      if (!url) {
+        setImg(null);
+        return;
+      }
+      const image = new window.Image();
+      
+      const loadImg = (src: string) => {
+        image.src = src;
+        image.onload = () => setImg(image);
+        image.onerror = () => setImg(null);
+      };
+
+      if (url.startsWith('blob:')) {
+        loadImg(url);
+      } else if (window.__TAURI_INTERNALS__) {
+        loadImg(`http://signet.localhost/library/${url}`);
+      } else if (FileTransferService.hasFile(url)) {
+        loadImg(FileTransferService.getFileUrl(url)!);
+      } else {
+        // Fallback or wait for download
+        // If we want it to update when downloaded, we need GameBoard to rewrite it or trigger a re-render.
+        // For now, GameBoard will rewrite avatarUrl to the blob URL when download completes.
+        loadImg(url);
+      }
+    }, [url]);
+
+    if (img) {
+      const scale = Math.max((radius * 2) / img.width, (radius * 2) / img.height);
+      return (
+        <Circle
+          radius={radius}
+          fillPatternImage={img}
+          fillPatternScale={{ x: scale, y: scale }}
+          fillPatternOffset={{ x: img.width / 2, y: img.height / 2 }}
+          stroke={colors.stroke}
+          strokeWidth={2}
+          shadowColor="rgba(0,0,0,0.5)"
+          shadowBlur={5}
+          shadowOffset={{ x: 2, y: 2 }}
+        />
+      );
+    }
+
+    return (
+      <>
+        <Circle
+          radius={radius}
+          fill={colors.fill}
+          stroke={colors.stroke}
+          strokeWidth={2}
+          shadowColor="rgba(0,0,0,0.5)"
+          shadowBlur={5}
+          shadowOffset={{ x: 2, y: 2 }}
+        />
+        <Text
+          text={name}
+          fontSize={14}
+          fontStyle="bold"
+          fill="#fff"
+          align="center"
+          verticalAlign="middle"
+          offsetX={radius}
+          offsetY={radius}
+          width={radius * 2}
+          height={radius * 2}
+        />
+      </>
+    );
+  };
+
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [rulerPoints, setRulerPoints] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 
@@ -149,16 +237,19 @@ export function VTTCanvas({
     return lines;
   };
 
-  // Convertir des classes tailwind en couleurs valides pour le canvas temporairement
-  // ex: 'bg-zinc-800' -> '#27272a', 'bg-rose-950' -> '#4c0519'
-  const getColor = (twClass: string) => {
-    if (twClass.includes('zinc-800')) return '#27272a';
-    if (twClass.includes('rose-950')) return '#4c0519';
-    return '#333';
-  };
+  // (Ancienne fonction getColor supprimée pour éviter la duplication)
 
   return (
-    <div className="absolute inset-0 bg-[#050508] touch-none">
+    <div 
+      className="absolute inset-0 bg-[#050508] touch-none outline-none"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedTokenId && onTokenDelete) {
+          onTokenDelete(selectedTokenId);
+          setSelectedTokenId(null);
+        }
+      }}
+    >
       <Stage
         ref={stageRef}
         width={windowSize.width}
@@ -237,6 +328,9 @@ export function VTTCanvas({
                 scaleY={token.scaleY || 1}
                 rotation={token.rotation || 0}
                 draggable={canMove}
+                onDblClick={() => {
+                  coreEventBus.emit('TOKEN_DOUBLE_CLICKED', token.id);
+                }}
                 onPointerDown={(e) => {
                   if (canMove) {
                     setSelectedTokenId(token.id);
@@ -329,26 +423,11 @@ export function VTTCanvas({
                   onTokenMove(token.id, logicX, logicY);
                 }}
             >
-              <Circle
-                radius={gridSize / 2 - 2}
-                fill={getColor(token.color)}
-                stroke="#fff"
-                strokeWidth={2}
-                shadowColor="rgba(0,0,0,0.5)"
-                shadowBlur={5}
-                shadowOffset={{ x: 2, y: 2 }}
-              />
-              <Text
-                text={token.name}
-                fontSize={14}
-                fontStyle="bold"
-                fill="#fff"
-                align="center"
-                verticalAlign="middle"
-                offsetX={gridSize / 2}
-                offsetY={gridSize / 2}
-                width={gridSize}
-                height={gridSize}
+              <TokenAvatar 
+                url={token.avatarUrl} 
+                radius={gridSize / 2 - 2} 
+                name={token.name} 
+                colorClass={token.color} 
               />
             </Group>
             );

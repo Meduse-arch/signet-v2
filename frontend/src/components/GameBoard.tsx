@@ -9,6 +9,7 @@ import { CoreSystemWindowsModule } from '../core/modules/system-windows';
 import { CoreToolbarModule } from '../core/modules/toolbar';
 import { CoreDiceModule } from '../core/modules/dice-roller';
 import { CoreChatRollModule } from '../core/modules/chat-roll';
+import { SystemFlowerModule } from '../systems/flower';
 import { coreEventBus } from '../core/services/EventBus';
 import { VTTCanvas, type TokenData } from './game/VTTCanvas';
 
@@ -30,12 +31,7 @@ import { FileTransferService } from '../core/services/FileTransferService';
 const isTauri = () => '__TAURI_INTERNALS__' in window;
 
 export function GameBoard({ isHost, username, messages, sendMessage, sendBinary, onReturn }: GameBoardProps) {
-  // Liste de pions par défaut pour tester
-  const [tokens, setTokens] = useState<TokenData[]>([
-    { id: 'hero', name: username.substring(0, 2).toUpperCase(), x: 3, y: 3, color: 'bg-zinc-800 text-white border-zinc-500', owner: username },
-    { id: 'goblin1', name: 'GB', x: 8, y: 4, color: 'bg-rose-950 text-rose-200 border-rose-800' },
-    { id: 'goblin2', name: 'GB', x: 8, y: 6, color: 'bg-rose-950 text-rose-200 border-rose-800' },
-  ]);
+  const [tokens, setTokens] = useState<TokenData[]>([]);
 
   // État des outils VTT
   const [activeTool, setActiveTool] = useState<'pan' | 'select' | 'duo' | 'ruler'>('pan');
@@ -44,7 +40,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
   const [mapUrl, setMapUrl] = useState<string | null>(null);
   const [isMapLoading, setIsMapLoading] = useState(false);
 
-  // Initialisation des modules au lancement du plateau
+  // Initialisation des modules et chargement des tokens
   useEffect(() => {
     ModManager.setContext(username, isHost);
     if (ModManager.isItemEnabled('mod-chat')) {
@@ -52,14 +48,43 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     }
     ModManager.registerMod(CoreNavigationModule);
     ModManager.registerMod(CoreSystemWindowsModule);
-    ModManager.registerMod(CoreToolbarModule); // Nouveau module
+    ModManager.registerMod(CoreToolbarModule); 
     if (ModManager.isItemEnabled('core-dice-roller')) {
       ModManager.registerMod(CoreDiceModule);
     }
     if (ModManager.isItemEnabled('core-chat-roll')) {
       ModManager.registerMod(CoreChatRollModule);
     }
-  }, [username, isHost]);
+    // Système de jeu (devrait être dynamique via la BDD plus tard, forcé pour le proto)
+    ModManager.registerMod(SystemFlowerModule);
+
+    if (isHost && isTauri()) {
+      // Le MJ charge les tokens depuis la base de données
+      invoke('get_tokens').then((dbTokens: any) => {
+        const loadedTokens: TokenData[] = dbTokens.map((t: any) => {
+          const data = JSON.parse(t.data);
+          return {
+            id: t.id,
+            x: t.x,
+            y: t.y,
+            scaleX: t.scale_x,
+            scaleY: t.scale_y,
+            rotation: t.rotation,
+            name: data.name,
+            color: data.color,
+            owner: data.owner,
+            avatarUrl: data.avatarUrl,
+          };
+        });
+        setTokens(loadedTokens);
+        console.log('[GameBoard] Tokens chargés depuis la BD :', loadedTokens);
+      }).catch(err => console.error('[GameBoard] Erreur chargement tokens:', err));
+    } else if (!isHost) {
+      // Les joueurs demandent l'état initial
+      console.log('[GameBoard] Envoi de REQUEST_STATE pour récupérer la carte et les tokens');
+      sendMessage({ type: 'REQUEST_STATE', payload: {} });
+    }
+  }, [username, isHost, sendMessage]);
 
   // Écoute des événements système globaux
   useEffect(() => {
@@ -68,22 +93,64 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     const handleToggleGrid = (show: boolean) => setShowGrid(show);
     const handleToggleSnap = (snap: boolean) => setSnapToGrid(snap);
     const handleSetMapLocal = (url: string) => setMapUrl(url);
+    const handleToggleToken = (token: TokenData) => {
+      setTokens(prev => {
+        const exists = prev.find(t => t.id === token.id);
+        if (exists) {
+          // Supprimer le token
+          coreEventBus.emit('NETWORK_OUTGOING', { type: 'REMOVE_TOKEN', payload: { tokenId: token.id } });
+          if (isHost && isTauri()) invoke('delete_token', { id: token.id }).catch(e => console.error(e));
+          return prev.filter(t => t.id !== token.id);
+        } else {
+          // Ajouter le token
+          coreEventBus.emit('NETWORK_OUTGOING', { type: 'SPAWN_TOKEN', payload: token });
+          if (isHost && isTauri()) {
+            invoke('save_token', {
+              id: token.id,
+              x: token.x,
+              y: token.y,
+              scaleX: token.scaleX || 1,
+              scaleY: token.scaleY || 1,
+              rotation: token.rotation || 0,
+              data: JSON.stringify({
+                name: token.name,
+                color: token.color,
+                owner: token.owner,
+                avatarUrl: token.avatarUrl
+              })
+            }).catch(e => console.error(e));
+          }
+          return [...prev, token];
+        }
+      });
+    };
 
     coreEventBus.on('SYSTEM_RETURN_TO_HUB', handleReturnToHub);
     coreEventBus.on('CANVAS_TOOL_CHANGED', handleToolChange);
     coreEventBus.on('CANVAS_TOGGLE_GRID', handleToggleGrid);
     coreEventBus.on('CANVAS_TOGGLE_SNAP', handleToggleSnap);
     coreEventBus.on('CANVAS_SET_MAP_LOCAL', handleSetMapLocal);
+    coreEventBus.on('CANVAS_TOGGLE_TOKEN', handleToggleToken);
 
-    // Quand FileTransferService finit de télécharger une carte !
+    // Quand FileTransferService finit de télécharger une carte ou un avatar !
     const handleFileComplete = (payload: { filename: string, blobUrl?: string }) => {
+      if (!payload || !payload.filename) return;
+      const { filename, blobUrl } = payload;
+
       // Si la carte qu'on attendait vient de finir de télécharger
-      if (payload && payload.filename) {
+      if (mapUrl && mapUrl.includes(filename)) {
+        console.log(`[GameBoard] La carte ${filename} a été reçue et chargée.`);
+        setMapUrl(blobUrl || `http://signet.localhost/library/${filename}`);
         setIsMapLoading(false);
-        // Si on est dans le navigateur (blobUrl fourni), on utilise le Blob URL
-        // Sinon (Tauri), on utilise le lien signet:// local
-        setMapUrl(payload.blobUrl || `http://signet.localhost/library/${payload.filename}`);
       }
+      
+      // On regarde si c'est l'avatar d'un de nos tokens
+      setTokens(prev => prev.map(t => {
+        if (t.avatarUrl === filename) {
+          return { ...t, avatarUrl: blobUrl || `http://signet.localhost/library/${filename}` };
+        }
+        return t;
+      }));
     };
     coreEventBus.on('FILE_TRANSFER_COMPLETE', handleFileComplete);
 
@@ -93,6 +160,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
       coreEventBus.off('CANVAS_TOGGLE_GRID', handleToggleGrid);
       coreEventBus.off('CANVAS_TOGGLE_SNAP', handleToggleSnap);
       coreEventBus.off('CANVAS_SET_MAP_LOCAL', handleSetMapLocal);
+      coreEventBus.off('CANVAS_TOGGLE_TOKEN', handleToggleToken);
       coreEventBus.off('FILE_TRANSFER_COMPLETE', handleFileComplete);
     };
   }, [onReturn]);
@@ -104,14 +172,101 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
 
     if (lastMsg.type === 'MOVE_TOKEN') {
       const { tokenId, x, y } = lastMsg.payload;
-      setTokens((prev) => 
-        prev.map(t => (t.id === tokenId ? { ...t, x, y } : t))
-      );
+      setTokens((prev) => {
+        const next = prev.map(t => (t.id === tokenId ? { ...t, x, y } : t));
+        if (isHost && isTauri()) {
+          const t = next.find(t => t.id === tokenId);
+          if (t) {
+            invoke('save_token', {
+              id: t.id, x: t.x, y: t.y, scaleX: t.scaleX || 1, scaleY: t.scaleY || 1, rotation: t.rotation || 0,
+              data: JSON.stringify({ name: t.name, color: t.color, owner: t.owner, avatarUrl: t.avatarUrl })
+            }).catch(e => console.error(e));
+          }
+        }
+        return next;
+      });
     } else if (lastMsg.type === 'TRANSFORM_TOKEN') {
       const { tokenId, x, y, scaleX, scaleY, rotation } = lastMsg.payload;
-      setTokens((prev) => 
-        prev.map(t => (t.id === tokenId ? { ...t, x, y, scaleX, scaleY, rotation } : t))
-      );
+      setTokens((prev) => {
+        const next = prev.map(t => (t.id === tokenId ? { ...t, x, y, scaleX, scaleY, rotation } : t));
+        if (isHost && isTauri()) {
+          const t = next.find(t => t.id === tokenId);
+          if (t) {
+            invoke('save_token', {
+              id: t.id, x: t.x, y: t.y, scaleX: t.scaleX || 1, scaleY: t.scaleY || 1, rotation: t.rotation || 0,
+              data: JSON.stringify({ name: t.name, color: t.color, owner: t.owner, avatarUrl: t.avatarUrl })
+            }).catch(e => console.error(e));
+          }
+        }
+        return next;
+      });
+    } else if (lastMsg.type === 'SPAWN_TOKEN') {
+      const token = lastMsg.payload;
+      setTokens((prev) => {
+        const exists = prev.find(t => t.id === token.id);
+        const next = exists ? prev.map(t => (t.id === token.id ? token : t)) : [...prev, token];
+        if (isHost && isTauri()) {
+          invoke('save_token', {
+            id: token.id, x: token.x, y: token.y, scaleX: token.scaleX || 1, scaleY: token.scaleY || 1, rotation: token.rotation || 0,
+            data: JSON.stringify({ name: token.name, color: token.color, owner: token.owner, avatarUrl: token.avatarUrl })
+          }).catch(e => console.error(e));
+        }
+        return next;
+      });
+
+      // Si le token a un avatar, on vérifie si on l'a en cache. Sinon, on le demande.
+      if (token.avatarUrl && !token.avatarUrl.startsWith('blob:') && !isTauri()) {
+        if (!FileTransferService.hasFile(token.avatarUrl)) {
+          console.log(`[GameBoard] Demande de téléchargement de l'avatar ${token.avatarUrl} via P2P...`);
+          sendMessage({ type: 'REQUEST_FILE', payload: { hash: token.avatarUrl } });
+        } else {
+          setTokens(prev => prev.map(t => t.id === token.id ? { ...t, avatarUrl: FileTransferService.getFileUrl(token.avatarUrl!)! } : t));
+        }
+      }
+    } else if (lastMsg.type === 'REMOVE_TOKEN') {
+      const { tokenId } = lastMsg.payload;
+      setTokens(prev => prev.filter(t => t.id !== tokenId));
+      if (isHost && isTauri()) invoke('delete_token', { id: tokenId }).catch(e => console.error(e));
+    } else if (lastMsg.type === 'REQUEST_STATE') {
+      if (isHost) {
+        console.log('[GameBoard] Hôte: Envoi du SYNC_STATE suite à REQUEST_STATE');
+        sendMessage({
+          type: 'SYNC_STATE',
+          payload: { mapUrl, tokens }
+        });
+      }
+    } else if (lastMsg.type === 'SYNC_STATE') {
+      if (!isHost) {
+        console.log('[GameBoard] Joueur: Réception du SYNC_STATE', lastMsg.payload);
+        const { mapUrl: syncedMapUrl, tokens: syncedTokens } = lastMsg.payload;
+        setTokens(syncedTokens);
+        if (syncedMapUrl) {
+          // Déclencher le téléchargement si nécessaire (même logique que SET_MAP)
+          const parts = syncedMapUrl.split('/library/');
+          if (parts.length > 1) {
+            const filename = parts[1];
+            if (FileTransferService.hasFile(filename)) {
+              setMapUrl(FileTransferService.getFileUrl(filename));
+            } else {
+              setIsMapLoading(true);
+              sendMessage({ type: 'REQUEST_FILE', payload: { hash: filename } });
+            }
+          } else {
+            setMapUrl(syncedMapUrl);
+          }
+        }
+        
+        // Requêter les avatars de tous les tokens si nécessaire
+        syncedTokens.forEach((t) => {
+          if (t.avatarUrl && !t.avatarUrl.startsWith('blob:')) {
+            if (!FileTransferService.hasFile(t.avatarUrl)) {
+              sendMessage({ type: 'REQUEST_FILE', payload: { hash: t.avatarUrl } });
+            } else {
+              setTokens(prev => prev.map(pt => pt.id === t.id ? { ...pt, avatarUrl: FileTransferService.getFileUrl(t.avatarUrl!)! } : pt));
+            }
+          }
+        });
+      }
     } else if (lastMsg.type === 'SET_MAP') {
       const { url } = lastMsg.payload;
       
@@ -198,6 +353,14 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     });
   };
 
+  const handleTokenDelete = (tokenId: string) => {
+    setTokens(prev => prev.filter(t => t.id !== tokenId));
+    sendMessage({
+      type: 'REMOVE_TOKEN',
+      payload: { tokenId }
+    });
+  };
+
   return (
     <div className="h-full flex flex-col bg-zinc-950 relative overflow-hidden">
       {/* Moteur 2D (Konva) */}
@@ -205,6 +368,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
         tokens={tokens} 
         onTokenMove={handleTokenMove} 
         onTokenTransform={handleTokenTransform}
+        onTokenDelete={handleTokenDelete}
         gridSize={GRID_SIZE} 
         isHost={isHost}
         username={username}

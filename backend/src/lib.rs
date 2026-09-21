@@ -1,6 +1,7 @@
 mod lan_server;
 mod dice;
-mod library;
+pub mod library;
+pub mod database;
 
 use tauri::Manager;
 use tauri::http::Response;
@@ -47,6 +48,7 @@ pub fn run() {
         // Fichier non trouvé ou mauvaise URL
         Response::builder().status(404).body(vec![]).unwrap()
     })
+    .manage(database::DbState(std::sync::Mutex::new(None)))
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -54,6 +56,11 @@ pub fn run() {
             .level(log::LevelFilter::Info)
             .build(),
         )?;
+      }
+      
+      // Initialisation de la BDD
+      if let Err(e) = database::init_db(app.handle()) {
+          eprintln!("Erreur critique lors de l'init de la DB: {}", e);
       }
       
       // Démarre le serveur LAN en tâche de fond (port 3030)
@@ -68,7 +75,13 @@ pub fn run() {
         dice::dice::roll_dice,
         library::upload_asset,
         library::check_asset_exists,
-        library::read_asset
+        library::read_asset,
+        database::save_character,
+        database::get_characters,
+        database::delete_character,
+        database::save_token,
+        database::get_tokens,
+        database::delete_token
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

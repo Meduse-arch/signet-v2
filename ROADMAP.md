@@ -39,8 +39,8 @@ Voici l'état actuel des trois grands piliers du projet : le Serveur, le Core (c
 **Rôle :** Connecter les joueurs et optimiser les transferts.
 - [x] **API de Signalement (LAN/Web) :** Négociation WebRTC fonctionnelle.
 - [x] **Topologie en Étoile :** L'Hôte relaie l'information (anti-triche).
-- [ ] **Transfert Torrent (Nouveau) :** Utilisation de WebTorrent pour le partage de fichiers lourds (cartes, musiques) entre joueurs.
 - [ ] **DataChannels Optimisés :** Modes TCP (Fiable) pour le chat/dés, et UDP (Non-Fiable) pour les pointeurs/tokens.
+- [ ] **Transfert Intelligent (Mesh/Torrent) :** Script `TransferOptimizer` pour basculer dynamiquement en mode Torrent selon le nombre de joueurs (Prévu Sprint 4).
 
 ### 🎲 B. Le Cœur (Core VTT) - *Frontend React*
 **Rôle :** L'interface commune à tous, le moteur 2D, le chat, et la gestion des sessions.
@@ -90,17 +90,30 @@ Nous avons inversé les sprints initiaux pour poser de solides bases visuelles e
 
 ### 🎯 Sprint 2 : Le Plateau de Jeu (VTT Canvas) & Interactions
 *Objectif : Les joueurs interagissent visuellement sur une carte de manière fluide.*
-1. [ ] Ajouter le Zoom (Molette) et le Pan (Drag de caméra) sur le Canvas.
-2. [ ] Rendu performant de la Grille avec prise en charge du Magnétisme (Snap to grid).
-3. [ ] Drag & Drop fluide des Pions (Tokens) et synchronisation réseau en temps réel.
-4. [ ] Gestion des calques (Background Map, Grille, Tokens).
+1. [x] Ajouter le Zoom (Molette) et le Pan (Drag de caméra) sur le Canvas.
+2. [x] Rendu performant de la Grille avec prise en charge du Magnétisme (Snap to grid).
+3. [x] Drag & Drop fluide des Pions (Tokens) et synchronisation réseau en temps réel.
+4. [x] Gestion des calques (Background Map, Grille, Tokens).
 
 ### ✅ Sprint 3 : L'Artillerie Lourde (Bibliothèque & CAS) (Partiellement Terminé)
 *Objectif : Soulager le Maître du Jeu pour la gestion des assets.*
 1. [x] Créer le système de stockage local avec hachage SHA-256 (Content-Addressable Storage en Rust).
 2. [x] Interface de glisser-déposer intégrée à la Toolbar pour gérer les Maps.
 3. [x] Protocole personnalisé (`signet://`) pour servir les images locales via Tauri.
-4. [ ] Intégrer WebTorrent / Transfert de Chunks P2P pour envoyer ces images locales aux joueurs automatiquement.
+4. [x] Transfert binaire de base (Client-Serveur P2P) pour l'affichage initial de la carte.
+
+### 🌸 Sprint 4 : Le Premier Système de Jeu (Système "Flower")
+*Objectif : Créer le tout premier vrai "Module" de règles complet pour valider l'architecture du VTT.*
+1. [ ] Fiche de personnage dynamique (Affichage et édition des caractéristiques/skills).
+2. [ ] Règles du système de dés spécifiques à "Flower" (Calcul des succès/échecs).
+3. [ ] Mécaniques de jeu (Compétences, jauges, inventaire).
+4. [ ] Lien entre le pion sur la carte et sa fiche de personnage.
+
+### 🌐 Sprint 5 : Optimisation Réseau & Architecture Mesh
+*Objectif : Transformer le réseau 1-à-1 en une vraie toile d'araignée capable d'encaisser 8 joueurs.*
+1. [ ] Topologie Mesh : Chaque joueur se connecte directement à tous les autres.
+2. [ ] `TransferOptimizer` : Analyse le contexte pour choisir la meilleure stratégie (Broadcast vs Torrent).
+3. [ ] Transfert Torrent : Découpage et partage des chunks de fichiers P2P (pour éviter que l'hôte n'upload 8 fois la carte).
 
 ---
 *Document vivant - À mettre à jour à chaque fin de Sprint.*

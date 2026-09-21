@@ -1,10 +1,11 @@
 use sha2::{Sha256, Digest};
 use std::fs;
 use std::io::Write;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
+use crate::database::{DbState, insert_asset_record};
 
 #[tauri::command]
-pub fn upload_asset(app: AppHandle, data: Vec<u8>, extension: String) -> Result<String, String> {
+pub fn upload_asset(app: AppHandle, state: State<'_, DbState>, data: Vec<u8>, extension: String) -> Result<String, String> {
     // 1. Calcul du hash SHA-256
     let mut hasher = Sha256::new();
     hasher.update(&data);
@@ -34,6 +35,14 @@ pub fn upload_asset(app: AppHandle, data: Vec<u8>, extension: String) -> Result<
             .map_err(|e| format!("Erreur création fichier: {}", e))?;
         file.write_all(&data)
             .map_err(|e| format!("Erreur écriture fichier: {}", e))?;
+    }
+
+    // 4. Enregistrer dans la base de données
+    if let Ok(mut lock) = state.inner().0.lock() {
+        if let Some(conn) = lock.as_ref() {
+            // "Inconnu" comme nom par défaut, on pourra faire un endpoint rename_asset plus tard si besoin.
+            let _ = insert_asset_record(conn, &hash_hex, &extension, "Inconnu");
+        }
     }
 
     // Retourner seulement "hash.ext" pour que l'URL soit signet://library/hash.ext

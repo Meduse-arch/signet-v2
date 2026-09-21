@@ -44,6 +44,29 @@ const RollDiceSchema = z.object({
   }),
 });
 
+const SpawnTokenSchema = z.object({
+  type: z.literal('SPAWN_TOKEN'),
+  payload: z.object({
+    id: z.string().min(1).max(64),
+    name: z.string().min(1).max(64),
+    x: z.number().finite(),
+    y: z.number().finite(),
+    color: z.string(),
+    owner: z.string().optional(),
+    scaleX: z.number().finite().optional(),
+    scaleY: z.number().finite().optional(),
+    rotation: z.number().finite().optional(),
+    avatarUrl: z.string().optional(),
+  }),
+});
+
+const RemoveTokenSchema = z.object({
+  type: z.literal('REMOVE_TOKEN'),
+  payload: z.object({
+    tokenId: z.string().min(1).max(64),
+  }),
+});
+
 const PlayerJoinSchema = z.object({
   type: z.literal('PLAYER_JOIN'),
   payload: z.object({
@@ -58,6 +81,30 @@ const LobbyStateSchema = z.object({
     players: z.array(z.string()),
     isGameStarted: z.boolean(),
     isRoomOpen: z.boolean(),
+  }),
+});
+
+const RequestStateSchema = z.object({
+  type: z.literal('REQUEST_STATE'),
+  payload: z.object({}),
+});
+
+const SyncStateSchema = z.object({
+  type: z.literal('SYNC_STATE'),
+  payload: z.object({
+    mapUrl: z.string().nullable(),
+    tokens: z.array(z.object({
+      id: z.string().min(1).max(64),
+      name: z.string().min(1).max(64),
+      x: z.number().finite(),
+      y: z.number().finite(),
+      color: z.string(),
+      owner: z.string().optional(),
+      scaleX: z.number().finite().optional(),
+      scaleY: z.number().finite().optional(),
+      rotation: z.number().finite().optional(),
+      avatarUrl: z.string().optional(),
+    })),
   }),
 });
 
@@ -98,13 +145,17 @@ const RequestFileSchema = z.object({
 export const P2PMessageSchema = z.discriminatedUnion('type', [
   ChatMessageSchema,
   MoveTokenSchema,
+  TransformTokenSchema,
+  SpawnTokenSchema,
+  RemoveTokenSchema,
   RollDiceSchema,
   PlayerJoinSchema,
   LobbyStateSchema,
+  RequestStateSchema,
+  SyncStateSchema,
   StartGameSchema,
   PingSchema,
   ModEventSchema,
-  TransformTokenSchema,
   SetMapSchema,
   RequestFileSchema,
 ]);
@@ -117,10 +168,14 @@ export type MoveTokenMessage = z.infer<typeof MoveTokenSchema>;
 export type RollDiceMessage = z.infer<typeof RollDiceSchema>;
 export type PlayerJoinMessage = z.infer<typeof PlayerJoinSchema>;
 export type LobbyStateMessage = z.infer<typeof LobbyStateSchema>;
+export type RequestStateMessage = z.infer<typeof RequestStateSchema>;
+export type SyncStateMessage = z.infer<typeof SyncStateSchema>;
 export type StartGameMessage = z.infer<typeof StartGameSchema>;
 export type ModEventMessage = z.infer<typeof ModEventSchema>;
 export type TransformTokenMessage = z.infer<typeof TransformTokenSchema>;
+export type SpawnTokenMessage = z.infer<typeof SpawnTokenSchema>;
+export type RemoveTokenMessage = z.infer<typeof RemoveTokenSchema>;
 export type SetMapMessage = z.infer<typeof SetMapSchema>;
 export type RequestFileMessage = z.infer<typeof RequestFileSchema>;
 
-export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema, SetMapSchema, RequestFileSchema };
+export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, RequestStateSchema, SyncStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema, SpawnTokenSchema, RemoveTokenSchema, SetMapSchema, RequestFileSchema };
