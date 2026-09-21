@@ -32,6 +32,10 @@ export interface RegisteredWindow {
   icon?: React.ReactNode;
   component: React.ReactNode;
   defaultPosition: WindowPosition;
+  transparent?: boolean;
+  hideHeader?: boolean;
+  startSlim?: boolean;
+  collapseMode?: 'slim' | 'hide';
 }
 
 export interface RegisteredAction {
@@ -65,13 +69,15 @@ class ModManagerService {
   private windows: Map<string, RegisteredWindow> = new Map();
   private actions: Map<string, RegisteredAction> = new Map();
   private username: string = 'Anonyme';
+  private isHost: boolean = false;
 
   private storeItems: StoreItem[] = [
     { id: 'system-seal', name: 'SEAL', author: 'Signet Team', description: 'Tactical modern combat', category: 'system-signet' },
     { id: 'system-stars', name: 'Flower', author: 'Signet Team', description: 'Sci-fi RPG', category: 'system-signet' },
     { id: 'mod-chat', name: 'Chat Universel', author: 'Signet Team', description: 'Module de chat officiel pour toutes les parties.', category: 'mod-signet' },
     { id: 'mod-nav', name: 'Navigation Principale', author: 'Signet Team', description: 'La barre des tâches et le Menu de base.', category: 'mod-signet' },
-    { id: 'core-system-windows', name: 'Outils Système', author: 'Signet Team', description: 'Fenêtres système (Paramètres, Notes Globales).', category: 'mod-signet' }
+    { id: 'core-system-windows', name: 'Outils Système', author: 'Signet Team', description: 'Fenêtres système (Paramètres, Notes Globales).', category: 'mod-signet' },
+    { id: 'core-toolbar', name: 'Barre d\'outils VTT', author: 'Signet Team', description: 'Outils du plateau virtuel (Caméra, Sélection, Grille).', category: 'mod-signet' }
   ];
 
   constructor() {
@@ -100,8 +106,13 @@ class ModManagerService {
   /**
    * Définit le contexte global du VTT (comme le nom de l'utilisateur)
    */
-  public setContext(username: string): void {
+  public setContext(username: string, isHost: boolean = false): void {
     this.username = username;
+    this.isHost = isHost;
+  }
+
+  public getIsHost(): boolean {
+    return this.isHost;
   }
 
   /**

@@ -106,6 +106,10 @@ export function DockManager() {
             onFocus={() => bringToFront(win.windowId)}
             zIndex={zIndex}
             occupiedZones={occupiedZones}
+            transparent={win.transparent}
+            hideHeader={win.hideHeader}
+            startSlim={win.startSlim}
+            collapseMode={win.collapseMode}
           >
             {win.component}
           </DraggableWindow>

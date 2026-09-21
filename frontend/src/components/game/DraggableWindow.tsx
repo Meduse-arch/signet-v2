@@ -15,6 +15,10 @@ interface DraggableWindowProps {
   onFocus: () => void;
   zIndex: number;
   occupiedZones?: string[];
+  transparent?: boolean;
+  hideHeader?: boolean;
+  startSlim?: boolean;
+  collapseMode?: 'slim' | 'hide';
 }
 
 export function DraggableWindow({ 
@@ -26,7 +30,11 @@ export function DraggableWindow({
   isOpen,
   onFocus,
   zIndex,
-  occupiedZones = []
+  occupiedZones = [],
+  transparent = false,
+  hideHeader = false,
+  startSlim = false,
+  collapseMode = 'hide'
 }: DraggableWindowProps) {
   const [dockState, setDockState] = useState<WindowPosition>(() => {
     // Si la zone demandée est occupée par une AUTRE fenêtre au démarrage, on force en flottant
@@ -39,7 +47,7 @@ export function DraggableWindow({
   const [size, setSize] = useState({ w: 400, h: 500 });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(startSlim);
   const [isPopout, setIsPopout] = useState(false);
   const [snapPreview, setSnapPreview] = useState<WindowPosition | null>(null);
   
@@ -256,25 +264,36 @@ export function DraggableWindow({
     coreEventBus.emit('WINDOW_CLOSE', windowId);
   };
 
-  let containerStyles = "fixed flex flex-col bg-[#050508]/95 backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-300 ease-in-out pointer-events-auto";
+  let containerStyles = "fixed flex flex-col transition-all duration-300 ease-in-out";
+  if (transparent) {
+    containerStyles += " pointer-events-none";
+  } else {
+    containerStyles += " bg-[#050508]/95 backdrop-blur-xl border border-white/10 shadow-2xl pointer-events-auto";
+  }
+
   let inlineStyles: React.CSSProperties = { zIndex, display: isOpen ? 'flex' : 'none' };
+  
+  // Largeur dynamique selon l'état collapsed
+  const dockedWidth = (isCollapsed && collapseMode === 'slim') ? 72 : 350;
 
   if (dockState === 'floating') {
-    containerStyles += " rounded-xl overflow-hidden"; // Overflow hidden only when floating to keep rounded corners
+    if (!transparent) containerStyles += " rounded-xl overflow-hidden"; // Overflow hidden only when floating to keep rounded corners
     inlineStyles = {
       ...inlineStyles,
       left: pos.x,
       top: pos.y,
-      width: size.w,
-      height: size.h,
+      width: transparent ? 'auto' : size.w,
+      height: transparent ? 'auto' : size.h,
       transition: (isDragging || isResizing) ? 'none' : 'all 0.3s ease-out'
     };
   } else if (dockState === 'right') {
-    containerStyles += " right-0 top-0 h-full w-[350px] border-l";
-    if (isCollapsed) inlineStyles.transform = 'translateX(100%)';
+    containerStyles += transparent ? " right-0 top-0 h-full" : " right-0 top-0 h-full border-l";
+    inlineStyles.width = transparent ? 'auto' : dockedWidth;
+    if (isCollapsed && collapseMode === 'hide') inlineStyles.transform = 'translateX(100%)';
   } else if (dockState === 'left') {
-    containerStyles += " left-0 top-0 h-full w-[350px] border-r";
-    if (isCollapsed) inlineStyles.transform = 'translateX(-100%)';
+    containerStyles += transparent ? " left-0 top-0 h-full" : " left-0 top-0 h-full border-r";
+    inlineStyles.width = transparent ? 'auto' : dockedWidth;
+    if (isCollapsed && collapseMode === 'hide') inlineStyles.transform = 'translateX(-100%)';
   } else if (dockState === 'fullscreen') {
     containerStyles += " inset-0 w-full h-full";
   }
@@ -330,68 +349,80 @@ export function DraggableWindow({
         )}
 
         {/* Header Drag Area */}
-        <div 
-          className={`bg-white/5 border-b border-white/10 p-3 flex justify-between items-center shrink-0 ${dockState === 'fullscreen' ? '' : 'cursor-grab active:cursor-grabbing'}`}
-          onPointerDown={dockState === 'fullscreen' ? undefined : handlePointerDown}
-        >
-          <div className="flex items-center gap-2 pointer-events-none select-none">
-            {icon ? (
-              <div className="w-4 h-4 text-zinc-400">
-                {icon}
-              </div>
-            ) : (
-              <GripHorizontal className="w-4 h-4 text-zinc-500" />
-            )}
-            <h3 className="text-zinc-300 text-sm font-bold tracking-widest uppercase">{title}</h3>
+        {!hideHeader && !isCollapsed && (
+          <div 
+            className={`pointer-events-auto bg-white/5 border-b border-white/10 p-3 flex justify-between items-center shrink-0 ${dockState === 'fullscreen' ? '' : 'cursor-grab active:cursor-grabbing'}`}
+            onPointerDown={dockState === 'fullscreen' ? undefined : handlePointerDown}
+          >
+            <div className="flex items-center gap-2 pointer-events-none select-none">
+              {icon ? (
+                <div className="w-4 h-4 text-zinc-400">
+                  {icon}
+                </div>
+              ) : (
+                <GripHorizontal className="w-4 h-4 text-zinc-500" />
+              )}
+              <h3 className="text-zinc-300 text-sm font-bold tracking-widest uppercase">{title}</h3>
+            </div>
+            
+            <div className="flex items-center gap-2 pointer-events-auto">
+              {/* Boutons d'état (Plein écran / Flottant) */}
+              {dockState !== 'fullscreen' && (
+                 <button 
+                   onClick={(e) => { e.stopPropagation(); setDockState('fullscreen'); }}
+                   className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                   title="Plein Écran"
+                 >
+                   <Maximize2 className="w-4 h-4 pointer-events-none" />
+                 </button>
+              )}
+
+              {dockState === 'fullscreen' && (
+                 <button 
+                   onClick={(e) => { e.stopPropagation(); setDockState('floating'); }}
+                   className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                   title="Réduire en fenêtre"
+                 >
+                   <Minimize2 className="w-4 h-4 pointer-events-none" />
+                 </button>
+              )}
+
+              <PopoutButton 
+                windowId={windowId} 
+                title={title} 
+                size={size} 
+                onPopout={() => handleClose()} 
+              />
+
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleClose(); }} 
+                className="text-white/30 hover:text-rose-400 transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+              >
+                <X className="w-5 h-5 pointer-events-none" />
+              </button>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-2 pointer-events-auto">
-            {/* Boutons d'état (Plein écran / Flottant) */}
-            {dockState !== 'fullscreen' && (
-               <button 
-                 onClick={(e) => { e.stopPropagation(); setDockState('fullscreen'); }}
-                 className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
-                 title="Plein Écran"
-               >
-                 <Maximize2 className="w-4 h-4 pointer-events-none" />
-               </button>
-            )}
-
-            {dockState === 'fullscreen' && (
-               <button 
-                 onClick={(e) => { e.stopPropagation(); setDockState('floating'); }}
-                 className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
-                 title="Réduire en fenêtre"
-               >
-                 <Minimize2 className="w-4 h-4 pointer-events-none" />
-               </button>
-            )}
-
-            <PopoutButton 
-              windowId={windowId} 
-              title={title} 
-              size={size} 
-              onPopout={() => handleClose()} 
-            />
-
-            <button 
-              onClick={(e) => { e.stopPropagation(); handleClose(); }} 
-              className="text-white/30 hover:text-rose-400 transition-colors p-1 no-drag cursor-pointer relative z-[100]"
-            >
-              <X className="w-5 h-5 pointer-events-none" />
-            </button>
+        )}
+        
+        {/* Transparent or Slim Drag Grip (Visible when header is hidden or collapsed) */}
+        {(hideHeader || isCollapsed) && dockState !== 'fullscreen' && (
+          <div 
+            className="w-full flex justify-center p-2 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity pointer-events-auto shrink-0"
+            onPointerDown={handlePointerDown}
+          >
+            <GripHorizontal className="w-5 h-5 text-zinc-400" />
           </div>
-        </div>
+        )}
         
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar pointer-events-auto relative">
+        <div className={`flex-1 overflow-y-auto custom-scrollbar pointer-events-auto relative ${transparent ? '' : 'bg-[#050508]/50'}`}>
           {children}
         </div>
 
         {/* Handle de redimensionnement */}
-        {dockState === 'floating' && (
+        {dockState === 'floating' && !transparent && (
           <div 
-            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1 z-50 text-white/20 hover:text-white/50"
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1 z-50 text-white/20 hover:text-white/50 pointer-events-auto"
             onPointerDown={handleResizeDown}
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">

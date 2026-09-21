@@ -11,7 +11,7 @@ export class SignetAPI {
   public readonly events: EventBus;
   public readonly ui: {
     registerOverlay: (overlayId: string, component: React.ReactNode) => void;
-    registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, icon?: React.ReactNode }) => void;
+    registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, icon?: React.ReactNode, transparent?: boolean, hideHeader?: boolean, startSlim?: boolean, collapseMode?: 'slim' | 'hide' }) => void;
     registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => void;
     setActionState: (actionId: string, isActive: boolean) => void;
   };
@@ -37,14 +37,18 @@ export class SignetAPI {
           component
         });
       },
-      registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, icon?: React.ReactNode }) => {
+      registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, icon?: React.ReactNode, transparent?: boolean, hideHeader?: boolean, startSlim?: boolean, collapseMode?: 'slim' | 'hide' }) => {
         this.events.emit('SYSTEM_UI_REGISTER_WINDOW', {
           modId: this.modId,
           windowId,
           title,
           component,
           defaultPosition: options?.defaultPosition || 'floating',
-          icon: options?.icon
+          icon: options?.icon,
+          transparent: options?.transparent,
+          hideHeader: options?.hideHeader,
+          startSlim: options?.startSlim,
+          collapseMode: options?.collapseMode
         });
       },
       registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => {

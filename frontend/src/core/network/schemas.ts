@@ -22,6 +22,18 @@ const MoveTokenSchema = z.object({
   }),
 });
 
+const TransformTokenSchema = z.object({
+  type: z.literal('TRANSFORM_TOKEN'),
+  payload: z.object({
+    tokenId: z.string().min(1).max(64),
+    x: z.number().finite(),
+    y: z.number().finite(),
+    scaleX: z.number().finite(),
+    scaleY: z.number().finite(),
+    rotation: z.number().finite(),
+  }),
+});
+
 const RollDiceSchema = z.object({
   type: z.literal('ROLL_DICE'),
   payload: z.object({
@@ -78,6 +90,7 @@ export const P2PMessageSchema = z.discriminatedUnion('type', [
   StartGameSchema,
   PingSchema,
   ModEventSchema,
+  TransformTokenSchema,
 ]);
 
 // ── Types inférés ─────────────────────────────────────────────────────────
@@ -90,5 +103,6 @@ export type PlayerJoinMessage = z.infer<typeof PlayerJoinSchema>;
 export type LobbyStateMessage = z.infer<typeof LobbyStateSchema>;
 export type StartGameMessage = z.infer<typeof StartGameSchema>;
 export type ModEventMessage = z.infer<typeof ModEventSchema>;
+export type TransformTokenMessage = z.infer<typeof TransformTokenSchema>;
 
-export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, StartGameSchema, ModEventSchema };
+export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema };
