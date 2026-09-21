@@ -16,8 +16,7 @@ export const CoreChatModule: SignetModule = {
   init: (api: SignetAPI) => {
     console.log('[ChatModule] Initializing...');
 
-    // 1. On injecte l'interface graphique du chat dans le système
-    api.ui.registerWindow('toggle-chat', 'Chat Universel', <ChatUI />, { defaultPosition: 'right' });
+    api.ui.registerWindow('toggle-chat', 'Chat Universel', <ChatUI />, { defaultPosition: 'right', startSlim: true });
 
     // 1b. On enregistre notre action dans le Menu Principal / Barre des tâches
     api.ui.registerAction(
