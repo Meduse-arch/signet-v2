@@ -244,7 +244,7 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
   }
 
   return (
-    <div className="h-full relative animate-fade-in bg-[#050508] overflow-hidden flex flex-col">
+    <div className="h-full pt-8 relative animate-fade-in bg-[#050508] flex flex-col overflow-x-hidden">
       {/* Background Cinématique */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-cover bg-center opacity-40 blur-sm scale-105 grayscale" style={{ backgroundImage: 'url("/fantasy_vtt_bg.jpg")' }} />

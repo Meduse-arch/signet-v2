@@ -24,16 +24,43 @@ interface CompendiumEntry {
 export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
   const [entries, setEntries] = useState<CompendiumEntry[]>([]);
   const [activeTab, setActiveTab] = useState<'skill' | 'item'>('skill');
-  const [allStats, setAllStats] = useState<string[]>(['PV Max', 'PV Actuel', 'Force', 'Résistance', 'Résistance Magique', 'Dextérité', 'Puissance Magique']);
+  const BASE_STATS = ['PV Max', 'PV Actuel', 'Force', 'Résistance', 'Résistance Magique', 'Dextérité', 'Puissance Magique'];
+  const [allStats, setAllStats] = useState<string[]>(BASE_STATS);
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<FlowerSkill & FlowerItem>>({});
 
   useEffect(() => {
-    // Wait a bit for invoke to load if it's dynamic
+    // Chargement initial (léger délai pour laisser invoke se charger dynamiquement)
     setTimeout(() => {
       loadCompendium();
     }, 100);
+
+    // Écoute en temps réel des synchronisations de personnages pour mettre à jour
+    // la liste des stats disponibles dans les modificateurs (cible + scaling)
+    const onSync = (msg: any) => {
+      if (msg.modEventType === 'SYNC_CHARACTER' && msg.payload?.stats) {
+        const newCustom = new Set<string>();
+        Object.values(msg.payload.stats).forEach((s: any) => {
+          if (s.isCustom && s.name) newCustom.add(s.name);
+        });
+        // Mise à jour seulement si de nouvelles stats sont détectées (évite les re-renders inutiles)
+        setAllStats(prev => {
+          const added = [...newCustom].filter(s => !prev.includes(s));
+          if (added.length === 0) return prev;
+          console.log('[Compendium] Nouvelles stats détectées:', added);
+          return [...prev, ...added];
+        });
+      }
+    };
+
+    api.events.on('NETWORK_INCOMING', onSync);
+    api.events.on('NETWORK_OUTGOING', onSync); // Pour le MJ qui sauvegarde lui-même
+
+    return () => {
+      api.events.off('NETWORK_INCOMING', onSync);
+      api.events.off('NETWORK_OUTGOING', onSync);
+    };
   }, []);
 
   const loadCompendium = async () => {
@@ -64,7 +91,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
         } catch (e) {}
       }
       setAllStats([
-        'PV Max', 'PV Actuel', 'Force', 'Résistance', 'Résistance Magique', 'Dextérité', 'Puissance Magique',
+        ...BASE_STATS,
         ...Array.from(customStats)
       ]);
     } catch (e) {
@@ -181,21 +208,21 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-zinc-950/95 text-white overflow-hidden backdrop-blur-xl border border-white/5 shadow-2xl">
+    <div className="w-full h-full flex flex-col bg-slate-950/80 text-white overflow-hidden backdrop-blur-xl border border-white/10 shadow-2xl">
       <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-black/40">
-        <Library className="w-6 h-6 text-fuchsia-400" />
+        <Library className="w-6 h-6 text-rose-400" />
         <div>
-          <h2 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-rose-400">
+          <h2 className="text-lg font-black text-white tracking-tight">
             Compendium Flower
           </h2>
-          <p className="text-xs text-zinc-400">Gérez les compétences et objets du système</p>
+          <p className="text-xs text-slate-400">Gérez les compétences et objets du système</p>
         </div>
       </div>
 
       <div className="flex border-b border-white/10 bg-black/20">
         <button
           onClick={() => { setActiveTab('skill'); setEditingId(null); }}
-          className={`flex-1 py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'skill' ? 'border-fuchsia-500 text-fuchsia-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+          className={`flex-1 py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'skill' ? 'border-rose-500 text-rose-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
         >
           <Swords className="w-4 h-4" /> Compétences
         </button>
@@ -210,7 +237,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         {editingId ? (
           <div className="bg-white/5 border border-white/10 p-4 rounded-lg space-y-4">
-            <h3 className="font-bold text-fuchsia-300 mb-2">Édition</h3>
+            <h3 className="font-bold text-rose-300 mb-2">Édition</h3>
             
             <div>
               <label className="block text-xs uppercase text-zinc-500 mb-1">Nom</label>
@@ -218,7 +245,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
                 type="text" 
                 value={editForm.name || ''} 
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
               />
             </div>
 
@@ -228,7 +255,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
                 <select 
                   value={editForm.skillType || 'active'}
                   onChange={(e) => setEditForm({ ...editForm, skillType: e.target.value })}
-                  className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-fuchsia-500 text-white"
+                  className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 text-white"
                 >
                   <option value="active">Active (Classique)</option>
                   <option value="toggle">Activable (Toggle)</option>
@@ -320,7 +347,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
               <textarea 
                 value={editForm.description || ''} 
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm h-24 focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm h-24 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
               />
             </div>
 

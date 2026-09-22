@@ -201,7 +201,7 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
   const filtered = visibleCharacters.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950/90 text-white p-4 gap-4 pointer-events-auto border border-zinc-800 rounded-xl">
+    <div className="flex flex-col h-full bg-slate-950/80 text-white p-4 gap-4 pointer-events-auto border border-white/10 rounded-xl backdrop-blur-md">
       
       {/* En-tête / Recherche */}
       <div className="flex items-center gap-2 bg-black/50 border border-white/10 rounded-lg p-2">
@@ -218,7 +218,7 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
       {/* Filtres & Actions (MJ uniquement) */}
       {isTauri() && (
         <div className="flex flex-col gap-2">
-          <Button variant="glass" onClick={handleCreate} className="w-full gap-2 border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-300">
+          <Button variant="glass" onClick={handleCreate} className="w-full gap-2 border-rose-500/30 hover:bg-rose-500/20 text-rose-300">
             <Plus className="w-4 h-4" /> Créer une Entité
           </Button>
           
@@ -231,7 +231,7 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
             </button>
             <button 
               onClick={() => setActiveFilter('players')}
-              className={`flex-1 text-xs py-1.5 rounded transition-colors ${activeFilter === 'players' ? 'bg-indigo-500/20 text-indigo-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`flex-1 text-xs py-1.5 rounded transition-colors ${activeFilter === 'players' ? 'bg-rose-500/20 text-rose-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
               Joueurs
             </button>
@@ -255,7 +255,7 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
           </div>
         ) : (
           filtered.map(c => (
-            <div key={c.id} className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg hover:border-zinc-600 transition-colors">
+            <div key={c.id} className="flex items-center justify-between p-3 bg-black/40 backdrop-blur-sm border border-white/5 rounded-lg hover:border-rose-500/30 hover:bg-white/5 transition-all">
               <div className="flex items-center gap-3">
                 {c.avatarUrl ? (
                   <img 
@@ -271,18 +271,18 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
                     }}
                   />
                 ) : (
-                  <div className={`w-8 h-8 rounded bg-zinc-800 flex items-center justify-center ${!c.owner_id ? 'text-rose-400' : 'text-indigo-400'}`}>
+                  <div className={`w-8 h-8 rounded bg-zinc-800/80 flex items-center justify-center ${!c.owner_id ? 'text-rose-400' : 'text-slate-300'}`}>
                     {!c.owner_id ? <Skull className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </div>
                 )}
-                <div>
-                  <div className="font-bold text-zinc-200">{c.name}</div>
-                  <div className="text-xs text-zinc-500">
+                <div className="min-w-0">
+                  <div className="font-bold text-zinc-200 truncate max-w-[120px] sm:max-w-[160px]">{c.name}</div>
+                  <div className="text-xs text-zinc-500 truncate">
                     {c.owner_id ? `Lié à: ${c.owner_id}` : 'PNJ (Non lié)'}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <Button variant="ghost" onClick={() => openSheet(c.id)} className="text-xs px-3">
                   Ouvrir
                 </Button>

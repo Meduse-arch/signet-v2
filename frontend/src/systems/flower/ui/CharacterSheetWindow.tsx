@@ -376,6 +376,14 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
     setNewStatName('');
   };
 
+  const deleteCustomStat = (key: string) => {
+    updateCharacter(prev => {
+      const newStats = { ...prev.stats };
+      delete newStats[key];
+      return { ...prev, stats: newStats };
+    });
+  };
+
   const renderFlowers = (statKey: string, value: number) => {
     const renderCore = () => {
       // Si la valeur est strictement supérieure à 5, on affiche une fleur + le multiplicateur
@@ -686,10 +694,10 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950/80 text-white p-6 gap-6 pointer-events-auto overflow-y-auto custom-scrollbar border-2 border-pink-900/30 rounded-xl relative shadow-[inset_0_0_50px_rgba(244,114,182,0.05)]">
+    <div className="flex flex-col h-full bg-slate-950/80 text-white p-4 sm:p-6 gap-4 sm:gap-6 pointer-events-auto overflow-y-auto custom-scrollbar border border-rose-900/30 rounded-xl relative backdrop-blur-md shadow-[inset_0_0_50px_rgba(225,29,72,0.04)]">
       
       {/* Boutons Haut Droite */}
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+      <div className="absolute top-3 right-3 flex items-center gap-1.5 flex-wrap justify-end max-w-[60%]">
         <button 
           onClick={() => {
             api.emit('CANVAS_TOGGLE_TOKEN', {
@@ -702,23 +710,23 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
               avatarUrl: character.avatarUrl
             });
           }}
-          className="bg-pink-900/40 text-pink-300 hover:bg-pink-800/60 hover:text-white px-3 py-1.5 rounded-lg border border-pink-500/30 flex items-center gap-2 text-xs transition-colors shadow-lg"
+          className="bg-rose-900/40 text-rose-300 hover:bg-rose-800/60 hover:text-white px-3 py-1.5 rounded-lg border border-rose-500/30 flex items-center gap-2 text-xs transition-colors shadow-lg whitespace-nowrap"
           title="Faire apparaître / retirer le pion sur la carte"
         >
-          <Flower2 className="w-3 h-3" /> Placer/Retirer Pion
+          <Flower2 className="w-3 h-3 shrink-0" /> Placer/Retirer Pion
         </button>
         <button 
           onClick={onBack}
-          className="bg-black/50 text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg border border-white/5 hover:border-pink-500/30 flex items-center gap-2 text-xs transition-colors shadow-lg"
+          className="bg-black/50 text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg border border-white/5 hover:border-rose-500/30 flex items-center gap-2 text-xs transition-colors shadow-lg whitespace-nowrap"
         >
           <ArrowLeft className="w-3 h-3" /> Retour
         </button>
       </div>
 
       {/* En-tête du personnage */}
-      <div className="flex items-center gap-4 border-b border-pink-500/20 pb-4 pr-32">
+      <div className="flex items-center gap-3 sm:gap-4 border-b border-rose-500/20 pb-4 pr-4">
         <div 
-          className="w-16 h-16 rounded-full bg-pink-950 border border-pink-500/30 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer relative group"
+          className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-rose-950/50 border border-rose-500/20 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer relative group"
           onClick={() => fileInputRef.current?.click()}
           title="Modifier l'avatar"
         >
@@ -751,12 +759,12 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
             value={character.name} 
             onChange={(e) => updateCharacter(prev => ({ ...prev, name: e.target.value }))}
             onBlur={(e) => updateCharacter(prev => ({ ...prev, name: e.target.value }))}
-            className="bg-transparent text-2xl font-bold text-pink-100 focus:outline-none focus:border-b border-pink-500 w-full"
+            className="bg-transparent text-2xl font-black text-white focus:outline-none focus:border-b border-rose-500 w-full"
             placeholder="Nom du personnage"
           />
-          <div className="text-pink-400/50 text-xs mt-1 uppercase tracking-widest font-bold flex items-center justify-between">
+          <div className="text-rose-400/60 text-xs mt-1 uppercase tracking-widest font-bold flex items-center justify-between">
             Système Flower
-            {isSaving && <span className="text-pink-500 animate-pulse">Sauvegarde...</span>}
+            {isSaving && <span className="text-rose-500 animate-pulse">Sauvegarde...</span>}
           </div>
         </div>
       </div>
@@ -777,7 +785,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
                 updateCharacter(prev => ({ ...prev, owner_id: val }));
               }
             }}
-            className="bg-transparent text-sm text-indigo-300 focus:outline-none border-b border-transparent focus:border-indigo-500 flex-1"
+            className="bg-transparent text-sm text-slate-300 focus:outline-none border-b border-transparent focus:border-rose-500 flex-1"
             placeholder="Joueur (Laisser vide si PNJ)"
           />
           <datalist id="players-list">
@@ -828,22 +836,22 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
       </div>
 
       {/* Tabs Menu */}
-      <div className="flex items-center gap-4 border-b border-pink-900/50 mt-2">
+      <div className="flex items-center gap-3 border-b border-rose-900/50 mt-2 flex-wrap">
         <button 
           onClick={() => setActiveTab('stats')}
-          className={`pb-2 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'stats' ? 'text-pink-400 border-b-2 border-pink-500' : 'text-zinc-500 hover:text-pink-300'}`}
+          className={`pb-2 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'stats' ? 'text-rose-400 border-b-2 border-rose-500' : 'text-zinc-500 hover:text-rose-300'}`}
         >
           Caractéristiques
         </button>
         <button 
           onClick={() => setActiveTab('skills')}
-          className={`pb-2 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'skills' ? 'text-pink-400 border-b-2 border-pink-500' : 'text-zinc-500 hover:text-pink-300'}`}
+          className={`pb-2 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'skills' ? 'text-rose-400 border-b-2 border-rose-500' : 'text-zinc-500 hover:text-rose-300'}`}
         >
           Compétences
         </button>
         <button 
           onClick={() => setActiveTab('inventory')}
-          className={`pb-2 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'inventory' ? 'text-pink-400 border-b-2 border-pink-500' : 'text-zinc-500 hover:text-pink-300'}`}
+          className={`pb-2 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'inventory' ? 'text-rose-400 border-b-2 border-rose-500' : 'text-zinc-500 hover:text-rose-300'}`}
         >
           Inventaire
         </button>
@@ -853,10 +861,10 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
         {activeTab === 'stats' && (
           <div className="flex flex-col gap-3">
             {Object.entries(character.stats).map(([key, stat]) => (
-              <div key={key} className="flex items-center justify-between bg-black/30 p-2 rounded-md border border-white/5 hover:border-pink-500/30 transition-colors">
+              <div key={key} className="flex items-center justify-between bg-black/30 p-2 rounded-md border border-white/5 hover:border-rose-500/30 transition-colors group/stat">
                 <button 
                   onClick={() => rollStat(key)}
-                  className="text-left font-bold text-zinc-300 hover:text-pink-300 transition-colors w-40 truncate"
+                  className="text-left font-bold text-zinc-300 hover:text-rose-300 transition-colors w-40 truncate"
                 >
                   {stat.name}
                 </button>
@@ -865,12 +873,21 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
                     {getDiceForFlowers(stat.value)}
                   </span>
                   {renderFlowers(key, stat.value)}
+                  {stat.isCustom && isTauri() && (
+                    <button
+                      onClick={() => deleteCustomStat(key)}
+                      className="w-6 h-6 flex items-center justify-center text-zinc-600 hover:text-rose-400 hover:bg-rose-950/40 rounded transition-all opacity-0 group-hover/stat:opacity-100"
+                      title={`Supprimer la stat "${stat.name}"`}
+                    >
+                      <Skull className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
 
             {/* Ajout de Statistique Personnalisée (Interface MJ) */}
-            <div className="mt-4 pt-4 border-t border-pink-900/50">
+            <div className="mt-4 pt-4 border-t border-rose-900/50">
               <form onSubmit={addCustomStat} className="flex gap-2">
                 <input 
                   list="known-custom-stats"
@@ -878,13 +895,13 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
                   value={newStatName} 
                   onChange={(e) => setNewStatName(e.target.value)}
                   placeholder="Nouvelle Statistique (ex: Perception)"
-                  className="flex-1 bg-black/50 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500/50"
+                  className="flex-1 bg-black/50 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
                 />
                 <datalist id="known-custom-stats">
                   {knownCustomStats.map((s, i) => <option key={`${s}-${i}`} value={s} />)}
                 </datalist>
                 <Button type="submit" variant="glass" className="px-3" disabled={!newStatName.trim()}>
-                  <Plus className="w-4 h-4 text-pink-400" />
+                  <Plus className="w-4 h-4 text-rose-400" />
                 </Button>
               </form>
             </div>
@@ -894,7 +911,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
         {activeTab === 'skills' && (
           <div className="flex flex-col gap-4">
             {isTauri() && (
-              <Button variant="glass" onClick={() => openCompendiumModal('skill')} className="w-full justify-center text-pink-300 border-pink-900/50 hover:bg-pink-900/30">
+              <Button variant="glass" onClick={() => openCompendiumModal('skill')} className="w-full justify-center text-rose-300 border-rose-900/50 hover:bg-rose-900/30">
                 <Plus className="w-4 h-4 mr-2" /> Importer une Compétence
               </Button>
             )}
@@ -916,7 +933,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
                 </button>
                 <div className="flex flex-col gap-1 pr-6">
                   <div className="flex items-center justify-between">
-                    <div className="text-pink-300 font-bold flex items-center gap-2">
+                    <div className="text-rose-300 font-bold flex items-center gap-2">
                       {skill.name || 'Compétence Sans Nom'}
                       {skill.skillType && (
                         <span className="text-[10px] opacity-70 uppercase tracking-widest bg-white/10 px-1.5 py-0.5 rounded">
@@ -937,7 +954,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
                       {skill.skillType === 'toggle' && (
                         <button 
                           onClick={() => handleToggleSkill(skill.id)}
-                          className={`p-1.5 rounded transition-all shadow-lg ${skill.isActive ? 'bg-fuchsia-600 text-white shadow-fuchsia-500/50' : 'bg-black/50 text-zinc-500 hover:bg-white/10 border border-white/5'}`}
+                          className={`p-1.5 rounded transition-all shadow-lg ${skill.isActive ? 'bg-rose-600 text-white shadow-rose-500/50' : 'bg-black/50 text-zinc-500 hover:bg-white/10 border border-white/5'}`}
                         >
                           <Zap className="w-4 h-4" />
                         </button>
@@ -948,7 +965,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
                   {skill.modifiers && skill.modifiers.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {skill.modifiers.map((mod, i) => (
-                        <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${skill.skillType === 'toggle' && !skill.isActive ? 'bg-zinc-800 text-zinc-500 line-through' : 'bg-pink-950/50 text-pink-400 border border-pink-900/30'}`}>
+                        <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${skill.skillType === 'toggle' && !skill.isActive ? 'bg-zinc-800 text-zinc-500 line-through' : 'bg-rose-950/50 text-rose-400 border border-rose-900/30'}`}>
                           {mod.value} {mod.target} {mod.scaleStat ? `(Scale: ${mod.scaleStat})` : ''}
                         </span>
                       ))}

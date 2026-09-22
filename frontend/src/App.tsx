@@ -120,16 +120,14 @@ export default function App() {
       )}
 
       {appState === 'game' && sessionRoomId && (
-        <div className="animate-fade-in h-screen flex flex-col pt-8">
-          <div className="flex-1 overflow-hidden relative">
-            <GameSession 
-              roomId={sessionRoomId} 
-              signalUrl={signalUrl} 
-              isHost={isHost}
-              username={username || 'Aventurier'}
-              onLeave={() => setAppState('hub')}
-            />
-          </div>
+        <div className="animate-fade-in flex-1 flex flex-col min-h-0">
+          <GameSession 
+            roomId={sessionRoomId} 
+            signalUrl={signalUrl} 
+            isHost={isHost}
+            username={username || 'Aventurier'}
+            onLeave={() => setAppState('hub')}
+          />
         </div>
       )}
 

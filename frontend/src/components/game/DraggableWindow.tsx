@@ -156,8 +156,8 @@ export function DraggableWindow({
         const dx = e.clientX - dragStartPos.current.x;
         const dy = e.clientY - dragStartPos.current.y;
         setSize({
-          w: Math.max(300, sizeStartPos.current.w + dx),
-          h: Math.max(200, sizeStartPos.current.h + dy)
+          w: Math.max(250, sizeStartPos.current.w + dx),
+          h: Math.max(180, sizeStartPos.current.h + dy)
         });
         return;
       }
@@ -284,6 +284,8 @@ export function DraggableWindow({
       top: pos.y,
       width: transparent ? 'auto' : size.w,
       height: transparent ? 'auto' : size.h,
+      maxWidth: 'calc(100vw - 1rem)',
+      maxHeight: 'calc(100vh - 2rem)',
       transition: (isDragging || isResizing) ? 'none' : 'all 0.3s ease-out'
     };
   } else if (dockState === 'right') {

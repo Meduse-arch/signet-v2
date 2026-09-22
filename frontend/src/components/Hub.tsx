@@ -224,7 +224,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value)}
                   placeholder="CODE (EX: A4B9F2)"
-                  className="w-48 sm:w-56 bg-black/40 backdrop-blur-md border border-white/20 rounded-sm px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
+                  className="w-full sm:w-56 bg-black/40 backdrop-blur-md border border-white/20 rounded-sm px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
                 />
                 <Button
                   type="submit"
@@ -249,8 +249,8 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
             </div>
           </div>
 
-          {/* Section Droite : Carré Magique de 4 Cartes (Caché sur mobile, visible sur grand écran) */}
-          <div className="hidden xl:grid grid-cols-2 gap-4 w-[380px] shrink-0 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          {/* Section Droite : Carré Magique de 4 Cartes (Caché sur sm, visible dès md) */}
+          <div className="hidden md:grid grid-cols-2 gap-4 w-full md:w-[360px] xl:w-[380px] shrink-0 animate-fade-in" style={{ animationDelay: '0.2s' }}>
             
             <div onClick={() => setCurrentView('notes')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Ouvrir le Carnet de Notes">
               <BookOpen className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
@@ -272,6 +272,26 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Paramètres & Actu</span>
             </div>
 
+          </div>
+
+          {/* Mobile/SM : Navigation en carousel horizontal (< md) */}
+          <div className="flex md:hidden gap-3 w-full overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <button onClick={() => setCurrentView('notes')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-rose-500/50 group min-w-[90px]">
+              <BookOpen className="w-6 h-6 text-white/50 group-hover:text-rose-400 transition-colors" />
+              <span className="text-xs font-bold text-white/70 group-hover:text-white transition-colors text-center">Notes</span>
+            </button>
+            <button onClick={() => setCurrentView('public')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-rose-500/50 group min-w-[90px]">
+              <Globe className="w-6 h-6 text-white/50 group-hover:text-rose-400 transition-colors" />
+              <span className="text-xs font-bold text-white/70 group-hover:text-white transition-colors text-center">Sessions</span>
+            </button>
+            <button onClick={() => setCurrentView('mods')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-rose-500/50 group min-w-[90px]">
+              <Puzzle className="w-6 h-6 text-white/50 group-hover:text-rose-400 transition-colors" />
+              <span className="text-xs font-bold text-white/70 group-hover:text-white transition-colors text-center">Mods</span>
+            </button>
+            <button onClick={() => setCurrentView('settings')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-rose-500/50 group min-w-[90px]">
+              <Settings className="w-6 h-6 text-white/50 group-hover:text-rose-400 transition-colors" />
+              <span className="text-xs font-bold text-white/70 group-hover:text-white transition-colors text-center">Params</span>
+            </button>
           </div>
           
         </div>
@@ -317,7 +337,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
         </div>
           </>
         ) : (
-          <div className="flex-1 w-full h-full pt-4 flex flex-col max-h-[85vh]">
+          <div className="flex-1 w-full min-h-0 flex flex-col overflow-hidden">
             <div className="mb-4">
               <Button variant="ghost" onClick={() => setCurrentView('main')} leftIcon={<ArrowLeft className="w-5 h-5" />}>
                 Retour à l'accueil

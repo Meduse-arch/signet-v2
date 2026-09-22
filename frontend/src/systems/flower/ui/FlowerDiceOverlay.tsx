@@ -57,7 +57,7 @@ export function FlowerDiceOverlay({ api }: FlowerDiceOverlayProps) {
       onClick={() => setActiveRoll(null)}
     >
       <div className="flex flex-col items-center justify-center animate-slide-up relative">
-        <span className="text-pink-300 font-bold uppercase tracking-[0.3em] mb-8 text-sm drop-shadow-[0_0_10px_rgba(244,114,182,0.8)] z-10">
+        <span className="text-rose-300 font-bold uppercase tracking-[0.3em] mb-8 text-sm drop-shadow-[0_0_10px_rgba(225,29,72,0.7)] z-10">
           {activeRoll.label}
         </span>
         
@@ -104,7 +104,7 @@ export function FlowerDiceOverlay({ api }: FlowerDiceOverlayProps) {
           `}} />
 
           {/* Résultat du dé */}
-          <div className="z-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full w-24 h-24 border border-pink-500/50 shadow-[0_0_30px_rgba(244,114,182,0.4)] animate-bounce-in">
+          <div className="z-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full w-24 h-24 border border-rose-500/50 shadow-[0_0_30px_rgba(225,29,72,0.4)] animate-bounce-in">
             <span className={activeRoll.total >= 1000 ? 'text-4xl drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] text-white font-black' : 'text-5xl drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] text-white font-black'}>
               {activeRoll.total}
             </span>
