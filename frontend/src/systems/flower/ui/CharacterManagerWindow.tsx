@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SignetAPI } from '../../../core/services/SignetAPI';
-import { Search, UserPlus, BookUser, User, Skull, Trash2, MapPin } from 'lucide-react';
+import { Search, UserPlus, BookUser, User, Skull, Trash2, MapPin, Plus } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { invoke } from '@tauri-apps/api/core';
 import { FileTransferService } from '../../../core/services/FileTransferService';
@@ -17,6 +17,7 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
   const [characters, setCharacters] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'players' | 'npcs'>('all');
 
   const fetchCharacters = async () => {
     setLoading(true);
@@ -122,12 +123,12 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
     };
   }, [api]);
 
-  const handleCreate = async (isNpc: boolean) => {
+  const handleCreate = async () => {
     const id = `char_${Date.now()}`;
     const newChar = {
       id,
-      name: isNpc ? 'Nouvelle Entité' : 'Nouveau Joueur',
-      owner_id: isNpc ? null : api.user.getName()
+      name: 'Nouvelle Entité',
+      owner_id: null
     };
 
     if (isTauri()) {
@@ -187,8 +188,12 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
 
   // Filtrage selon le rôle et la recherche
   const visibleCharacters = characters.filter(c => {
-    // Si c'est l'Hôte (MJ), il voit tout
-    if (isTauri()) return true;
+    // Si c'est l'Hôte (MJ), on applique le filtre d'onglet
+    if (isTauri()) {
+      if (activeFilter === 'players' && !c.owner_id) return false;
+      if (activeFilter === 'npcs' && c.owner_id) return false;
+      return true;
+    }
     // Si c'est un joueur, il ne voit que ses propres personnages
     return c.owner_id === api.user.getName();
   });
@@ -210,15 +215,33 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
         />
       </div>
 
-      {/* Actions (MJ uniquement) */}
+      {/* Filtres & Actions (MJ uniquement) */}
       {isTauri() && (
-        <div className="flex gap-2">
-          <Button variant="glass" onClick={() => handleCreate(false)} className="flex-1 gap-2 border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-300">
-            <UserPlus className="w-4 h-4" /> Créer Joueur
+        <div className="flex flex-col gap-2">
+          <Button variant="glass" onClick={handleCreate} className="w-full gap-2 border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-300">
+            <Plus className="w-4 h-4" /> Créer une Entité
           </Button>
-          <Button variant="glass" onClick={() => handleCreate(true)} className="flex-1 gap-2 border-rose-500/30 hover:bg-rose-500/20 text-rose-300">
-            <Skull className="w-4 h-4" /> Créer Entité
-          </Button>
+          
+          <div className="flex bg-black/40 rounded-lg p-1">
+            <button 
+              onClick={() => setActiveFilter('all')}
+              className={`flex-1 text-xs py-1.5 rounded transition-colors ${activeFilter === 'all' ? 'bg-white/10 text-white font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              Tous
+            </button>
+            <button 
+              onClick={() => setActiveFilter('players')}
+              className={`flex-1 text-xs py-1.5 rounded transition-colors ${activeFilter === 'players' ? 'bg-indigo-500/20 text-indigo-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              Joueurs
+            </button>
+            <button 
+              onClick={() => setActiveFilter('npcs')}
+              className={`flex-1 text-xs py-1.5 rounded transition-colors ${activeFilter === 'npcs' ? 'bg-rose-500/20 text-rose-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              PNJ
+            </button>
+          </div>
         </div>
       )}
 

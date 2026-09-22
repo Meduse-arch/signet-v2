@@ -40,27 +40,27 @@ Voici l'état actuel des trois grands piliers du projet : le Serveur, le Core (c
 - [x] **API de Signalement (LAN/Web) :** Négociation WebRTC fonctionnelle.
 - [x] **Topologie en Étoile :** L'Hôte relaie l'information (anti-triche).
 - [ ] **DataChannels Optimisés :** Modes TCP (Fiable) pour le chat/dés, et UDP (Non-Fiable) pour les pointeurs/tokens.
-- [ ] **Transfert Intelligent (Mesh/Torrent) :** Script `TransferOptimizer` pour basculer dynamiquement en mode Torrent selon le nombre de joueurs (Prévu Sprint 4).
+- [ ] **Transfert Intelligent (Mesh/Torrent) :** Script `TransferOptimizer` pour basculer dynamiquement en mode Torrent selon le nombre de joueurs (Prévu Sprint 6).
 
 ### 🎲 B. Le Cœur (Core VTT) - *Frontend React*
 **Rôle :** L'interface commune à tous, le moteur 2D, le chat, et la gestion des sessions.
 - [x] **UI Premium & Modulaire :** Le Hub, l'Auth et l'interface de base sont terminés (Glassmorphism, animations).
 - [x] **Architecture "Chill" :** Code factorisé en services et petits composants.
 - **Plateau de Jeu (Canvas) :**
-  - [ ] Moteur de rendu performant (PixiJS, Konva ou Canvas natif).
-  - [ ] Gestion des calques (Background, Tokens, Grille, UI).
-  - [ ] Déplacement fluide des Tokens.
+  - [x] Moteur de rendu performant (PixiJS, Konva ou Canvas natif).
+  - [x] Gestion des calques (Background, Tokens, Grille, UI).
+  - [x] Déplacement fluide des Tokens.
 - **Interface de Table (In-Game) :**
-  - [ ] Chat textuel persistant.
-  - [ ] Lancer de dés virtuel.
+  - [x] Chat textuel persistant.
+  - [x] Lancer de dés virtuel.
 
 ### 🧩 C. Les Modules (Systèmes Indépendants)
 **Rôle :** Permettre l'extension infinie du VTT. C'est ici que réside la véritable règle d'or de l'application : **Le "Core" du VTT est un moteur vide qui ne connaît aucune règle. Chaque jeu (D&D, Cthulhu...) est un module indépendant.** Cela évite que les règles entrent en conflit et garde l'application hyper légère, car seul le module auquel on joue est chargé en mémoire.
-- [ ] **Le "Core" Universel :** Une API (`SignetAPI`) qui donne accès à des fonctions génériques (lancer un dé virtuel, écrire un message) sans aucune logique de règles.
-- [ ] **Le Gestionnaire de Modules (`ModManager`) :** Le cerveau qui s'assure de ne charger **QUE** le code du système sélectionné au lancement de la partie.
-- [ ] **L'Event Bus (Système Nerveux) :** Système permettant au module d'écouter les actions réseau (P2P) sans avoir à toucher au code source du VTT.
-- [ ] **Système de "Sandbox" :** Garantir qu'un Module ne puisse pas entrer en conflit avec les composants de base ou faire planter l'application globale.
-- [ ] **Feuilles de Personnages Dynamiques :** Interface entièrement générée à la volée par le code du Module.
+- [x] **Le "Core" Universel :** Une API (`SignetAPI`) qui donne accès à des fonctions génériques (lancer un dé virtuel, écrire un message) sans aucune logique de règles.
+- [x] **Le Gestionnaire de Modules (`ModManager`) :** Le cerveau qui s'assure de ne charger **QUE** le code du système sélectionné au lancement de la partie.
+- [x] **L'Event Bus (Système Nerveux) :** Système permettant au module d'écouter les actions réseau (P2P) sans avoir à toucher au code source du VTT.
+- [x] **Système de "Sandbox" :** Garantir qu'un Module ne puisse pas entrer en conflit avec les composants de base ou faire planter l'application globale.
+- [x] **Feuilles de Personnages Dynamiques :** Interface entièrement générée à la volée par le code du Module.
 
 ---
 
@@ -102,14 +102,21 @@ Nous avons inversé les sprints initiaux pour poser de solides bases visuelles e
 3. [x] Protocole personnalisé (`signet://`) pour servir les images locales via Tauri.
 4. [x] Transfert binaire de base (Client-Serveur P2P) pour l'affichage initial de la carte.
 
-### 🌸 Sprint 4 : Le Premier Système de Jeu (Système "Flower")
+### ✅ Sprint 4 : Le Premier Système de Jeu (Système "Flower")
 *Objectif : Créer le tout premier vrai "Module" de règles complet pour valider l'architecture du VTT.*
-1. [ ] Fiche de personnage dynamique (Affichage et édition des caractéristiques/skills).
-2. [ ] Règles du système de dés spécifiques à "Flower" (Calcul des succès/échecs).
-3. [ ] Mécaniques de jeu (Compétences, jauges, inventaire).
-4. [ ] Lien entre le pion sur la carte et sa fiche de personnage.
+1. [x] Fiche de personnage dynamique (Affichage et édition des caractéristiques/skills).
+2. [x] Règles du système de dés spécifiques à "Flower" (Calcul des succès/échecs).
+3. [x] Mécaniques de jeu (Compétences, jauges, inventaire).
+4. [x] Lien entre le pion sur la carte et sa fiche de personnage.
 
-### 🌐 Sprint 5 : Optimisation Réseau & Architecture Mesh
+### 🛡️ Sprint 5 : Droits MJ, Sécurité & Charte Responsive
+*Objectif : Affiner la gestion des droits, sécuriser la partie et s'assurer que l'application est parfaite sur tous les écrans selon la charte graphique.*
+1. [ ] **Découplage Hébergement/Rôle :** Séparer le statut d'"Hôte Réseau" (qui a la base de données sur son PC) des "Droits MJ". Un hôte peut inviter un autre joueur à agir en tant que MJ.
+2. [ ] **Sécurité des Permissions :** Vérifications strictes (anti-triche) pour s'assurer que seul le MJ ou les joueurs autorisés puissent déplacer certains jetons ou révéler la carte.
+3. [ ] **Responsive Design :** Revue complète de l'interface pour garantir une ergonomie irréprochable sur tablettes et mobiles.
+4. [ ] **Audit Charte Graphique :** Vérification de l'alignement de tous les modules et fenêtres avec le document `CHARTE_GRAPHIQUE.md` (homogénéité visuelle).
+
+### 🌐 Sprint 6 : Optimisation Réseau & Architecture Mesh
 *Objectif : Transformer le réseau 1-à-1 en une vraie toile d'araignée capable d'encaisser 8 joueurs.*
 1. [ ] Topologie Mesh : Chaque joueur se connecte directement à tous les autres.
 2. [ ] `TransferOptimizer` : Analyse le contexte pour choisir la meilleure stratégie (Broadcast vs Torrent).

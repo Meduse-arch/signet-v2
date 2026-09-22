@@ -81,7 +81,15 @@ pub fn run() {
         database::delete_character,
         database::save_token,
         database::get_tokens,
-        database::delete_token
+        database::delete_token,
+        database::save_campaigns_list,
+        database::get_campaigns_list,
+        database::open_campaign_db,
+        database::save_player,
+        database::get_players,
+        database::save_module_data,
+        database::get_module_data,
+        database::delete_module_data
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

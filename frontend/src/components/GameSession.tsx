@@ -35,7 +35,27 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [isInGameView, setIsInGameView] = useState(false);
   const [isRoomOpen, setIsRoomOpen] = useState(false);
-  const [isOnline, setIsOnline] = useState(false);
+  const [isOnline, setIsOnline] = useState(isHost); // Par défaut, l'hôte se met en ligne
+
+
+  // Ouvre la base de données SQLite correspondante dans Tauri
+  useEffect(() => {
+    const openDb = async () => {
+      // @ts-ignore
+      if (window.__TAURI_INTERNALS__) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          await invoke('open_campaign_db', { roomId });
+          if (isHost) {
+            await invoke('save_player', { username });
+          }
+        } catch (e) {
+          console.error('[GameSession] Erreur ouverture BD:', e);
+        }
+      }
+    };
+    openDb();
+  }, [roomId, isHost, username]);
 
   // Connexion automatique (Joueur)
   useEffect(() => {
@@ -109,6 +129,16 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
       if (isHost && msg.type === 'PLAYER_JOIN') {
         console.log('[GameSession] Hôte: Réception PLAYER_JOIN pour', msg.payload.username);
         
+        // Sauvegarder le joueur dans la BD
+        // @ts-ignore
+        if (window.__TAURI_INTERNALS__) {
+          import('@tauri-apps/api/core').then(({ invoke }) => {
+            invoke('save_player', { username: msg.payload.username }).catch(e => 
+              console.error('[GameSession] Erreur save_player:', e)
+            );
+          });
+        }
+
         setPlayers((prev) => {
           let newPlayer = msg.payload.username;
           

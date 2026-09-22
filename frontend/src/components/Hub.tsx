@@ -31,10 +31,50 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
   const [currentView, setCurrentView] = useState<HubView>('main');
   
   // État local pour les campagnes
-  const [campaigns, setCampaigns] = useState([
-    { id: 'SEAL-DEMO2', name: 'Campagne Principale', date: 'il y a 1 semaine', hue: '180deg' },
-    { id: 'SIGNET-DEMO1', name: 'Le Donjon Oublié', date: 'il y a 2 jours', hue: '0deg' }
-  ]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Chargement des campagnes (Tauri ou localStorage)
+  useEffect(() => {
+    const loadCampaigns = async () => {
+      try {
+        // @ts-ignore
+        if (window.__TAURI_INTERNALS__) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const data = await invoke<string>('get_campaigns_list');
+          setCampaigns(JSON.parse(data));
+        } else {
+          const saved = localStorage.getItem('signet_campaigns');
+          if (saved) setCampaigns(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.error("Erreur de chargement des campagnes:", e);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+    loadCampaigns();
+  }, []);
+
+  const saveCampaignsNow = async (newCampaigns: any[]) => {
+    try {
+      // @ts-ignore
+      if (window.__TAURI_INTERNALS__) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('save_campaigns_list', { data: JSON.stringify(newCampaigns) });
+      } else {
+        localStorage.setItem('signet_campaigns', JSON.stringify(newCampaigns));
+      }
+    } catch (e) {
+      console.error("Erreur de sauvegarde des campagnes:", e);
+    }
+  };
+
+  // Sauvegarde des campagnes sur changement
+  useEffect(() => {
+    if (!isLoaded) return;
+    saveCampaignsNow(campaigns);
+  }, [campaigns, isLoaded]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -68,19 +108,23 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
       const newRoom = `SIGNET-${code}`;
       
       // On ajoute la nouvelle campagne en haut de la liste
-      setCampaigns(prev => [
-        { 
-          id: newRoom, 
-          name: data.name, 
-          date: "À l'instant", 
-          hue: `${Math.floor(Math.random() * 360)}deg`,
-          system: data.system,
-          isPublic: data.isPublic,
-          tags: data.tags,
-          maxPlayers: data.maxPlayers
-        },
-        ...prev
-      ]);
+      const newCampaign = { 
+        id: newRoom, 
+        name: data.name, 
+        date: "À l'instant", 
+        hue: `${Math.floor(Math.random() * 360)}deg`,
+        system: data.system,
+        isPublic: data.isPublic,
+        tags: data.tags,
+        maxPlayers: data.maxPlayers,
+        isHost: true
+      };
+
+      setCampaigns(prev => {
+        const updated = [newCampaign, ...prev];
+        saveCampaignsNow(updated); // Sauvegarde immédiate avant démontage
+        return updated;
+      });
 
       setCurrentView('main');
       // On connecte immédiatement le MJ à sa nouvelle session (isHost = true)
@@ -250,8 +294,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                 subtitle={`Dernière session : ${camp.date}`}
                 badge={`CODE : ${camp.id}`}
                 imageUrl="/fantasy_vtt_bg.jpg"
-                imageHue={camp.hue}
-                onClick={() => onJoinGame(camp.id, false)}
+                onClick={() => onJoinGame(camp.id, camp.isHost !== false)}
               />
             ))}
             

@@ -93,7 +93,7 @@ class FileTransferServiceImpl {
    * Réceptionne un chunk binaire, le stocke, et reconstruit le fichier si terminé.
    * Déclenche un événement global quand le fichier est prêt.
    */
-  public async receiveChunk(raw: Uint8Array, onFileComplete?: (filename: string) => void): Promise<void> {
+  public async receiveChunk(raw: Uint8Array, onFileComplete?: (filename: string, blobUrl?: string) => void): Promise<void> {
     if (raw.length < HEADER_SIZE) return;
 
     const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);

@@ -31,13 +31,21 @@ pub struct TokenRecord {
 // ==============================================================================
 
 pub fn init_db(app: &AppHandle) -> Result<(), String> {
+    let state: State<DbState> = app.state();
+    *state.0.lock().unwrap() = None; // Pas de DB par défaut, on attend open_campaign_db
+    println!("[Base de données] SQLite en attente de la sélection de campagne.");
+    Ok(())
+}
+
+#[tauri::command]
+pub fn open_campaign_db(app: tauri::AppHandle, state: State<'_, DbState>, room_id: String) -> Result<(), String> {
     let app_data_dir = app
         .path()
         .app_data_dir()
         .map_err(|_| "Impossible de trouver le dossier AppData".to_string())?;
 
-    // On suit la règle du "campagne/signet-codexxe/bd"
-    let db_dir = app_data_dir.join("campaigns").join("signet-codexxe").join("bd");
+    // On suit la règle demandée: local / <CODE> / bd
+    let db_dir = app_data_dir.join("local").join(&room_id).join("bd");
     
     if !db_dir.exists() {
         fs::create_dir_all(&db_dir)
@@ -82,11 +90,28 @@ pub fn init_db(app: &AppHandle) -> Result<(), String> {
         [],
     ).map_err(|e| format!("Erreur table assets: {}", e))?;
 
-    // On stocke la connexion dans le State de Tauri
-    let state: State<DbState> = app.state();
-    *state.0.lock().unwrap() = Some(conn);
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS players (
+            username TEXT PRIMARY KEY
+        )",
+        [],
+    ).map_err(|e| format!("Erreur table players: {}", e))?;
 
-    println!("[Base de données] SQLite initialisé dans : {:?}", db_path);
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS module_data (
+            module_id TEXT,
+            key TEXT,
+            data TEXT NOT NULL,
+            PRIMARY KEY (module_id, key)
+        )",
+        [],
+    ).map_err(|e| format!("Erreur table module_data: {}", e))?;
+
+    // On stocke la connexion dans le State de Tauri
+    let mut lock = state.inner().0.lock().unwrap();
+    *lock = Some(conn);
+
+    println!("[Base de données] SQLite ouvert pour la room {} dans : {:?}", room_id, db_path);
     Ok(())
 }
 
@@ -243,4 +268,132 @@ pub fn insert_asset_record(conn: &Connection, hash: &str, extension: &str, name:
         params![hash, name, extension, "image"],
     )?;
     Ok(())
+}
+
+// ==============================================================================
+// COMMANDES TAURI - JOUEURS (PLAYERS)
+// ==============================================================================
+
+#[tauri::command]
+pub fn save_player(state: State<'_, DbState>, username: String) -> Result<(), String> {
+    let lock = state.inner().0.lock().unwrap();
+    let conn = lock.as_ref().ok_or("BD non initialisée")?;
+
+    conn.execute(
+        "INSERT INTO players (username) VALUES (?1) ON CONFLICT(username) DO NOTHING",
+        params![username],
+    ).map_err(|e| format!("Erreur sauvegarde joueur: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_players(state: State<'_, DbState>) -> Result<Vec<String>, String> {
+    let lock = state.inner().0.lock().unwrap();
+    let conn = lock.as_ref().ok_or("BD non initialisée")?;
+
+    let mut stmt = conn.prepare("SELECT username FROM players")
+        .map_err(|e| format!("Erreur préparation requête players: {}", e))?;
+        
+    let iter = stmt.query_map([], |row| {
+        row.get::<_, String>(0)
+    }).map_err(|e| format!("Erreur exécution requête players: {}", e))?;
+
+    let mut players = Vec::new();
+    for p in iter {
+        if let Ok(player) = p {
+            players.push(player);
+        }
+    }
+
+    Ok(players)
+}
+
+// ==============================================================================
+// COMMANDES TAURI - DONNÉES DE MODULES GÉNÉRIQUES (MODS / SYSTÈMES)
+// ==============================================================================
+
+#[tauri::command]
+pub fn save_module_data(
+    state: State<'_, DbState>,
+    module_id: String,
+    key: String,
+    data: String,
+) -> Result<(), String> {
+    let lock = state.inner().0.lock().unwrap();
+    let conn = lock.as_ref().ok_or("BD non initialisée")?;
+
+    conn.execute(
+        "INSERT INTO module_data (module_id, key, data) 
+         VALUES (?1, ?2, ?3)
+         ON CONFLICT(module_id, key) DO UPDATE SET 
+            data=excluded.data",
+        params![module_id, key, data],
+    ).map_err(|e| format!("Erreur sauvegarde module_data: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_module_data(state: State<'_, DbState>, module_id: String) -> Result<Vec<(String, String)>, String> {
+    let lock = state.inner().0.lock().unwrap();
+    let conn = lock.as_ref().ok_or("BD non initialisée")?;
+
+    let mut stmt = conn.prepare("SELECT key, data FROM module_data WHERE module_id = ?1")
+        .map_err(|e| format!("Erreur préparation requête module_data: {}", e))?;
+        
+    let iter = stmt.query_map(params![module_id], |row| {
+        Ok((row.get(0)?, row.get(1)?))
+    }).map_err(|e| format!("Erreur exécution requête module_data: {}", e))?;
+
+    let mut results = Vec::new();
+    for r in iter {
+        if let Ok(entry) = r {
+            results.push(entry);
+        }
+    }
+
+    Ok(results)
+}
+
+#[tauri::command]
+pub fn delete_module_data(state: State<'_, DbState>, module_id: String, key: String) -> Result<(), String> {
+    let lock = state.inner().0.lock().unwrap();
+    let conn = lock.as_ref().ok_or("BD non initialisée")?;
+
+    conn.execute("DELETE FROM module_data WHERE module_id = ?1 AND key = ?2", params![module_id, key])
+        .map_err(|e| format!("Erreur suppression module_data: {}", e))?;
+
+    Ok(())
+}
+
+// ==============================================================================
+// COMMANDES TAURI - LISTE DES CAMPAGNES
+// ==============================================================================
+
+#[tauri::command]
+pub fn save_campaigns_list(app: tauri::AppHandle, data: String) -> Result<(), String> {
+    let app_data_dir = app.path().app_data_dir().map_err(|_| "Error AppData".to_string())?;
+    let db_dir = app_data_dir.join("local").join("signet-code").join("bd");
+    
+    if !db_dir.exists() {
+        fs::create_dir_all(&db_dir).map_err(|e| format!("Erreur création dossier: {}", e))?;
+    }
+    
+    let path = db_dir.join("campaigns_list.json");
+    fs::write(&path, data).map_err(|e| format!("Erreur de sauvegarde: {}", e))?;
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_campaigns_list(app: tauri::AppHandle) -> Result<String, String> {
+    let app_data_dir = app.path().app_data_dir().map_err(|_| "Error AppData".to_string())?;
+    let path = app_data_dir.join("local").join("signet-code").join("bd").join("campaigns_list.json");
+    
+    if path.exists() {
+        Ok(fs::read_to_string(&path).unwrap_or_else(|_| "[]".to_string()))
+    } else {
+        Ok("[]".to_string())
+    }
 }
