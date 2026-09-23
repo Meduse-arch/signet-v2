@@ -1,6 +1,7 @@
 import React from 'react';
 import { coreEventBus, EventBus } from './EventBus';
 import type { WindowPosition } from './ModManager';
+import type { LogEntry } from '../modules/activity-log/types';
 
 /**
  * L'API Signet officielle fournie à chaque Module.
@@ -29,7 +30,11 @@ export class SignetAPI {
     this.events = coreEventBus; // Pour l'instant on partage le même bus global
 
     this.user = {
-      getName: getUsername,
+      getName: () => {
+        const val = getUsername();
+        console.log(`[SignetAPI] getName called by ${modId}. Returned: "${val}"`);
+        return val;
+      },
     };
 
     this.library = {
@@ -134,10 +139,35 @@ export class SignetAPI {
    */
   async requestRoll(diceList: string[]): Promise<number[]> {
     try {
-      // Pour éviter les soucis lors des imports dans des contextes non-Tauri,
-      // on importe invoke dynamiquement ou on l'utilise si disponible.
-      const { invoke } = await import('@tauri-apps/api/core');
-      const results = await invoke<number[]>('roll_dice', { dice: diceList });
+      let results: number[] = [];
+      const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+      if (isTauri) {
+        // En mode Host (Tauri), on utilise le vrai backend Rust
+        const { invoke } = await import('@tauri-apps/api/core');
+        results = await invoke<number[]>('roll_dice', { dice: diceList });
+      } else {
+        // En mode WebRTC Client (Navigateur), on utilise un fallback mathématique local
+        results = diceList.map(diceStr => {
+          try {
+            const str = diceStr.toLowerCase().replace(/\s/g, '');
+            const match = str.match(/^(\d*)d(\d+)([-+]\d+)?$/);
+            if (!match) return 0;
+            
+            const count = parseInt(match[1]) || 1;
+            const faces = parseInt(match[2]);
+            const modifier = match[3] ? parseInt(match[3]) : 0;
+            
+            let total = modifier;
+            for (let i = 0; i < count; i++) {
+              total += Math.floor(Math.random() * faces) + 1;
+            }
+            return total;
+          } catch {
+            return 0;
+          }
+        });
+      }
       
       this.emit('DICE_ROLLED_RAW', { dice: diceList, results });
       return results;
@@ -153,6 +183,34 @@ export class SignetAPI {
    */
   playStandardDiceAnimation(diceList: string[], results: number[]): void {
     this.emit('SYSTEM_UI_PLAY_DICE_ANIMATION', { dice: diceList, results });
+  }
+
+
+  // === JOURNAL D'ACTIVITÉ ===
+
+  /**
+   * Enregistre une entrée dans le journal d'activité.
+   * Raccourci pour : api.emit('LOG_ENTRY', { ... })
+   *
+   * @example
+   * api.log({
+   *   type: 'dice',
+   *   actor: 'Elara',
+   *   actorId: 'user-123',
+   *   summary: 'a lancé Force (1d30) → 24',
+   *   details: { formula: '1d30', result: 24 },
+   *   visibility: 'all',
+   * });
+   */
+  log(entry: Omit<LogEntry, 'id' | 'sourceModule' | 'timestamp'> & { accountName?: string }): void {
+    const fullEntry: LogEntry = {
+      ...entry,
+      id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      accountName: entry.accountName || this.user.getName(),
+      sourceModule: this.modId,
+      timestamp: Date.now(),
+    };
+    this.emit('LOG_ENTRY', fullEntry);
   }
 
   // NOTE: Dans le futur (Sprints suivants), nous ajouterons ici 

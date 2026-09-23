@@ -8,29 +8,8 @@ export function FlowerDiceOverlay({ api }: FlowerDiceOverlayProps) {
   const [activeRoll, setActiveRoll] = useState<{ id: number, total: number, label: string } | null>(null);
 
   useEffect(() => {
-    const handleIncoming = (message: any) => {
-      if (message.type === 'FLOWER_ROLL_ANIMATION' && message.payload) {
-        setActiveRoll({
-          id: Date.now(),
-          total: message.payload.total,
-          label: message.payload.label
-        });
-
-        setTimeout(() => {
-          setActiveRoll(null);
-        }, 3500);
-      }
-    };
-
-    api.on('NETWORK_INCOMING', handleIncoming);
-    return () => {
-      api.off('NETWORK_INCOMING', handleIncoming);
-    };
-  }, [api]);
-
-  useEffect(() => {
     const handleOutgoing = (message: any) => {
-      if (message.type === 'FLOWER_ROLL_ANIMATION' && message.payload) {
+      if (message.type === 'MOD_EVENT' && message.modEventType === 'FLOWER_ROLL_ANIMATION' && message.payload) {
         setActiveRoll({
           id: Date.now(),
           total: message.payload.total,

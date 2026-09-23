@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { P2PMessage } from '../core/network/schemas';
 import { ModuleOverlays } from './game/ModuleOverlays';
 import { DockManager } from './game/DockManager';
@@ -9,6 +9,7 @@ import { CoreSystemWindowsModule } from '../core/modules/system-windows';
 import { CoreToolbarModule } from '../core/modules/toolbar';
 import { CoreDiceModule } from '../core/modules/dice-roller';
 import { CoreChatRollModule } from '../core/modules/chat-roll';
+import { CoreActivityLogModule } from '../core/modules/activity-log';
 import { SystemFlowerModule } from '../systems/flower';
 import { coreEventBus } from '../core/services/EventBus';
 import { VTTCanvas, type TokenData } from './game/VTTCanvas';
@@ -39,6 +40,10 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [mapUrl, setMapUrl] = useState<string | null>(null);
   const [isMapLoading, setIsMapLoading] = useState(false);
+  const mapUrlRef = useRef<string | null>(null);
+
+  // Synchronise le ref avec le state
+  useEffect(() => { mapUrlRef.current = mapUrl; }, [mapUrl]);
 
   // Initialisation des modules et chargement des tokens
   useEffect(() => {
@@ -55,6 +60,10 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     if (ModManager.isItemEnabled('core-chat-roll')) {
       ModManager.registerMod(CoreChatRollModule);
     }
+    
+    // Module Journal d'Activité (Core)
+    ModManager.registerMod(CoreActivityLogModule);
+
     // Système de jeu (devrait être dynamique via la BDD plus tard, forcé pour le proto)
     ModManager.registerMod(SystemFlowerModule);
 
@@ -79,6 +88,15 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
         setTokens(loadedTokens);
         console.log('[GameBoard] Tokens chargés depuis la BD :', loadedTokens);
       }).catch(err => console.error('[GameBoard] Erreur chargement tokens:', err));
+
+      // Charger l'URL de la carte
+      invoke('get_module_data', { moduleId: 'core-gameboard' }).then((data: any) => {
+        const mapUrlEntry = data.find((d: any) => d[0] === 'mapUrl');
+        if (mapUrlEntry) {
+          setMapUrl(mapUrlEntry[1]);
+          console.log('[GameBoard] Carte chargée depuis la BD :', mapUrlEntry[1]);
+        }
+      }).catch(err => console.error('[GameBoard] Erreur chargement carte:', err));
     } else if (!isHost) {
       // Les joueurs demandent l'état initial
       console.log('[GameBoard] Envoi de REQUEST_STATE pour récupérer la carte et les tokens');
@@ -92,7 +110,13 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     const handleToolChange = (tool: 'pan' | 'select' | 'duo' | 'ruler') => setActiveTool(tool);
     const handleToggleGrid = (show: boolean) => setShowGrid(show);
     const handleToggleSnap = (snap: boolean) => setSnapToGrid(snap);
-    const handleSetMapLocal = (url: string) => setMapUrl(url);
+    const handleSetMapLocal = (url: string) => {
+      setMapUrl(url);
+      if (isHost && isTauri()) {
+        invoke('save_module_data', { moduleId: 'core-gameboard', key: 'mapUrl', data: url })
+          .catch(e => console.error('[GameBoard] Erreur sauvegarde mapUrl:', e));
+      }
+    };
     const handleToggleToken = (token: TokenData) => {
       setTokens(prev => {
         const exists = prev.find(t => t.id === token.id);
@@ -138,7 +162,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
       const { filename, blobUrl } = payload;
 
       // Si la carte qu'on attendait vient de finir de télécharger
-      if (mapUrl && mapUrl.includes(filename)) {
+      if (mapUrlRef.current && mapUrlRef.current.includes(filename)) {
         console.log(`[GameBoard] La carte ${filename} a été reçue et chargée.`);
         setMapUrl(blobUrl || `http://signet.localhost/library/${filename}`);
         setIsMapLoading(false);
@@ -165,13 +189,20 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     };
   }, [onReturn]);
 
+  const lastProcessedMsgIdx = useRef(-1);
+
   // Pont 1 : Réseau (Props) -> EventBus (Modules)
   useEffect(() => {
-    if (messages.length === 0) return;
-    const lastMsg = messages[messages.length - 1];
+    if (messages.length === 0) {
+      lastProcessedMsgIdx.current = -1;
+      return;
+    }
 
-    if (lastMsg.type === 'MOVE_TOKEN') {
-      const { tokenId, x, y } = lastMsg.payload;
+    for (let i = lastProcessedMsgIdx.current + 1; i < messages.length; i++) {
+      const msg = messages[i];
+
+      if (msg.type === 'MOVE_TOKEN') {
+        const { tokenId, x, y } = msg.payload;
       setTokens((prev) => {
         const next = prev.map(t => (t.id === tokenId ? { ...t, x, y } : t));
         if (isHost && isTauri()) {
@@ -185,8 +216,8 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
         }
         return next;
       });
-    } else if (lastMsg.type === 'TRANSFORM_TOKEN') {
-      const { tokenId, x, y, scaleX, scaleY, rotation } = lastMsg.payload;
+    } else if (msg.type === 'TRANSFORM_TOKEN') {
+      const { tokenId, x, y, scaleX, scaleY, rotation } = msg.payload;
       setTokens((prev) => {
         const next = prev.map(t => (t.id === tokenId ? { ...t, x, y, scaleX, scaleY, rotation } : t));
         if (isHost && isTauri()) {
@@ -200,8 +231,8 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
         }
         return next;
       });
-    } else if (lastMsg.type === 'SPAWN_TOKEN') {
-      const token = lastMsg.payload;
+    } else if (msg.type === 'SPAWN_TOKEN') {
+      const token = msg.payload;
       setTokens((prev) => {
         const exists = prev.find(t => t.id === token.id);
         const next = exists ? prev.map(t => (t.id === token.id ? token : t)) : [...prev, token];
@@ -223,11 +254,11 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
           setTokens(prev => prev.map(t => t.id === token.id ? { ...t, avatarUrl: FileTransferService.getFileUrl(token.avatarUrl!)! } : t));
         }
       }
-    } else if (lastMsg.type === 'REMOVE_TOKEN') {
-      const { tokenId } = lastMsg.payload;
+    } else if (msg.type === 'REMOVE_TOKEN') {
+      const { tokenId } = msg.payload;
       setTokens(prev => prev.filter(t => t.id !== tokenId));
       if (isHost && isTauri()) invoke('delete_token', { id: tokenId }).catch(e => console.error(e));
-    } else if (lastMsg.type === 'REQUEST_STATE') {
+    } else if (msg.type === 'REQUEST_STATE') {
       if (isHost) {
         console.log('[GameBoard] Hôte: Envoi du SYNC_STATE suite à REQUEST_STATE');
         sendMessage({
@@ -235,10 +266,10 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
           payload: { mapUrl, tokens }
         });
       }
-    } else if (lastMsg.type === 'SYNC_STATE') {
+    } else if (msg.type === 'SYNC_STATE') {
       if (!isHost) {
-        console.log('[GameBoard] Joueur: Réception du SYNC_STATE', lastMsg.payload);
-        const { mapUrl: syncedMapUrl, tokens: syncedTokens } = lastMsg.payload;
+        console.log('[GameBoard] Joueur: Réception du SYNC_STATE', msg.payload);
+        const { mapUrl: syncedMapUrl, tokens: syncedTokens } = msg.payload;
         setTokens(syncedTokens);
         if (syncedMapUrl) {
           // Déclencher le téléchargement si nécessaire (même logique que SET_MAP)
@@ -248,6 +279,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
             if (FileTransferService.hasFile(filename)) {
               setMapUrl(FileTransferService.getFileUrl(filename));
             } else {
+              setMapUrl(syncedMapUrl); // IMPORTANT : Fix le bug mapUrlRef
               setIsMapLoading(true);
               sendMessage({ type: 'REQUEST_FILE', payload: { hash: filename } });
             }
@@ -267,8 +299,8 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
           }
         });
       }
-    } else if (lastMsg.type === 'SET_MAP') {
-      const { url } = lastMsg.payload;
+    } else if (msg.type === 'SET_MAP') {
+      const { url } = msg.payload;
       
       const parts = url.split('/library/');
       if (parts.length > 1) {
@@ -303,16 +335,19 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
       } else {
         setMapUrl(url); // Fallback normal
       }
-    } else if (lastMsg.type === 'REQUEST_FILE') {
+    } else if (msg.type === 'REQUEST_FILE') {
       if (isHost) {
         // L'Hôte envoie le fichier demandé via le FileTransferService (binaire pur)
-        FileTransferService.sendFile(lastMsg.payload.hash, sendBinary);
+        FileTransferService.sendFile(msg.payload.hash, sendBinary);
       }
     } else {
       // Tous les autres types de messages (ex: CHAT) sont transférés aux modules
-      coreEventBus.emit('NETWORK_INCOMING', lastMsg);
+      coreEventBus.emit('NETWORK_INCOMING', msg);
     }
-  }, [messages]);
+    }
+    
+    lastProcessedMsgIdx.current = messages.length - 1;
+  }, [messages, isHost, mapUrl, tokens]);
 
   // Pont 2 : EventBus (Modules) -> Réseau (Props)
   useEffect(() => {

@@ -13,6 +13,20 @@ const ChatMessageSchema = z.object({
   }),
 });
 
+// Format utilisé par les modules (chat, flower, dice-roller, etc.)
+const ChatMessageModuleSchema = z.object({
+  type: z.literal('CHAT_MESSAGE'),
+  payload: z.object({
+    id: z.string().optional(),
+    sender: z.string().optional(),
+    author: z.string().optional(),
+    text: z.string().optional(),
+    content: z.string().optional(),
+    timestamp: z.number().optional(),
+    type: z.string().optional(),
+  }),
+});
+
 const MoveTokenSchema = z.object({
   type: z.literal('MOVE_TOKEN'),
   payload: z.object({
@@ -47,8 +61,8 @@ const RollDiceSchema = z.object({
 const SpawnTokenSchema = z.object({
   type: z.literal('SPAWN_TOKEN'),
   payload: z.object({
-    id: z.string().min(1).max(64),
-    name: z.string().min(1).max(64),
+    id: z.string().min(1).max(128),
+    name: z.string().max(128),
     x: z.number().finite(),
     y: z.number().finite(),
     color: z.string(),
@@ -57,7 +71,7 @@ const SpawnTokenSchema = z.object({
     scaleY: z.number().finite().optional(),
     rotation: z.number().finite().optional(),
     avatarUrl: z.string().optional(),
-  }),
+  }).passthrough(),
 });
 
 const RemoveTokenSchema = z.object({
@@ -92,18 +106,18 @@ const RequestStateSchema = z.object({
 const SyncStateSchema = z.object({
   type: z.literal('SYNC_STATE'),
   payload: z.object({
-    mapUrl: z.string().nullable(),
+    mapUrl: z.string().nullable().optional(),
     tokens: z.array(z.object({
-      id: z.string().min(1).max(64),
-      name: z.string().min(1).max(64),
+      id: z.string(),
+      name: z.string(),
       x: z.number().finite(),
       y: z.number().finite(),
       color: z.string(),
-      owner: z.string().optional(),
-      scaleX: z.number().finite().optional(),
-      scaleY: z.number().finite().optional(),
-      rotation: z.number().finite().optional(),
-      avatarUrl: z.string().optional(),
+      owner: z.string().nullable().optional(),
+      scaleX: z.number().finite().nullable().optional(),
+      scaleY: z.number().finite().nullable().optional(),
+      rotation: z.number().finite().nullable().optional(),
+      avatarUrl: z.string().nullable().optional(),
     })),
   }),
 });
@@ -144,6 +158,7 @@ const RequestFileSchema = z.object({
 
 export const P2PMessageSchema = z.discriminatedUnion('type', [
   ChatMessageSchema,
+  ChatMessageModuleSchema,
   MoveTokenSchema,
   TransformTokenSchema,
   SpawnTokenSchema,
@@ -177,5 +192,6 @@ export type SpawnTokenMessage = z.infer<typeof SpawnTokenSchema>;
 export type RemoveTokenMessage = z.infer<typeof RemoveTokenSchema>;
 export type SetMapMessage = z.infer<typeof SetMapSchema>;
 export type RequestFileMessage = z.infer<typeof RequestFileSchema>;
+export type ChatMessageModuleMessage = z.infer<typeof ChatMessageModuleSchema>;
 
-export { ChatMessageSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, RequestStateSchema, SyncStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema, SpawnTokenSchema, RemoveTokenSchema, SetMapSchema, RequestFileSchema };
+export { ChatMessageSchema, ChatMessageModuleSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, RequestStateSchema, SyncStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema, SpawnTokenSchema, RemoveTokenSchema, SetMapSchema, RequestFileSchema };

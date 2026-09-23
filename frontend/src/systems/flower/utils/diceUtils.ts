@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Lance des dés via le backend Rust directement, sans passer par le module Core.
@@ -13,12 +12,31 @@ export async function simulateFlowerRoll(rollArray: string[]): Promise<{ total: 
     let total = 0;
     const results: number[] = [];
 
-    // Lancer les dés via Rust
+    // Lancer les dés via Rust ou Fallback JS
     if (diceOnly.length > 0) {
-      const rustResults = await invoke<number[]>('roll_dice', { dice: diceOnly });
-      for (const r of rustResults) {
-        total += r;
-        results.push(r);
+      const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+      
+      if (isTauri) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const rustResults = await invoke<number[]>('roll_dice', { dice: diceOnly });
+        for (const r of rustResults) {
+          total += r;
+          results.push(r);
+        }
+      } else {
+        // Fallback WebRTC (JS)
+        for (const d of diceOnly) {
+          const match = d.toLowerCase().match(/^(\d*)d(\d+)/);
+          if (match) {
+            const count = parseInt(match[1]) || 1;
+            const faces = parseInt(match[2]);
+            for (let i = 0; i < count; i++) {
+              const val = Math.floor(Math.random() * faces) + 1;
+              total += val;
+              results.push(val);
+            }
+          }
+        }
       }
     }
 

@@ -56,13 +56,22 @@ export const CoreChatRollModule: SignetModule = {
             type: 'roll'
           };
 
+          // Enregistrement dans le Journal d'Activité
+          api.log({
+            type: 'dice',
+            actor: api.user.getName(), // Le joueur lui-même
+            actorId: api.user.getName(),
+            summary: `a lancé ${formula} : ${total}`,
+            details: { formula, total, results },
+            visibility: 'all'
+          });
+
           // Affichage local
           api.emit('CHAT_NEW_MESSAGE', payload);
 
           // Diffusion réseau
           api.emit('NETWORK_OUTGOING', {
-            type: 'MOD_EVENT',
-            modEventType: 'CHAT_MESSAGE',
+            type: 'CHAT_MESSAGE',
             payload: payload
           });
         }

@@ -67,6 +67,47 @@ export const SystemFlowerModule = {
       api.emit('SYSTEM_ACTION_TRIGGERED', 'flower-app');
     });
 
+    // 5. Listener réseau général (toujours actif, même sans la fenêtre ouverte)
+    api.on('NETWORK_INCOMING', async (msg: any) => {
+      if (msg.type !== 'MOD_EVENT' || msg._sourceMod !== 'system-flower') return;
+      const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+      // Répond aux demandes de personnages (même si la fenêtre n'est pas ouverte)
+      if (msg.modEventType === 'REQUEST_CHARACTERS' && isTauri) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const records: any[] = await invoke('get_characters');
+          const parsed = records.map((r: any) => {
+            try { return JSON.parse(r.data); } catch { return r; }
+          });
+          api.emit('NETWORK_OUTGOING', {
+            type: 'MOD_EVENT',
+            _sourceMod: 'system-flower',
+            modEventType: 'SYNC_CHARACTERS',
+            payload: parsed
+          });
+        } catch(err) {
+          console.error('[Flower] Erreur réponse REQUEST_CHARACTERS', err);
+        }
+      }
+
+      // Sauvegarde automatique en arrière-plan (SYNC_CHARACTER entrant)
+      if (msg.modEventType === 'SYNC_CHARACTER' && isTauri) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const char = msg.payload;
+          await invoke('save_character', {
+            id: char.id,
+            name: char.name,
+            ownerId: char.owner_id || null,
+            data: JSON.stringify(char)
+          });
+        } catch(err) {
+          console.error('[Flower] Erreur sauvegarde en arrière-plan', err);
+        }
+      }
+    });
+
     console.log(`[ModManager] ${MOD_ID} initialisé.`);
   },
 

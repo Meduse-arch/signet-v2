@@ -74,8 +74,9 @@ export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
         case 'data': {
           const result = P2PMessageSchema.safeParse(event.payload);
           if (!result.success) {
+            const payloadType = (event.payload as any)?.type ?? 'unknown';
             console.warn(
-              '[useVTTNetwork] Message P2P rejeté (validation Zod) :',
+              `[useVTTNetwork] Message P2P rejeté (type: "${payloadType}") Zod:`,
               result.error.issues,
               'Payload brut :',
               event.payload,

@@ -39,6 +39,17 @@ export function DiceWindow({ api }: DiceWindowProps) {
     // 2. Si on a un résultat, on déclenche l'animation visuelle LOCALE
     if (results && results.length > 0) {
       const total = results.reduce((a, b) => a + b, 0);
+      
+      // Enregistrement dans le journal d'activité
+      api.log({
+        type: 'dice',
+        actor: api.user.getName(),
+        actorId: api.user.getName(),
+        summary: `a lancé ${diceString} : ${total}`,
+        details: { formula: diceString, total, results },
+        visibility: 'all'
+      });
+
       api.emit('LOCAL_DICE_ROLL_ANIMATION', { total, label: `Lancé de ${diceString}` });
     }
   };

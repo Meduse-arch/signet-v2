@@ -70,6 +70,7 @@ class ModManagerService {
   private actions: Map<string, RegisteredAction> = new Map();
   private username: string = 'Anonyme';
   private isHost: boolean = false;
+  private players: string[] = [];
 
   private storeItems: StoreItem[] = [
     { id: 'system-seal', name: 'SEAL', author: 'Signet Team', description: 'Tactical modern combat', category: 'system-signet' },
@@ -109,12 +110,27 @@ class ModManagerService {
    * Définit le contexte global du VTT (comme le nom de l'utilisateur)
    */
   public setContext(username: string, isHost: boolean = false): void {
+    console.log(`[ModManager] setContext called with username: "${username}", isHost: ${isHost}`);
     this.username = username;
     this.isHost = isHost;
   }
 
   public getIsHost(): boolean {
     return this.isHost;
+  }
+
+  /**
+   * Met à jour la liste des joueurs connectés
+   */
+  public setPlayers(players: string[]): void {
+    this.players = players;
+  }
+
+  /**
+   * Récupère la liste des joueurs connectés
+   */
+  public getPlayers(): string[] {
+    return this.players;
   }
 
   /**

@@ -137,6 +137,7 @@ export default function App() {
             roomId={sessionRoomId}
             moduleId={popoutModuleId}
             signalUrl={signalUrl}
+            username={username || 'Aventurier'}
           />
         </div>
       )}

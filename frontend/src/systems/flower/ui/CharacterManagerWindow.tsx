@@ -51,24 +51,7 @@ export function CharacterManagerWindow({ api, onOpenSheet }: CharacterManagerWin
     // Écoute des messages réseau
     const handleNetwork = async (msg: any) => {
       if (msg.type === 'MOD_EVENT' && msg._sourceMod === 'system-flower') {
-        if (msg.modEventType === 'REQUEST_CHARACTERS') {
-          // L'hôte reçoit une demande, il broadcast la liste
-          if (isTauri()) {
-            console.log("[CharacterManagerWindow] Hôte: Envoi de la liste des persos (SYNC_CHARACTERS)");
-            try {
-              const records: any[] = await invoke('get_characters');
-              const parsed = records.map(r => JSON.parse(r.data));
-              api.emit('NETWORK_OUTGOING', {
-                type: 'MOD_EVENT',
-                _sourceMod: 'system-flower',
-                modEventType: 'SYNC_CHARACTERS',
-                payload: parsed
-              });
-            } catch (err) {
-              console.error("Erreur lecture DB lors de REQUEST_CHARACTERS", err);
-            }
-          }
-        } else if (msg.modEventType === 'SYNC_CHARACTERS') {
+        if (msg.modEventType === 'SYNC_CHARACTERS') {
           // Un joueur reçoit la liste complète
           if (!isTauri()) {
             console.log("[CharacterManagerWindow] Joueur: Réception de SYNC_CHARACTERS", msg.payload);

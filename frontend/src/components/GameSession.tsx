@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ModManager } from '../core/services/ModManager';
 import { useVTTNetwork } from '../core/hooks/useVTTNetwork';
 import { GameBoard } from './GameBoard';
 import { Button } from './ui/Button';
@@ -37,6 +38,11 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
   const [isRoomOpen, setIsRoomOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(isHost); // Par défaut, l'hôte se met en ligne
 
+  // Synchronisation des joueurs avec le ModManager
+  useEffect(() => {
+    ModManager.setContext(username, isHost);
+    ModManager.setPlayers(players);
+  }, [players, username, isHost]);
 
   // Ouvre la base de données SQLite correspondante dans Tauri
   useEffect(() => {

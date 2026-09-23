@@ -7,6 +7,7 @@ import { simulateFlowerRoll } from '../utils/diceUtils';
 import { useRef } from 'react';
 import { Button } from '../../../components/ui/Button';
 import { invoke } from '@tauri-apps/api/core';
+import { ModManager } from '../../../core/services/ModManager';
 
 // Détection de l'Hôte (Tauri)
 const isTauri = () => '__TAURI_INTERNALS__' in window;
@@ -31,6 +32,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
   const [inventoryFilter, setInventoryFilter] = useState<'all' | 'equipped' | 'unequipped'>('all');
   const [knownPlayers, setKnownPlayers] = useState<string[]>([]);
   const [knownCustomStats, setKnownCustomStats] = useState<string[]>([]);
+  const [isHost, setIsHost] = useState(false);
   
   // Modal Compendium
   const [compendiumModalOpen, setCompendiumModalOpen] = useState(false);
@@ -63,6 +65,16 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
   };
 
   const handleToggleEquip = (item: any) => {
+    // --- ACTIVITY LOG ---
+    api.log({
+      type: 'item',
+      actor: character.name,
+      actorId: character.id,
+      accountName: character.owner_id || api.user.getName(),
+      summary: `a ${item.isEquipped ? 'déséquipé' : 'équipé'} ${item.name}`,
+      visibility: 'all'
+    });
+
     if (!item.isEquipped) {
       // Action: EQUIP
       if (item.quantity > 1) {
@@ -153,9 +165,12 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
 
   // Chargement initial du personnage et des joueurs
   useEffect(() => {
+    setIsHost(ModManager.getIsHost());
+
     if (isTauri()) {
       invoke('get_players').then((players: any) => {
-        setKnownPlayers(players.map((p: any) => p.username));
+        // Le backend renvoie directement un tableau de strings (Vec<String>)
+        setKnownPlayers(players as string[]);
       }).catch(e => console.error("Erreur get_players", e));
 
       // Extraire toutes les statistiques personnalisées existantes
@@ -288,7 +303,6 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
   };
 
   const rollStat = async (statKey: string, activeSkillIdToInclude?: string) => {
-    if (!isTauri()) return;
     
     const stat = character.stats[statKey];
     if (!stat) return;
@@ -347,9 +361,23 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
 
     // Animation + Chat
     api.emit('NETWORK_OUTGOING', {
-      type: 'FLOWER_ROLL_ANIMATION',
+      type: 'MOD_EVENT',
+      _sourceMod: 'system-flower',
+      modEventType: 'FLOWER_ROLL_ANIMATION',
       payload: { total, label: stat.name }
     });
+    
+    // --- ACTIVITY LOG ---
+    api.log({
+      type: 'dice',
+      actor: character.name,
+      actorId: character.id,
+      accountName: character.owner_id || api.user.getName(),
+      summary: `a lancé ${stat.name} (${fullFormula}) → ${total}`,
+      details: { formula: fullFormula, result: total, stat: stat.name },
+      visibility: 'all'
+    });
+
     api.emit('NETWORK_OUTGOING', {
       type: 'CHAT_MESSAGE',
       payload: {
@@ -402,8 +430,9 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
         flowers.push(
           <button 
             key={i} 
+            disabled={!isHost}
             onClick={() => handleStatChange(statKey, i)}
-            className={`transition-all hover:scale-125 focus:outline-none ${i <= value ? 'text-pink-400 drop-shadow-[0_0_5px_rgba(244,114,182,0.8)]' : 'text-zinc-600'}`}
+            className={`transition-all focus:outline-none ${!isHost ? 'cursor-default' : 'hover:scale-125'} ${i <= value ? 'text-pink-400 drop-shadow-[0_0_5px_rgba(244,114,182,0.8)]' : 'text-zinc-600'}`}
           >
             <Flower2 className="w-5 h-5" />
           </button>
@@ -416,7 +445,8 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
       <div className="flex items-center gap-2">
         <button 
           onClick={() => handleStatChange(statKey, Math.max(0, value - 1))}
-          className="w-6 h-6 flex items-center justify-center bg-black/40 text-zinc-400 rounded hover:text-rose-400 hover:bg-rose-950/30 transition-colors border border-white/5 shrink-0"
+          disabled={!isHost}
+          className={`w-6 h-6 flex items-center justify-center bg-black/40 rounded transition-colors border border-white/5 shrink-0 ${!isHost ? 'text-zinc-700 opacity-30 cursor-not-allowed' : 'text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30'}`}
         >
           <Minus className="w-3 h-3" />
         </button>
@@ -425,7 +455,8 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
 
         <button 
           onClick={() => handleStatChange(statKey, value + 1)}
-          className="w-6 h-6 flex items-center justify-center bg-black/40 text-zinc-400 rounded hover:text-pink-400 hover:bg-pink-950/30 transition-colors border border-white/5 shrink-0"
+          disabled={!isHost}
+          className={`w-6 h-6 flex items-center justify-center bg-black/40 rounded transition-colors border border-white/5 shrink-0 ${!isHost ? 'text-zinc-700 opacity-30 cursor-not-allowed' : 'text-zinc-400 hover:text-pink-400 hover:bg-pink-950/30'}`}
         >
           <Plus className="w-3 h-3" />
         </button>
@@ -441,6 +472,16 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
       skill.isActive = !skill.isActive;
       setCharacter(updated);
       saveCharacter(updated);
+      
+      // --- ACTIVITY LOG ---
+      api.log({
+        type: 'skill',
+        actor: character.name,
+        actorId: character.id,
+        accountName: character.owner_id || api.user.getName(),
+        summary: `a ${skill.isActive ? 'activé' : 'désactivé'} ${skill.name}`,
+        visibility: 'all'
+      });
     }
   };
 
@@ -486,7 +527,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
 
     return (
       <div className="flex items-center gap-1">
-        {isTauri() && (
+        {isTauri() && isHost && (
           <button 
             onClick={() => setLevel(level - 1)}
             className="w-5 h-5 flex items-center justify-center bg-black/40 text-zinc-500 rounded hover:text-fuchsia-400 hover:bg-fuchsia-950/30 transition-colors border border-white/5"
@@ -500,15 +541,15 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
             <button
               key={s}
               onClick={() => setLevel(s)}
-              disabled={!isTauri()}
-              className={`transition-colors ${s <= level ? 'text-fuchsia-400 drop-shadow-[0_0_5px_rgba(232,121,249,0.8)]' : 'text-zinc-700 hover:text-zinc-500'}`}
-              title={isTauri() ? "Changer le niveau (Maîtrise)" : "Niveau de maîtrise"}
+              disabled={!isHost}
+              className={`transition-colors ${s <= level ? 'text-fuchsia-400 drop-shadow-[0_0_5px_rgba(232,121,249,0.8)]' : 'text-zinc-700 hover:text-zinc-500'} ${!isHost ? 'cursor-default' : ''}`}
+              title={isTauri() && isHost ? "Changer le niveau (Maîtrise)" : "Niveau de maîtrise"}
             >
               <Flower2 className={`w-4 h-4 ${s <= level ? 'fill-current' : ''}`} />
             </button>
           ))}
         </div>
-        {isTauri() && (
+        {isTauri() && isHost && (
           <button 
             onClick={() => setLevel(level + 1)}
             className="w-5 h-5 flex items-center justify-center bg-black/40 text-zinc-500 rounded hover:text-fuchsia-400 hover:bg-fuchsia-950/30 transition-colors border border-white/5"
@@ -568,7 +609,9 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
       const { total: rollTotal } = await simulateFlowerRoll(rollArray);
       healAmount += rollTotal;
       api.emit('NETWORK_OUTGOING', {
-        type: 'FLOWER_ROLL_ANIMATION',
+        type: 'MOD_EVENT',
+        _sourceMod: 'system-flower',
+        modEventType: 'FLOWER_ROLL_ANIMATION',
         payload: { total: healAmount, label: item.name }
       });
     }
@@ -586,6 +629,16 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
         next.hpCurrent += healAmount;
         consumeText = healAmount > 0 ? `récupère ${healAmount} PV` : `perd ${Math.abs(healAmount)} PV`;
       }
+      
+      // --- ACTIVITY LOG ---
+      api.log({
+        type: 'item',
+        actor: next.name,
+        actorId: next.id,
+        accountName: character.owner_id || api.user.getName(),
+        summary: `a consommé ${item.name}${consumeText ? ` (${consumeText})` : ''}`,
+        visibility: 'all'
+      });
 
       api.emit('NETWORK_OUTGOING', {
         type: 'CHAT_MESSAGE',
@@ -656,7 +709,9 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
       const { total: rollTotal } = await simulateFlowerRoll(rollArray);
       healAmount += rollTotal;
       api.emit('NETWORK_OUTGOING', {
-        type: 'FLOWER_ROLL_ANIMATION',
+        type: 'MOD_EVENT',
+        _sourceMod: 'system-flower',
+        modEventType: 'FLOWER_ROLL_ANIMATION',
         payload: { total: healAmount, label: skill.name }
       });
     }
@@ -667,6 +722,16 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
         next.hpCurrent += healAmount;
         castText = healAmount > 0 ? `récupère ${healAmount} PV` : `perd ${Math.abs(healAmount)} PV`;
         
+        // --- ACTIVITY LOG ---
+        api.log({
+          type: 'skill',
+          actor: next.name,
+          actorId: next.id,
+          accountName: character.owner_id || api.user.getName(),
+          summary: `a utilisé ${skill.name}${castText ? ` (${castText})` : ''}`,
+          visibility: 'all'
+        });
+
         api.emit('NETWORK_OUTGOING', {
           type: 'CHAT_MESSAGE',
           payload: {
@@ -680,6 +745,16 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
         return next;
       });
     } else if (statsToRoll.size === 0) {
+      // --- ACTIVITY LOG ---
+      api.log({
+        type: 'skill',
+        actor: character.name,
+        actorId: character.id,
+        accountName: character.owner_id || api.user.getName(),
+        summary: `a utilisé ${skill.name}`,
+        visibility: 'all'
+      });
+
       // If there was no stat roll and no healing, just emit a generic cast message
       api.emit('NETWORK_OUTGOING', {
         type: 'CHAT_MESSAGE',
@@ -770,32 +845,35 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
       </div>
 
       {/* Assignation */}
-      {isTauri() && (
-        <div className="flex items-center gap-2 bg-black/30 p-2 rounded border border-white/5">
-          <span className="text-xs text-zinc-500 uppercase font-bold">Assigné à :</span>
-          <input 
-            type="text" 
-            list="players-list"
-            value={character.owner_id === null ? '' : (character.owner_id || '')} 
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val.trim() === '') {
-                updateCharacter(prev => ({ ...prev, owner_id: null }));
-              } else {
-                updateCharacter(prev => ({ ...prev, owner_id: val }));
-              }
-            }}
-            className="bg-transparent text-sm text-slate-300 focus:outline-none border-b border-transparent focus:border-rose-500 flex-1"
-            placeholder="Joueur (Laisser vide si PNJ)"
-          />
-          <datalist id="players-list">
-            <option value="" label="-- PNJ (Aucun Joueur) --" />
-            {knownPlayers.map((p, i) => (
-              <option key={`${p}-${i}`} value={p} />
-            ))}
-          </datalist>
-        </div>
-      )}
+      {isTauri() && (() => {
+        // Fusionne les joueurs de la BDD avec les joueurs actuellement connectés en direct
+        const connectedPlayers = ModManager.getPlayers();
+        const allAvailablePlayers = Array.from(new Set([...knownPlayers, ...connectedPlayers]));
+
+        return (
+          <div className="flex items-center gap-2 bg-black/30 p-2 rounded border border-white/5">
+            <span className="text-xs text-zinc-500 uppercase font-bold">Assigné à :</span>
+            <select 
+              value={character.owner_id === null ? '' : (character.owner_id || '')} 
+              disabled={!isHost}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val.trim() === '') {
+                  updateCharacter(prev => ({ ...prev, owner_id: null }));
+                } else {
+                  updateCharacter(prev => ({ ...prev, owner_id: val }));
+                }
+              }}
+              className={`bg-transparent text-sm text-slate-300 focus:outline-none border-b border-transparent focus:border-rose-500 flex-1 py-1 ${!isHost ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <option value="" className="bg-slate-900">-- PNJ (Aucun Joueur) --</option>
+              {allAvailablePlayers.map((p, i) => (
+                <option key={`${p}-${i}`} value={p} className="bg-slate-900">{p}</option>
+              ))}
+            </select>
+          </div>
+        );
+      })()}
 
       {/* Points de Vie */}
       <div className="bg-rose-950/30 border border-rose-500/20 rounded-lg p-4 flex flex-col items-center gap-2">
@@ -805,7 +883,8 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
         <div className="flex items-center gap-3">
           <button 
             onClick={() => updateCharacter(prev => ({ ...prev, hpCurrent: Math.max(0, prev.hpCurrent - 1) }))}
-            className="w-8 h-8 flex items-center justify-center bg-rose-900/40 text-rose-300 rounded hover:bg-rose-700/50 hover:text-white transition-colors border border-rose-500/30"
+            disabled={!isHost}
+            className={`w-8 h-8 flex items-center justify-center bg-rose-900/40 rounded transition-colors border border-rose-500/30 ${!isHost ? 'text-rose-900 opacity-50 cursor-not-allowed' : 'text-rose-300 hover:bg-rose-700/50 hover:text-white'}`}
           >
             <Minus className="w-4 h-4" />
           </button>
@@ -814,15 +893,17 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
             <input 
               type="number" 
               value={character.hpCurrent} 
+              disabled={!isHost}
               onChange={(e) => updateCharacter(prev => ({ ...prev, hpCurrent: Math.min(maxHp, Math.max(0, parseInt(e.target.value) || 0)) }))}
-              className="bg-black/50 border border-rose-500/30 rounded px-2 py-1 text-2xl font-black text-rose-300 w-16 text-center focus:outline-none focus:border-rose-400"
+              className={`bg-black/50 border border-rose-500/30 rounded px-2 py-1 text-2xl font-black text-rose-300 w-16 text-center focus:outline-none focus:border-rose-400 ${!isHost ? 'opacity-70 cursor-not-allowed' : ''}`}
             />
             <span className="text-rose-500 font-bold mb-2">/ {maxHp}</span>
           </div>
 
           <button 
             onClick={() => updateCharacter(prev => ({ ...prev, hpCurrent: Math.min(maxHp, prev.hpCurrent + 1) }))}
-            className="w-8 h-8 flex items-center justify-center bg-rose-900/40 text-rose-300 rounded hover:bg-rose-700/50 hover:text-white transition-colors border border-rose-500/30"
+            disabled={!isHost}
+            className={`w-8 h-8 flex items-center justify-center bg-rose-900/40 rounded transition-colors border border-rose-500/30 ${!isHost ? 'text-rose-900 opacity-50 cursor-not-allowed' : 'text-rose-300 hover:bg-rose-700/50 hover:text-white'}`}
           >
             <Plus className="w-4 h-4" />
           </button>

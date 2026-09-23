@@ -10,9 +10,10 @@ interface PopoutSessionProps {
   roomId: string;
   moduleId: string;
   signalUrl: string;
+  username: string;
 }
 
-export function PopoutSession({ roomId, moduleId, signalUrl }: PopoutSessionProps) {
+export function PopoutSession({ roomId, moduleId, signalUrl, username }: PopoutSessionProps) {
   const {
     connectionState,
     messages,
@@ -35,7 +36,7 @@ export function PopoutSession({ roomId, moduleId, signalUrl }: PopoutSessionProp
 
   useEffect(() => {
     // Initialiser les modules pour que la fenêtre puisse être récupérée
-    ModManager.setContext('Popout');
+    ModManager.setContext(username, false);
     if (ModManager.isItemEnabled('mod-chat')) {
       ModManager.registerMod(CoreChatModule);
     }

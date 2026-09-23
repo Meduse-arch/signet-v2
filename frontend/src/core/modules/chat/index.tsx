@@ -47,17 +47,19 @@ export const CoreChatModule: SignetModule = {
 
       // On demande au système d'envoyer le message aux autres joueurs via WebRTC/LAN
       api.emit('NETWORK_OUTGOING', {
-        type: 'MOD_EVENT',
-        modEventType: 'CHAT_MESSAGE',
+        type: 'CHAT_MESSAGE',
         payload: payload
       });
     });
 
     // 3. On écoute le réseau (quand le GameBoard reçoit un paquet d'un autre joueur)
     api.on('NETWORK_INCOMING', (networkData: any) => {
-      // On vérifie que c'est un MOD_EVENT et qu'il concerne le chat
+      // Format 1 : MOD_EVENT enveloppé
       if (networkData.type === 'MOD_EVENT' && networkData.modEventType === 'CHAT_MESSAGE') {
-        // Un autre joueur a parlé, on l'affiche dans notre ChatUI
+        api.emit('CHAT_NEW_MESSAGE', networkData.payload);
+      }
+      // Format 2 : CHAT_MESSAGE direct (envoyé par la fiche de perso, etc.)
+      else if (networkData.type === 'CHAT_MESSAGE' && networkData.payload) {
         api.emit('CHAT_NEW_MESSAGE', networkData.payload);
       }
     });
