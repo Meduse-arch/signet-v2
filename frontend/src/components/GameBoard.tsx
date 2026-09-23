@@ -313,6 +313,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
               setMapUrl(url);
             } else {
               console.log(`[GameBoard] Carte non trouvée localement. Demande de ${filename}...`);
+              setMapUrl(url); // IMPORTANT: Fix bug mapUrlRef
               setIsMapLoading(true);
               sendMessage({ type: 'REQUEST_FILE', payload: { hash: filename } });
             }
@@ -328,6 +329,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
             setMapUrl(FileTransferService.getFileUrl(filename));
           } else {
             console.log(`[GameBoard] Carte non trouvée en mémoire. Demande de ${filename}...`);
+            setMapUrl(url); // IMPORTANT: Fix bug mapUrlRef
             setIsMapLoading(true);
             sendMessage({ type: 'REQUEST_FILE', payload: { hash: filename } });
           }

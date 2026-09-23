@@ -9,6 +9,9 @@ interface MapAsset {
   hash?: string;
 }
 
+const isTauri = () => '__TAURI_INTERNALS__' in window;
+
+
 export function ToolbarUI() {
   const [activeTab, setActiveTab] = useState<'tools' | 'maps'>('tools');
   const [activeTool, setActiveTool] = useState<'pan' | 'select' | 'duo' | 'ruler'>('pan');
@@ -39,6 +42,39 @@ export function ToolbarUI() {
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // Chargement des cartes sauvegardées pour le MJ
+  useEffect(() => {
+    if (isHost && isTauri()) {
+      import('@tauri-apps/api/core').then(({ invoke }) => {
+        invoke('get_module_data', { moduleId: 'core-toolbar' })
+          .then((data: any) => {
+            const mapsEntry = data.find((d: any) => d[0] === 'maps');
+            if (mapsEntry) {
+              try {
+                setMaps(JSON.parse(mapsEntry[1]));
+              } catch (e) {
+                console.error('[ToolbarUI] Erreur parse maps:', e);
+              }
+            }
+          })
+          .catch(err => console.error('[ToolbarUI] Erreur chargement maps:', err));
+      });
+    }
+  }, [isHost]);
+
+  // Sauvegarde des cartes quand la liste change
+  useEffect(() => {
+    if (isHost && isTauri() && maps.length > 0) {
+      import('@tauri-apps/api/core').then(({ invoke }) => {
+        invoke('save_module_data', { 
+          moduleId: 'core-toolbar', 
+          key: 'maps', 
+          data: JSON.stringify(maps) 
+        }).catch(err => console.error('[ToolbarUI] Erreur sauvegarde maps:', err));
+      });
+    }
+  }, [maps, isHost]);
 
   const handleToolChange = (tool: 'pan' | 'select' | 'duo' | 'ruler') => {
     setActiveTool(tool);
