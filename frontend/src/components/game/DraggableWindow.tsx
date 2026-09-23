@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, GripHorizontal, ArrowRightToLine, ArrowLeftToLine, ChevronRight, ChevronLeft, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
+import { X, GripHorizontal, ArrowRightToLine, ArrowLeftToLine, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
 import { coreEventBus } from '../../core/services/EventBus';
 import { PopoutButton } from './PopoutButton';
 import type { WindowPosition } from '../../core/services/ModManager';
@@ -283,9 +283,10 @@ export function DraggableWindow({
       left: pos.x,
       top: pos.y,
       width: transparent ? 'auto' : size.w,
-      height: transparent ? 'auto' : size.h,
+      // Quand replié : hauteur auto (barre de titre seule)
+      height: isCollapsed ? 'auto' : (transparent ? 'auto' : size.h),
       maxWidth: 'calc(100vw - 1rem)',
-      maxHeight: 'calc(100vh - 2rem)',
+      maxHeight: isCollapsed ? 'none' : 'calc(100vh - 2rem)',
       transition: (isDragging || isResizing) ? 'none' : 'all 0.3s ease-out'
     };
   } else if (dockState === 'right') {
@@ -351,7 +352,8 @@ export function DraggableWindow({
         )}
 
         {/* Header Drag Area */}
-        {!hideHeader && !isCollapsed && (
+        {/* Header : toujours visible si flottant replié, pour permettre le dé-repliement */}
+        {!hideHeader && (!isCollapsed || dockState === 'floating') && (
           <div 
             className={`pointer-events-auto bg-white/5 border-b border-white/10 p-3 flex justify-between items-center shrink-0 ${dockState === 'fullscreen' ? '' : 'cursor-grab active:cursor-grabbing'}`}
             onPointerDown={dockState === 'fullscreen' ? undefined : handlePointerDown}
@@ -396,6 +398,20 @@ export function DraggableWindow({
                 onPopout={() => handleClose()} 
               />
 
+              {/* Bouton Collapse (replier/déplier) — masqué en fullscreen */}
+              {dockState !== 'fullscreen' && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}
+                  className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                  title={isCollapsed ? 'Déplier la fenêtre' : 'Replier la fenêtre'}
+                >
+                  {isCollapsed
+                    ? <ChevronDown className="w-4 h-4 pointer-events-none" />
+                    : <ChevronUp className="w-4 h-4 pointer-events-none" />
+                  }
+                </button>
+              )}
+
               <button 
                 onClick={(e) => { e.stopPropagation(); handleClose(); }} 
                 className="text-white/30 hover:text-rose-400 transition-colors p-1 no-drag cursor-pointer relative z-[100]"
@@ -407,7 +423,8 @@ export function DraggableWindow({
         )}
         
         {/* Transparent or Slim Drag Grip (Visible when header is hidden or collapsed) */}
-        {(hideHeader || isCollapsed) && dockState !== 'fullscreen' && (
+        {/* Grip slim : visible si header caché ou si docké+replié (pas si flottant+replié, le header reste affiché) */}
+        {(hideHeader || (isCollapsed && dockState !== 'floating')) && dockState !== 'fullscreen' && (
           <div 
             className="w-full flex justify-center p-2 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity pointer-events-auto shrink-0"
             onPointerDown={handlePointerDown}
@@ -416,13 +433,15 @@ export function DraggableWindow({
           </div>
         )}
         
-        {/* Content Area */}
-        <div className={`flex-1 overflow-y-auto custom-scrollbar pointer-events-auto relative ${transparent ? '' : 'bg-[#050508]/50'}`}>
-          {children}
-        </div>
+        {/* Content Area : masqué si fenêtre flottante repliée */}
+        {!(isCollapsed && dockState === 'floating') && (
+          <div className={`flex-1 overflow-y-auto custom-scrollbar pointer-events-auto relative ${transparent ? '' : 'bg-[#050508]/50'}`}>
+            {children}
+          </div>
+        )}
 
         {/* Handle de redimensionnement */}
-        {dockState === 'floating' && !transparent && (
+        {dockState === 'floating' && !transparent && !isCollapsed && (
           <div 
             className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1 z-50 text-white/20 hover:text-white/50 pointer-events-auto"
             onPointerDown={handleResizeDown}

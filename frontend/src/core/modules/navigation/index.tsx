@@ -51,9 +51,30 @@ function NavigationWrapper() {
     };
   }, []);
 
+  const CATEGORY_LIMIT = 4;
+
   const togglePin = (actionId: string) => {
+    const action = actions.find(a => a.actionId === actionId);
+    if (!action) return;
+
+    const isSystem = action.modId.startsWith('system-');
+    const isAlreadyPinned = pinnedIds.includes(actionId);
+
+    // Si on veut épingler (pas désépingler), vérifier la limite par catégorie
+    if (!isAlreadyPinned) {
+      // Partir de `actions` (registre réel) pour éviter les IDs périmés en localStorage
+      const currentCategoryPinnedCount = actions.filter(a =>
+        a.modId.startsWith('system-') === isSystem && pinnedIds.includes(a.actionId)
+      ).length;
+
+      if (currentCategoryPinnedCount >= CATEGORY_LIMIT) {
+        // Catégorie pleine — on n'épingle pas, MenuOverlay gère l'affichage
+        return;
+      }
+    }
+
     setPinnedIds(prev => {
-      const next = prev.includes(actionId) 
+      const next = prev.includes(actionId)
         ? prev.filter(id => id !== actionId)
         : [...prev, actionId];
       localStorage.setItem('signet_pinned_actions', JSON.stringify(next));
@@ -65,7 +86,10 @@ function NavigationWrapper() {
     coreEventBus.emit('SYSTEM_RETURN_TO_HUB');
   };
 
-  const pinnedActions = actions.filter(a => pinnedIds.includes(a.actionId));
+  // Respecte l'ordre d'épinglage (ordre de pinnedIds, pas l'ordre d'enregistrement des mods)
+  const pinnedActions = pinnedIds
+    .map(id => actions.find(a => a.actionId === id))
+    .filter(Boolean) as RegisteredAction[];
 
   return (
     <>

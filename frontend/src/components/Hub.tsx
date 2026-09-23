@@ -224,7 +224,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value)}
                   placeholder="CODE (EX: A4B9F2)"
-                  className="w-full sm:w-56 bg-black/40 backdrop-blur-md border border-white/20 rounded-sm px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
+                  className="w-full sm:w-56 flex-1 sm:flex-none bg-black/40 backdrop-blur-md border border-white/20 rounded-sm px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
                 />
                 <Button
                   type="submit"

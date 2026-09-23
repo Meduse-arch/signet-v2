@@ -15,6 +15,15 @@ interface MenuOverlayProps {
 
 export function MenuOverlay({ isOpen, onClose, onReturnToHub, actions, pinnedIds, activeIds, onTogglePin }: MenuOverlayProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const CATEGORY_LIMIT = 4;
+
+  // Partir de `actions` (registre réel) pour éviter de compter des IDs périmés en localStorage
+  const systemPinnedCount = actions.filter(a =>
+    a.modId.startsWith('system-') && pinnedIds.includes(a.actionId)
+  ).length;
+  const classicPinnedCount = actions.filter(a =>
+    !a.modId.startsWith('system-') && pinnedIds.includes(a.actionId)
+  ).length;
 
   if (!isOpen) return null;
 
@@ -38,19 +47,28 @@ export function MenuOverlay({ isOpen, onClose, onReturnToHub, actions, pinnedIds
         {actionList.map((action) => {
           const isPinned = pinnedIds.includes(action.actionId);
           const isActive = activeIds.includes(action.actionId);
+          const isSystem = action.modId.startsWith('system-');
+          const categoryCount = isSystem ? systemPinnedCount : classicPinnedCount;
+          const isCategoryFull = !isPinned && categoryCount >= CATEGORY_LIMIT;
           
           return (
             <div key={action.actionId} className="relative group">
               <button 
-                onClick={() => onTogglePin(action.actionId)}
+                onClick={() => !isCategoryFull && onTogglePin(action.actionId)}
+                disabled={isCategoryFull}
                 className={`absolute -top-3 -right-3 p-2 rounded-full z-10 transition-all duration-300 shadow-lg ${
-                  isPinned 
-                    ? 'bg-rose-500 text-white opacity-100 scale-100' 
-                    : 'bg-zinc-800 text-zinc-400 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 hover:bg-zinc-700 hover:text-white'
+                  isCategoryFull
+                    ? 'bg-zinc-800/50 text-zinc-600 opacity-50 scale-90 cursor-not-allowed'
+                    : isPinned 
+                      ? 'bg-rose-500 text-white opacity-100 scale-100' 
+                      : 'bg-zinc-800 text-zinc-400 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 hover:bg-zinc-700 hover:text-white'
                 }`}
-                title={isPinned ? "Désépingler de la barre des tâches" : "Épingler à la barre des tâches"}
+                title={isCategoryFull 
+                  ? `Limite atteinte (max ${CATEGORY_LIMIT} par catégorie)` 
+                  : isPinned ? 'Désépingler de la barre' : 'Épingler à la barre'
+                }
               >
-                {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                {isCategoryFull ? <span className="text-xs font-bold">✕</span> : isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
               </button>
 
               <button 
