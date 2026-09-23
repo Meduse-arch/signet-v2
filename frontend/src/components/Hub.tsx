@@ -139,6 +139,31 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
     const inputCode = roomCode.trim().toUpperCase();
     if (inputCode) {
       const finalCode = inputCode.startsWith('SIGNET-') ? inputCode : `SIGNET-${inputCode}`;
+      
+      // Enregistrer dans le carrousel (liste des campagnes)
+      const existingIndex = campaigns.findIndex(c => c.id === finalCode);
+      let updatedCampaigns;
+      
+      if (existingIndex === -1) {
+        const newCampaign = {
+          id: finalCode,
+          name: `Session ${finalCode}`, // Nom par défaut
+          date: "À l'instant",
+          hue: `${Math.floor(Math.random() * 360)}deg`,
+          isHost: false
+        };
+        updatedCampaigns = [newCampaign, ...campaigns];
+      } else {
+        // Remonter la campagne en haut et mettre à jour la date
+        updatedCampaigns = [...campaigns];
+        const camp = updatedCampaigns.splice(existingIndex, 1)[0];
+        camp.date = "À l'instant";
+        updatedCampaigns.unshift(camp);
+      }
+
+      setCampaigns(updatedCampaigns);
+      saveCampaignsNow(updatedCampaigns);
+
       onJoinGame(finalCode, false);
     }
   };
