@@ -68,8 +68,25 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     ModManager.registerMod(SystemFlowerModule);
 
     if (isHost && isTauri()) {
-      // Le MJ charge les tokens depuis la base de données
-      invoke('get_tokens').then((dbTokens: any) => {
+      // Charger l'URL de la carte
+      invoke('get_module_data', { moduleId: 'core-gameboard' }).then((data: any) => {
+        const mapUrlEntry = data.find((d: any) => d[0] === 'mapUrl');
+        if (mapUrlEntry) {
+          setMapUrl(mapUrlEntry[1]);
+          console.log('[GameBoard] Carte chargée depuis la BD :', mapUrlEntry[1]);
+        }
+      }).catch(err => console.error('[GameBoard] Erreur chargement carte:', err));
+    } else if (!isHost) {
+      // Les joueurs demandent l'état initial
+      console.log('[GameBoard] Envoi de REQUEST_STATE pour récupérer la carte et les tokens');
+      sendMessage({ type: 'REQUEST_STATE', payload: { mapUrl: mapUrl || undefined, requester: username } });
+    }
+  }, [username, isHost, sendMessage, mapUrl]);
+
+  // Quand le MJ change de carte locale, il charge les tokens de cette carte depuis la base
+  useEffect(() => {
+    if (isHost && isTauri() && mapUrl) {
+      invoke('get_tokens', { mapId: mapUrl }).then((dbTokens: any) => {
         const loadedTokens: TokenData[] = dbTokens.map((t: any) => {
           const data = JSON.parse(t.data);
           return {
@@ -86,23 +103,10 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
           };
         });
         setTokens(loadedTokens);
-        console.log('[GameBoard] Tokens chargés depuis la BD :', loadedTokens);
-      }).catch(err => console.error('[GameBoard] Erreur chargement tokens:', err));
-
-      // Charger l'URL de la carte
-      invoke('get_module_data', { moduleId: 'core-gameboard' }).then((data: any) => {
-        const mapUrlEntry = data.find((d: any) => d[0] === 'mapUrl');
-        if (mapUrlEntry) {
-          setMapUrl(mapUrlEntry[1]);
-          console.log('[GameBoard] Carte chargée depuis la BD :', mapUrlEntry[1]);
-        }
-      }).catch(err => console.error('[GameBoard] Erreur chargement carte:', err));
-    } else if (!isHost) {
-      // Les joueurs demandent l'état initial
-      console.log('[GameBoard] Envoi de REQUEST_STATE pour récupérer la carte et les tokens');
-      sendMessage({ type: 'REQUEST_STATE', payload: {} });
+        console.log(`[GameBoard] Tokens chargés pour la carte ${mapUrl} :`, loadedTokens);
+      }).catch(err => console.error('[GameBoard] Erreur chargement tokens de la carte:', err));
     }
-  }, [username, isHost, sendMessage]);
+  }, [mapUrl, isHost]);
 
   // Écoute des événements système globaux
   useEffect(() => {
@@ -131,6 +135,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
           if (isHost && isTauri()) {
             invoke('save_token', {
               id: token.id,
+              mapId: mapUrlRef.current || 'default',
               x: token.x,
               y: token.y,
               scaleX: token.scaleX || 1,
@@ -209,7 +214,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
           const t = next.find(t => t.id === tokenId);
           if (t) {
             invoke('save_token', {
-              id: t.id, x: t.x, y: t.y, scaleX: t.scaleX || 1, scaleY: t.scaleY || 1, rotation: t.rotation || 0,
+              id: t.id, mapId: mapUrlRef.current || 'default', x: t.x, y: t.y, scaleX: t.scaleX || 1, scaleY: t.scaleY || 1, rotation: t.rotation || 0,
               data: JSON.stringify({ name: t.name, color: t.color, owner: t.owner, avatarUrl: t.avatarUrl })
             }).catch(e => console.error(e));
           }
@@ -224,7 +229,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
           const t = next.find(t => t.id === tokenId);
           if (t) {
             invoke('save_token', {
-              id: t.id, x: t.x, y: t.y, scaleX: t.scaleX || 1, scaleY: t.scaleY || 1, rotation: t.rotation || 0,
+              id: t.id, mapId: mapUrlRef.current || 'default', x: t.x, y: t.y, scaleX: t.scaleX || 1, scaleY: t.scaleY || 1, rotation: t.rotation || 0,
               data: JSON.stringify({ name: t.name, color: t.color, owner: t.owner, avatarUrl: t.avatarUrl })
             }).catch(e => console.error(e));
           }
@@ -238,7 +243,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
         const next = exists ? prev.map(t => (t.id === token.id ? token : t)) : [...prev, token];
         if (isHost && isTauri()) {
           invoke('save_token', {
-            id: token.id, x: token.x, y: token.y, scaleX: token.scaleX || 1, scaleY: token.scaleY || 1, rotation: token.rotation || 0,
+            id: token.id, mapId: mapUrlRef.current || 'default', x: token.x, y: token.y, scaleX: token.scaleX || 1, scaleY: token.scaleY || 1, rotation: token.rotation || 0,
             data: JSON.stringify({ name: token.name, color: token.color, owner: token.owner, avatarUrl: token.avatarUrl })
           }).catch(e => console.error(e));
         }
@@ -260,14 +265,39 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
       if (isHost && isTauri()) invoke('delete_token', { id: tokenId }).catch(e => console.error(e));
     } else if (msg.type === 'REQUEST_STATE') {
       if (isHost) {
-        console.log('[GameBoard] Hôte: Envoi du SYNC_STATE suite à REQUEST_STATE');
-        sendMessage({
-          type: 'SYNC_STATE',
-          payload: { mapUrl, tokens }
-        });
+        console.log('[GameBoard] Hôte: Réception de REQUEST_STATE', msg.payload);
+        const { mapUrl: requestedMapUrl, requester } = msg.payload;
+        
+        if (requestedMapUrl && requestedMapUrl !== mapUrl) {
+          // Le joueur demande l'état d'une carte différente de celle actuellement affichée par le MJ
+          if (isTauri()) {
+            invoke('get_tokens', { mapId: requestedMapUrl }).then((dbTokens: any) => {
+              const loadedTokens: TokenData[] = dbTokens.map((t: any) => {
+                const data = JSON.parse(t.data);
+                return {
+                  id: t.id, x: t.x, y: t.y, scaleX: t.scale_x, scaleY: t.scale_y, rotation: t.rotation,
+                  name: data.name, color: data.color, owner: data.owner, avatarUrl: data.avatarUrl,
+                };
+              });
+              sendMessage({
+                type: 'SYNC_STATE',
+                payload: { mapUrl: requestedMapUrl, tokens: loadedTokens, targetUsername: requester }
+              });
+            }).catch(e => console.error(e));
+          }
+        } else {
+          // Envoi de l'état actuel de la carte du MJ
+          sendMessage({
+            type: 'SYNC_STATE',
+            payload: { mapUrl, tokens, targetUsername: requester }
+          });
+        }
       }
     } else if (msg.type === 'SYNC_STATE') {
       if (!isHost) {
+        if (msg.payload.targetUsername && msg.payload.targetUsername !== username) {
+          return;
+        }
         console.log('[GameBoard] Joueur: Réception du SYNC_STATE', msg.payload);
         const { mapUrl: syncedMapUrl, tokens: syncedTokens } = msg.payload;
         setTokens(syncedTokens);
@@ -341,6 +371,28 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
       if (isHost) {
         // L'Hôte envoie le fichier demandé via le FileTransferService (binaire pur)
         FileTransferService.sendFile(msg.payload.hash, sendBinary);
+      }
+    } else if (msg.type === 'MOVE_PLAYER_MAP') {
+      if (msg.payload.username === username && !isHost) {
+        console.log(`[GameBoard] Le MJ m'a déplacé sur la carte ${msg.payload.url}`);
+        // Forcer le changement de carte comme un SET_MAP, mais ciblé
+        // Et on redemande l'état complet (tokens) à l'hôte pour cette carte
+        const newUrl = msg.payload.url;
+        const parts = newUrl.split('/library/');
+        if (parts.length > 1) {
+          const filename = parts[1];
+          if (FileTransferService.hasFile(filename)) {
+            setMapUrl(FileTransferService.getFileUrl(filename));
+          } else {
+            setMapUrl(newUrl);
+            setIsMapLoading(true);
+            sendMessage({ type: 'REQUEST_FILE', payload: { hash: filename } });
+          }
+        } else {
+          setMapUrl(newUrl);
+        }
+        // Demande des tokens
+        sendMessage({ type: 'REQUEST_STATE', payload: { mapUrl: newUrl, requester: username } });
       }
     } else {
       // Tous les autres types de messages (ex: CHAT) sont transférés aux modules

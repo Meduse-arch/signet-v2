@@ -124,6 +124,7 @@ class ModManagerService {
    */
   public setPlayers(players: string[]): void {
     this.players = players;
+    coreEventBus.emit('PLAYERS_CHANGED', players);
   }
 
   /**

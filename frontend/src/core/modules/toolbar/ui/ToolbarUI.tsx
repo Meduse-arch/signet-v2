@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Hand, MousePointer2, Grid3x3, ImageIcon, Magnet, Move, Ruler, Wrench, UploadCloud, Plus } from 'lucide-react';
+import { Hand, MousePointer2, Grid3x3, ImageIcon, Magnet, Move, Ruler, Wrench, UploadCloud, Plus, Users, Eye, Play, Pencil, Trash2 } from 'lucide-react';
 import { coreEventBus } from '../../../services/EventBus';
 import { ModManager } from '../../../services/ModManager';
 
@@ -21,7 +21,10 @@ export function ToolbarUI() {
 
   // État des Cartes
   const [maps, setMaps] = useState<MapAsset[]>([]);
+  const [playerLocations, setPlayerLocations] = useState<Record<string, string>>({});
+  const [players, setPlayers] = useState<string[]>(ModManager.getPlayers());
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingMapIndex, setEditingMapIndex] = useState<number | null>(null);
   const [newMapName, setNewMapName] = useState('');
   const [newMapSource, setNewMapSource] = useState<'url' | 'file'>('url');
   const [newMapUrl, setNewMapUrl] = useState('');
@@ -40,7 +43,14 @@ export function ToolbarUI() {
       }
     });
     observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    
+    const handlePlayersChanged = (newPlayers: string[]) => setPlayers(newPlayers);
+    coreEventBus.on('PLAYERS_CHANGED', handlePlayersChanged);
+
+    return () => {
+      observer.disconnect();
+      coreEventBus.off('PLAYERS_CHANGED', handlePlayersChanged);
+    };
   }, []);
 
   // Chargement des cartes sauvegardées pour le MJ
@@ -55,6 +65,14 @@ export function ToolbarUI() {
                 setMaps(JSON.parse(mapsEntry[1]));
               } catch (e) {
                 console.error('[ToolbarUI] Erreur parse maps:', e);
+              }
+            }
+            const locEntry = data.find((d: any) => d[0] === 'playerLocations');
+            if (locEntry) {
+              try {
+                setPlayerLocations(JSON.parse(locEntry[1]));
+              } catch (e) {
+                console.error('[ToolbarUI] Erreur parse playerLocations:', e);
               }
             }
           })
@@ -76,6 +94,19 @@ export function ToolbarUI() {
     }
   }, [maps, isHost]);
 
+  // Sauvegarde de playerLocations
+  useEffect(() => {
+    if (isHost && isTauri() && Object.keys(playerLocations).length > 0) {
+      import('@tauri-apps/api/core').then(({ invoke }) => {
+        invoke('save_module_data', { 
+          moduleId: 'core-toolbar', 
+          key: 'playerLocations', 
+          data: JSON.stringify(playerLocations) 
+        }).catch(err => console.error('[ToolbarUI] Erreur sauvegarde loc:', err));
+      });
+    }
+  }, [playerLocations, isHost]);
+
   const handleToolChange = (tool: 'pan' | 'select' | 'duo' | 'ruler') => {
     setActiveTool(tool);
     coreEventBus.emit('CANVAS_TOOL_CHANGED', tool);
@@ -93,8 +124,18 @@ export function ToolbarUI() {
     coreEventBus.emit('CANVAS_TOGGLE_SNAP', newState);
   };
 
-  const setAsMap = (url: string) => {
+  const handleGroupMap = (url: string) => {
     coreEventBus.emit('NETWORK_OUTGOING', { type: 'SET_MAP', payload: { url } });
+    coreEventBus.emit('CANVAS_SET_MAP_LOCAL', url);
+    // Assigner tous les joueurs à cette carte
+    setPlayerLocations(prev => {
+      const next = { ...prev };
+      players.forEach(p => next[p] = url);
+      return next;
+    });
+  };
+
+  const handleSoloMap = (url: string) => {
     coreEventBus.emit('CANVAS_SET_MAP_LOCAL', url);
   };
 
@@ -133,10 +174,37 @@ export function ToolbarUI() {
   const submitAddForm = () => {
     if (newMapSource === 'url') {
       if (!newMapUrl) return;
-      setMaps((prev) => [...prev, { name: newMapName.trim() || 'Nouvelle Carte', url: newMapUrl }]);
+      
+      if (editingMapIndex !== null) {
+        // Mode édition
+        setMaps(prev => prev.map((m, i) => i === editingMapIndex ? { ...m, name: newMapName.trim() || m.name, url: newMapUrl } : m));
+      } else {
+        // Mode ajout
+        setMaps((prev) => [...prev, { name: newMapName.trim() || 'Nouvelle Carte', url: newMapUrl }]);
+      }
       setShowAddForm(false);
+      setEditingMapIndex(null);
       setNewMapName('');
       setNewMapUrl('');
+    }
+  };
+
+  const handleEditMap = (index: number) => {
+    const map = maps[index];
+    if (map.hash) {
+      alert("L'édition d'URL n'est pas supportée pour les fichiers locaux uploadés.");
+      return;
+    }
+    setNewMapName(map.name);
+    setNewMapUrl(map.url);
+    setNewMapSource('url');
+    setEditingMapIndex(index);
+    setShowAddForm(true);
+  };
+
+  const handleDeleteMap = (index: number) => {
+    if (confirm("Supprimer cette carte de la bibliothèque ?")) {
+      setMaps(prev => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -244,16 +312,47 @@ export function ToolbarUI() {
                   </div>
                 )}
                 
-                <button onClick={() => setShowAddForm(false)} className="text-xs text-zinc-500 hover:text-white uppercase font-semibold">Annuler</button>
+                <button onClick={() => { setShowAddForm(false); setEditingMapIndex(null); }} className="text-xs text-zinc-500 hover:text-white uppercase font-semibold">Annuler</button>
               </div>
             ) : (
               <button 
-                onClick={() => setShowAddForm(true)}
+                onClick={() => {
+                  setNewMapName('');
+                  setNewMapUrl('');
+                  setEditingMapIndex(null);
+                  setShowAddForm(true);
+                }}
                 className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 flex items-center justify-center gap-2 py-2 rounded transition-colors mb-2"
               >
                 <Plus className="w-4 h-4" />
                 <span className="font-medium text-sm">Nouvelle Carte</span>
               </button>
+            )}
+
+            {/* Ruban des joueurs non assignés (Drag & Drop) */}
+            {isHost && players.filter(p => !playerLocations[p]).length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-2 flex flex-col gap-2 mb-2 shadow-[0_0_15px_rgba(225,29,72,0.1)]">
+                <div className="flex items-center gap-2 text-rose-400 text-xs font-bold uppercase tracking-wider">
+                  <Users className="w-3 h-3" />
+                  Nouveaux Joueurs
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {players.filter(p => !playerLocations[p]).map((p) => (
+                    <div 
+                      key={p}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', p);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      className="bg-zinc-800 border border-zinc-700 hover:border-rose-400 hover:bg-zinc-700 text-white text-xs px-2 py-1 rounded cursor-grab active:cursor-grabbing transition-colors"
+                      title="Glisser vers une carte"
+                    >
+                      {p}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Liste des cartes */}
@@ -264,15 +363,74 @@ export function ToolbarUI() {
                 maps.map((map, i) => (
                   <div 
                     key={i}
-                    onClick={() => setAsMap(map.url)}
-                    className="relative group h-20 rounded-lg overflow-hidden border border-zinc-700 hover:border-rose-500 cursor-pointer transition-colors"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDragEnter={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const player = e.dataTransfer.getData('text/plain');
+                      if (player) {
+                        coreEventBus.emit('NETWORK_OUTGOING', { 
+                          type: 'MOVE_PLAYER_MAP', 
+                          payload: { username: player, url: map.url } 
+                        });
+                        setPlayerLocations(prev => ({ ...prev, [player]: map.url }));
+                      }
+                    }}
+                    className="relative group h-24 rounded-lg overflow-hidden border border-zinc-700 hover:border-rose-500 transition-colors"
                   >
-                    <img src={map.url} className="w-full h-full object-cover" alt={map.name} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2">
-                      <span className="text-white font-medium text-sm truncate">{map.name}</span>
+                    <img src={map.url} className="w-full h-full object-cover pointer-events-none" alt={map.name} />
+                    
+                    {/* Affichage des joueurs sur cette carte */}
+                    <div className="absolute top-1 left-1 right-1 flex flex-wrap gap-1 z-10">
+                      {players.filter(p => playerLocations[p] === map.url).map(p => (
+                        <div 
+                          key={p} 
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', p);
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          className="bg-zinc-900/90 text-white text-[10px] px-1.5 py-0.5 rounded border border-zinc-500 cursor-grab active:cursor-grabbing shadow-sm"
+                          title="Déplacer vers une autre carte"
+                        >
+                          {p}
+                        </div>
+                      ))}
                     </div>
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="bg-rose-600 text-white text-xs font-bold px-2 py-1 rounded">Afficher</span>
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-between p-2 pointer-events-none">
+                      <div className="flex justify-end"></div>
+                      <span className="text-white font-medium text-sm truncate drop-shadow-md mt-auto">{map.name}</span>
+                    </div>
+
+                    {/* Boutons d'édition (Haut Droite) */}
+                    <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      {!map.hash && (
+                        <button onClick={(e) => { e.stopPropagation(); handleEditMap(i); }} className="bg-zinc-800 hover:bg-zinc-700 text-white p-1.5 rounded" title="Modifier l'URL">
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      )}
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteMap(i); }} className="bg-red-900/80 hover:bg-red-600 text-white p-1.5 rounded" title="Supprimer">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Boutons d'action visibles au survol (Bas) */}
+                    <div className="absolute bottom-0 left-0 right-0 h-10 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 px-2 z-20">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleSoloMap(map.url); }}
+                        className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition-colors"
+                        title="Y aller seul"
+                      >
+                        <Play className="w-3 h-3" /> Go
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleGroupMap(map.url); }}
+                        className="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition-colors shadow-[0_0_10px_rgba(225,29,72,0.5)]"
+                        title="Amener tout le monde"
+                      >
+                        <Eye className="w-3 h-3" /> Tous
+                      </button>
                     </div>
                   </div>
                 ))

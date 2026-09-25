@@ -100,12 +100,16 @@ const LobbyStateSchema = z.object({
 
 const RequestStateSchema = z.object({
   type: z.literal('REQUEST_STATE'),
-  payload: z.object({}),
+  payload: z.object({
+    mapUrl: z.string().optional(),
+    requester: z.string().optional(),
+  }),
 });
 
 const SyncStateSchema = z.object({
   type: z.literal('SYNC_STATE'),
   payload: z.object({
+    targetUsername: z.string().optional(),
     mapUrl: z.string().nullable().optional(),
     tokens: z.array(z.object({
       id: z.string(),
@@ -156,6 +160,14 @@ const RequestFileSchema = z.object({
   }),
 });
 
+const MovePlayerMapSchema = z.object({
+  type: z.literal('MOVE_PLAYER_MAP'),
+  payload: z.object({
+    username: z.string(),
+    url: z.string(),
+  }),
+});
+
 export const P2PMessageSchema = z.discriminatedUnion('type', [
   ChatMessageSchema,
   ChatMessageModuleSchema,
@@ -173,6 +185,7 @@ export const P2PMessageSchema = z.discriminatedUnion('type', [
   ModEventSchema,
   SetMapSchema,
   RequestFileSchema,
+  MovePlayerMapSchema,
 ]);
 
 // ── Types inférés ─────────────────────────────────────────────────────────
@@ -192,6 +205,7 @@ export type SpawnTokenMessage = z.infer<typeof SpawnTokenSchema>;
 export type RemoveTokenMessage = z.infer<typeof RemoveTokenSchema>;
 export type SetMapMessage = z.infer<typeof SetMapSchema>;
 export type RequestFileMessage = z.infer<typeof RequestFileSchema>;
+export type MovePlayerMapMessage = z.infer<typeof MovePlayerMapSchema>;
 export type ChatMessageModuleMessage = z.infer<typeof ChatMessageModuleSchema>;
 
-export { ChatMessageSchema, ChatMessageModuleSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, RequestStateSchema, SyncStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema, SpawnTokenSchema, RemoveTokenSchema, SetMapSchema, RequestFileSchema };
+export { ChatMessageSchema, ChatMessageModuleSchema, MoveTokenSchema, RollDiceSchema, PlayerJoinSchema, LobbyStateSchema, RequestStateSchema, SyncStateSchema, StartGameSchema, ModEventSchema, TransformTokenSchema, SpawnTokenSchema, RemoveTokenSchema, SetMapSchema, RequestFileSchema, MovePlayerMapSchema };

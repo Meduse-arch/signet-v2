@@ -18,6 +18,7 @@ pub struct CharacterRecord {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenRecord {
     pub id: String,
+    pub map_id: String,
     pub x: f64,
     pub y: f64,
     pub scale_x: f64,
@@ -67,9 +68,13 @@ pub fn open_campaign_db(app: tauri::AppHandle, state: State<'_, DbState>, room_i
         [],
     ).map_err(|e| format!("Erreur table characters: {}", e))?;
 
+    // DROP de la table tokens pour forcer la mise à jour du schéma en test
+    let _ = conn.execute("DROP TABLE IF EXISTS tokens", []);
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS tokens (
             id TEXT PRIMARY KEY,
+            map_id TEXT NOT NULL,
             x REAL NOT NULL,
             y REAL NOT NULL,
             scale_x REAL NOT NULL,
@@ -189,6 +194,7 @@ pub fn delete_character(state: State<'_, DbState>, id: String) -> Result<(), Str
 pub fn save_token(
     state: State<'_, DbState>,
     id: String,
+    map_id: String,
     x: f64,
     y: f64,
     scale_x: f64,
@@ -200,38 +206,40 @@ pub fn save_token(
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     conn.execute(
-        "INSERT INTO tokens (id, x, y, scale_x, scale_y, rotation, data) 
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+        "INSERT INTO tokens (id, map_id, x, y, scale_x, scale_y, rotation, data) 
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
          ON CONFLICT(id) DO UPDATE SET 
+            map_id=excluded.map_id,
             x=excluded.x, 
             y=excluded.y,
             scale_x=excluded.scale_x,
             scale_y=excluded.scale_y,
             rotation=excluded.rotation,
             data=excluded.data",
-        params![id, x, y, scale_x, scale_y, rotation, data],
+        params![id, map_id, x, y, scale_x, scale_y, rotation, data],
     ).map_err(|e| format!("Erreur sauvegarde token: {}", e))?;
 
     Ok(())
 }
 
 #[tauri::command]
-pub fn get_tokens(state: State<'_, DbState>) -> Result<Vec<TokenRecord>, String> {
+pub fn get_tokens(state: State<'_, DbState>, map_id: String) -> Result<Vec<TokenRecord>, String> {
     let lock = state.inner().0.lock().unwrap();
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
-    let mut stmt = conn.prepare("SELECT id, x, y, scale_x, scale_y, rotation, data FROM tokens")
+    let mut stmt = conn.prepare("SELECT id, map_id, x, y, scale_x, scale_y, rotation, data FROM tokens WHERE map_id = ?1")
         .map_err(|e| format!("Erreur préparation requête tokens: {}", e))?;
         
-    let iter = stmt.query_map([], |row| {
+    let iter = stmt.query_map(params![map_id], |row| {
         Ok(TokenRecord {
             id: row.get(0)?,
-            x: row.get(1)?,
-            y: row.get(2)?,
-            scale_x: row.get(3)?,
-            scale_y: row.get(4)?,
-            rotation: row.get(5)?,
-            data: row.get(6)?,
+            map_id: row.get(1)?,
+            x: row.get(2)?,
+            y: row.get(3)?,
+            scale_x: row.get(4)?,
+            scale_y: row.get(5)?,
+            rotation: row.get(6)?,
+            data: row.get(7)?,
         })
     }).map_err(|e| format!("Erreur exécution requête tokens: {}", e))?;
 
