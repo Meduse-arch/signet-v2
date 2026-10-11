@@ -12,10 +12,11 @@ interface GameSessionProps {
   signalUrl: string;
   isHost: boolean;
   username: string;
+  systemId: string | null;
   onLeave: () => void;
 }
 
-export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: GameSessionProps) {
+export function GameSession({ roomId, signalUrl, isHost, username, systemId, onLeave }: GameSessionProps) {
   const {
     connectionState,
     messages,
@@ -244,6 +245,7 @@ export function GameSession({ roomId, signalUrl, isHost, username, onLeave }: Ga
         messages={messages}
         sendMessage={sendMessage}
         sendBinary={sendBinary}
+        systemId={systemId}
         onReturn={handleReturnToLobby}
       />
     );

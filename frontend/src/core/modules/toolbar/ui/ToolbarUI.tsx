@@ -17,7 +17,7 @@ export function ToolbarUI() {
   const [activeTool, setActiveTool] = useState<'pan' | 'select' | 'duo' | 'ruler'>('pan');
   const [showGrid, setShowGrid] = useState(false); // Fix: Par défaut à false
   const [snapToGrid, setSnapToGrid] = useState(true);
-  const isHost = ModManager.getIsHost();
+  const [isHost, setIsHost] = useState(ModManager.getIsHost());
 
   // État des Cartes
   const [maps, setMaps] = useState<MapAsset[]>([]);
@@ -29,6 +29,7 @@ export function ToolbarUI() {
   const [newMapSource, setNewMapSource] = useState<'url' | 'file'>('url');
   const [newMapUrl, setNewMapUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Détection du mode Slim (plié)
@@ -45,11 +46,15 @@ export function ToolbarUI() {
     observer.observe(containerRef.current);
     
     const handlePlayersChanged = (newPlayers: string[]) => setPlayers(newPlayers);
+    const handleContextChanged = (ctx: any) => setIsHost(ctx.isHost);
+    
     coreEventBus.on('PLAYERS_CHANGED', handlePlayersChanged);
+    coreEventBus.on('CONTEXT_CHANGED', handleContextChanged);
 
     return () => {
       observer.disconnect();
       coreEventBus.off('PLAYERS_CHANGED', handlePlayersChanged);
+      coreEventBus.off('CONTEXT_CHANGED', handleContextChanged);
     };
   }, []);
 
@@ -137,6 +142,9 @@ export function ToolbarUI() {
 
   const handleSoloMap = (url: string) => {
     coreEventBus.emit('CANVAS_SET_MAP_LOCAL', url);
+    const hostName = ModManager.getUsername();
+    setPlayerLocations(prev => ({ ...prev, [hostName]: url }));
+    coreEventBus.emit('NETWORK_OUTGOING', { type: 'MOVE_PLAYER_MAP', payload: { username: hostName, url } });
   };
 
   const handleFileUpload = async (file: File) => {
@@ -340,13 +348,18 @@ export function ToolbarUI() {
                   {players.filter(p => !playerLocations[p]).map((p) => (
                     <div 
                       key={p}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('text/plain', p);
-                        e.dataTransfer.effectAllowed = 'move';
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (e.shiftKey) {
+                          if (selectedPlayers.includes(p)) setSelectedPlayers(selectedPlayers.filter(sp => sp !== p));
+                          else setSelectedPlayers([...selectedPlayers, p]);
+                        } else {
+                          if (selectedPlayers.length === 1 && selectedPlayers[0] === p) setSelectedPlayers([]);
+                          else setSelectedPlayers([p]);
+                        }
                       }}
-                      className="bg-zinc-800 border border-zinc-700 hover:border-rose-400 hover:bg-zinc-700 text-white text-xs px-2 py-1 rounded cursor-grab active:cursor-grabbing transition-colors"
-                      title="Glisser vers une carte"
+                      className={`bg-zinc-800 border ${selectedPlayers.includes(p) ? 'border-rose-500 bg-rose-500/20 shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'border-zinc-700 hover:border-rose-400 hover:bg-zinc-700'} text-white text-xs px-2 py-1 rounded cursor-pointer transition-all select-none`}
+                      title="Clic simple pour sélectionner, MAJ+Clic pour sélection multiple"
                     >
                       {p}
                     </div>
@@ -361,76 +374,91 @@ export function ToolbarUI() {
                 <div className="text-center text-zinc-600 text-xs italic py-4">Aucune carte dans la session.</div>
               ) : (
                 maps.map((map, i) => (
-                  <div 
-                    key={i}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDragEnter={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const player = e.dataTransfer.getData('text/plain');
-                      if (player) {
-                        coreEventBus.emit('NETWORK_OUTGOING', { 
-                          type: 'MOVE_PLAYER_MAP', 
-                          payload: { username: player, url: map.url } 
-                        });
-                        setPlayerLocations(prev => ({ ...prev, [player]: map.url }));
-                      }
-                    }}
-                    className="relative group h-24 rounded-lg overflow-hidden border border-zinc-700 hover:border-rose-500 transition-colors"
-                  >
-                    <img src={map.url} className="w-full h-full object-cover pointer-events-none" alt={map.name} />
-                    
-                    {/* Affichage des joueurs sur cette carte */}
-                    <div className="absolute top-1 left-1 right-1 flex flex-wrap gap-1 z-10">
-                      {players.filter(p => playerLocations[p] === map.url).map(p => (
-                        <div 
-                          key={p} 
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', p);
-                            e.dataTransfer.effectAllowed = 'move';
-                          }}
-                          className="bg-zinc-900/90 text-white text-[10px] px-1.5 py-0.5 rounded border border-zinc-500 cursor-grab active:cursor-grabbing shadow-sm"
-                          title="Déplacer vers une autre carte"
-                        >
-                          {p}
-                        </div>
-                      ))}
-                    </div>
+                  <div key={i} className="flex flex-col gap-1 mb-2">
+                    <div 
+                      onClick={(e) => {
+                        if (selectedPlayers.length > 0) {
+                          e.stopPropagation();
+                          selectedPlayers.forEach(player => {
+                            coreEventBus.emit('NETWORK_OUTGOING', { 
+                              type: 'MOVE_PLAYER_MAP', 
+                              payload: { username: player, url: map.url } 
+                            });
+                            if (player === ModManager.getUsername()) {
+                              coreEventBus.emit('CANVAS_SET_MAP_LOCAL', map.url);
+                            }
+                          });
+                          
+                          setPlayerLocations(prev => {
+                            const next = { ...prev };
+                            selectedPlayers.forEach(player => { next[player] = map.url; });
+                            return next;
+                          });
+                          
+                          setSelectedPlayers([]);
+                        }
+                      }}
+                      className={`relative group h-24 rounded-lg overflow-hidden border ${selectedPlayers.length > 0 ? 'border-rose-500 cursor-crosshair shadow-[0_0_15px_rgba(225,29,72,0.3)]' : 'border-zinc-700 hover:border-rose-500'} transition-all`}
+                    >
+                      <img src={map.url} className="w-full h-full object-cover pointer-events-none" alt={map.name} />
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-between p-2 pointer-events-none">
-                      <div className="flex justify-end"></div>
-                      <span className="text-white font-medium text-sm truncate drop-shadow-md mt-auto">{map.name}</span>
-                    </div>
+                      {/* Affichage des joueurs sur cette carte (REMIS EN HAUT) */}
+                      <div className="absolute top-1 left-1 right-1 flex flex-wrap gap-1 z-10">
+                        {players.filter(p => playerLocations[p] === map.url).map(p => (
+                          <div 
+                            key={p} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (e.shiftKey) {
+                                if (selectedPlayers.includes(p)) setSelectedPlayers(selectedPlayers.filter(sp => sp !== p));
+                                else setSelectedPlayers([...selectedPlayers, p]);
+                              } else {
+                                if (selectedPlayers.length === 1 && selectedPlayers[0] === p) setSelectedPlayers([]);
+                                else setSelectedPlayers([p]);
+                              }
+                            }}
+                            className={`bg-zinc-900/90 text-[10px] px-1.5 py-0.5 rounded border ${selectedPlayers.includes(p) ? 'border-rose-500 text-rose-300 shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'border-zinc-500 text-white hover:border-zinc-300'} cursor-pointer select-none transition-all`}
+                            title="Clic simple pour sélectionner, MAJ+Clic pour sélection multiple"
+                          >
+                            {p}
+                          </div>
+                        ))}
+                      </div>
 
-                    {/* Boutons d'édition (Haut Droite) */}
-                    <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                      {!map.hash && (
-                        <button onClick={(e) => { e.stopPropagation(); handleEditMap(i); }} className="bg-zinc-800 hover:bg-zinc-700 text-white p-1.5 rounded" title="Modifier l'URL">
-                          <Pencil className="w-3 h-3" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-between p-2 pointer-events-none">
+                        <div className="flex justify-end"></div>
+                        <span className="text-white font-medium text-sm truncate drop-shadow-md mt-auto">{map.name}</span>
+                      </div>
+
+                      {/* Boutons d'édition (Haut Droite) */}
+                      <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                        {!map.hash && (
+                          <button onClick={(e) => { e.stopPropagation(); handleEditMap(i); }} className="bg-zinc-800 hover:bg-zinc-700 text-white p-1.5 rounded" title="Modifier l'URL">
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteMap(i); }} className="bg-red-900/80 hover:bg-red-600 text-white p-1.5 rounded" title="Supprimer">
+                          <Trash2 className="w-3 h-3" />
                         </button>
-                      )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteMap(i); }} className="bg-red-900/80 hover:bg-red-600 text-white p-1.5 rounded" title="Supprimer">
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
+                      </div>
 
-                    {/* Boutons d'action visibles au survol (Bas) */}
-                    <div className="absolute bottom-0 left-0 right-0 h-10 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 px-2 z-20">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleSoloMap(map.url); }}
-                        className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition-colors"
-                        title="Y aller seul"
-                      >
-                        <Play className="w-3 h-3" /> Go
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleGroupMap(map.url); }}
-                        className="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition-colors shadow-[0_0_10px_rgba(225,29,72,0.5)]"
-                        title="Amener tout le monde"
-                      >
-                        <Eye className="w-3 h-3" /> Tous
-                      </button>
+                      {/* Boutons d'action visibles au survol (Bas) */}
+                      <div className="absolute bottom-0 left-0 right-0 h-10 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 px-2 z-20">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleSoloMap(map.url); }}
+                          className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition-colors"
+                          title="Y aller seul"
+                        >
+                          <Play className="w-3 h-3" /> Go
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleGroupMap(map.url); }}
+                          className="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition-colors shadow-[0_0_10px_rgba(225,29,72,0.5)]"
+                          title="Amener tout le monde"
+                        >
+                          <Eye className="w-3 h-3" /> Tous
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))

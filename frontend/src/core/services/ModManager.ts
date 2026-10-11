@@ -74,7 +74,8 @@ class ModManagerService {
 
   private storeItems: StoreItem[] = [
     { id: 'system-seal', name: 'SEAL', author: 'Signet Team', description: 'Tactical modern combat', category: 'system-signet' },
-    { id: 'system-stars', name: 'Flower', author: 'Signet Team', description: 'Sci-fi RPG', category: 'system-signet' },
+    { id: 'system-stars', name: 'Flower', author: 'Signet Team', description: 'RPG Médiéval Fantastique.', category: 'system-signet' },
+    { id: 'system-hexe', name: 'Hexe', author: 'Signet Team', description: 'RPG Médiéval Fantastique.', category: 'system-signet' },
     { id: 'mod-chat', name: 'Chat Universel', author: 'Signet Team', description: 'Module de chat officiel pour toutes les parties.', category: 'mod-signet' },
     { id: 'mod-nav', name: 'Navigation Principale', author: 'Signet Team', description: 'La barre des tâches et le Menu de base.', category: 'mod-signet' },
     { id: 'core-system-windows', name: 'Outils Système', author: 'Signet Team', description: 'Fenêtres système (Paramètres, Notes Globales).', category: 'mod-signet' },
@@ -113,10 +114,18 @@ class ModManagerService {
     console.log(`[ModManager] setContext called with username: "${username}", isHost: ${isHost}`);
     this.username = username;
     this.isHost = isHost;
+    // Notifie les composants React qui écoutent ce contexte.
+    // Sans ça, un composant qui lit isHost via getIsHost() au moment du
+    // render initial (avant setContext) resterait bloqué sur false.
+    coreEventBus.emit('CONTEXT_CHANGED', { username, isHost });
   }
 
   public getIsHost(): boolean {
     return this.isHost;
+  }
+
+  public getUsername(): string {
+    return this.username;
   }
 
   /**
@@ -201,16 +210,16 @@ class ModManagerService {
 
     try {
       console.log(`[ModManager] Initializing module: ${mod.name} (${mod.id}) v${mod.version}`);
-      
+
       // On crée une API dédiée (sandboxée) pour ce module
       const api = new SignetAPI(mod.id, () => this.username);
-      
+
       // On exécute la logique d'initialisation du module
       mod.init(api);
 
       this.activeMods.set(mod.id, mod);
       this.apis.set(mod.id, api);
-      
+
       console.log(`[ModManager] Module ${mod.id} loaded successfully.`);
     } catch (err) {
       console.error(`[ModManager] Failed to initialize module ${mod.id}:`, err);
@@ -226,7 +235,7 @@ class ModManagerService {
       if (mod.cleanup) {
         try {
           mod.cleanup();
-        } catch(err) {
+        } catch (err) {
           console.error(`[ModManager] Error during cleanup of module ${modId}:`, err);
         }
       }
@@ -234,6 +243,32 @@ class ModManagerService {
       this.apis.delete(modId);
       console.log(`[ModManager] Module ${modId} unloaded.`);
     }
+  }
+
+  /**
+   * Décharge TOUS les modules actifs et réinitialise complètement l'état de l'UI.
+   * À appeler impérativement à la fin de chaque session de jeu pour éviter
+   * que les modules (et leurs fenêtres/overlays) de la session précédente
+   * ne persistent lors du lancement d'une nouvelle session.
+   */
+  public unloadAll(): void {
+    console.log(`[ModManager] Déchargement de tous les modules (${this.activeMods.size} actifs)...`);
+    for (const modId of this.activeMods.keys()) {
+      const mod = this.activeMods.get(modId)!;
+      if (mod.cleanup) {
+        try {
+          mod.cleanup();
+        } catch (err) {
+          console.error(`[ModManager] Error during cleanup of module ${modId}:`, err);
+        }
+      }
+    }
+    this.activeMods.clear();
+    this.apis.clear();
+    this.windows.clear();
+    this.overlays.clear();
+    this.actions.clear();
+    console.log('[ModManager] Tous les modules ont été déchargés. État réinitialisé.');
   }
 
   /**

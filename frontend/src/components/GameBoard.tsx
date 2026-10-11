@@ -11,6 +11,7 @@ import { CoreDiceModule } from '../core/modules/dice-roller';
 import { CoreChatRollModule } from '../core/modules/chat-roll';
 import { CoreActivityLogModule } from '../core/modules/activity-log';
 import { SystemFlowerModule } from '../systems/flower';
+import { SystemHexeModule } from '../systems/hexe';
 import { coreEventBus } from '../core/services/EventBus';
 import { VTTCanvas, type TokenData } from './game/VTTCanvas';
 
@@ -20,6 +21,7 @@ interface GameBoardProps {
   messages: P2PMessage[];
   sendMessage: (msg: P2PMessage) => void;
   sendBinary: (data: Uint8Array) => void;
+  systemId?: string | null;
   onReturn: () => void;
 }
 
@@ -31,7 +33,7 @@ import { FileTransferService } from '../core/services/FileTransferService';
 // Détection simple si on est dans l'app Tauri ou dans un simple navigateur (Chrome)
 const isTauri = () => '__TAURI_INTERNALS__' in window;
 
-export function GameBoard({ isHost, username, messages, sendMessage, sendBinary, onReturn }: GameBoardProps) {
+export function GameBoard({ isHost, username, messages, sendMessage, sendBinary, systemId, onReturn }: GameBoardProps) {
   const [tokens, setTokens] = useState<TokenData[]>([]);
 
   // État des outils VTT
@@ -45,8 +47,16 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
   // Synchronise le ref avec le state
   useEffect(() => { mapUrlRef.current = mapUrl; }, [mapUrl]);
 
-  // Initialisation des modules et chargement des tokens
+  // ── Initialisation des modules (une seule fois au montage) ──────────────────
+  // Ce useEffect s'exécute UNE SEULE FOIS quand GameBoard est monté.
+  // Il est séparé du chargement de la carte exprès : si on les mettait dans
+  // le même useEffect avec `mapUrl` en dépendance, unloadAll() serait
+  // rappelé à chaque changement de carte, détruisant tous les modules.
   useEffect(() => {
+    // Réinitialisation propre : le ModManager est un singleton, on vide
+    // tout ce qui reste d'une éventuelle session précédente.
+    ModManager.unloadAll();
+
     ModManager.setContext(username, isHost);
     if (ModManager.isItemEnabled('mod-chat')) {
       ModManager.registerMod(CoreChatModule);
@@ -64,9 +74,32 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     // Module Journal d'Activité (Core)
     ModManager.registerMod(CoreActivityLogModule);
 
-    // Système de jeu (devrait être dynamique via la BDD plus tard, forcé pour le proto)
-    ModManager.registerMod(SystemFlowerModule);
+    // Chargement conditionnel du système sélectionné pour cette campagne
+    if (systemId === 'stars' || systemId === 'flower') {
+      ModManager.registerMod(SystemFlowerModule);
+    } else if (systemId === 'hexe') {
+      ModManager.registerMod(SystemHexeModule);
+    } else {
+      // Fallback si pas de système défini (on charge ce qui est activé globalement)
+      const enabledSystems = ModManager.getEnabledSystems();
+      if (enabledSystems.some(s => s.id === 'stars' || s.id === 'flower')) {
+        ModManager.registerMod(SystemFlowerModule);
+      }
+      if (enabledSystems.some(s => s.id === 'hexe')) {
+        ModManager.registerMod(SystemHexeModule);
+      }
+    }
 
+    // Nettoyage au démontage (fin de session) : décharge tous les modules
+    // pour que la prochaine session reparte sur un état vierge.
+    return () => {
+      ModManager.unloadAll();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // [] = s'exécute uniquement au montage/démontage du composant
+
+  // ── Chargement de la carte initiale ─────────────────────────────────────────
+  useEffect(() => {
     if (isHost && isTauri()) {
       // Charger l'URL de la carte
       invoke('get_module_data', { moduleId: 'core-gameboard' }).then((data: any) => {
@@ -79,9 +112,9 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     } else if (!isHost) {
       // Les joueurs demandent l'état initial
       console.log('[GameBoard] Envoi de REQUEST_STATE pour récupérer la carte et les tokens');
-      sendMessage({ type: 'REQUEST_STATE', payload: { mapUrl: mapUrl || undefined, requester: username } });
+      sendMessage({ type: 'REQUEST_STATE', payload: { requester: username } });
     }
-  }, [username, isHost, sendMessage, mapUrl]);
+  }, [isHost, username, sendMessage]);
 
   // Quand le MJ change de carte locale, il charge les tokens de cette carte depuis la base
   useEffect(() => {

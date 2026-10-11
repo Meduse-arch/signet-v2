@@ -16,7 +16,7 @@ import { Carousel } from './ui/Carousel';
 type HubView = 'main' | 'notes' | 'public' | 'mods' | 'settings' | 'create-session';
 
 interface HubProps {
-  onJoinGame: (roomId: string, isHost: boolean) => void;
+  onJoinGame: (roomId: string, isHost: boolean, systemId?: string) => void;
   onLogout: () => void;
   onSignalUrlChange: (url: string) => void;
   isLanMode: boolean;
@@ -128,7 +128,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
 
       setCurrentView('main');
       // On connecte immédiatement le MJ à sa nouvelle session (isHost = true)
-      onJoinGame(newRoom, true);
+      onJoinGame(newRoom, true, data.system);
     } catch (err: any) {
       alert("Erreur lors de la création : " + err.message);
     }
@@ -164,7 +164,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
       setCampaigns(updatedCampaigns);
       saveCampaignsNow(updatedCampaigns);
 
-      onJoinGame(finalCode, false);
+      onJoinGame(finalCode, false, updatedCampaigns[0].system);
     }
   };
 
@@ -339,7 +339,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                 subtitle={`Dernière session : ${camp.date}`}
                 badge={`CODE : ${camp.id}`}
                 imageUrl="/fantasy_vtt_bg.jpg"
-                onClick={() => onJoinGame(camp.id, camp.isHost !== false)}
+                onClick={() => onJoinGame(camp.id, camp.isHost !== false, camp.system)}
               />
             ))}
             

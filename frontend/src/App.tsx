@@ -14,6 +14,7 @@ type AppState = 'auth' | 'hub' | 'game' | 'popout';
 export default function App() {
   const [appState, setAppState] = useState<AppState>('auth');
   const [sessionRoomId, setSessionRoomId] = useState<string | null>(null);
+  const [sessionSystemId, setSessionSystemId] = useState<string | null>(null);
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
@@ -74,10 +75,11 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleJoinGame = (roomId: string, host: boolean) => {
+  const handleJoinGame = (roomId: string, host: boolean, systemId?: string) => {
     sessionStorage.setItem('signet_room_id', roomId);
     setSessionRoomId(roomId);
     setIsHost(host);
+    setSessionSystemId(systemId || null);
     setAppState('game');
     setShowSplash(true);
   };
@@ -126,6 +128,7 @@ export default function App() {
             signalUrl={signalUrl} 
             isHost={isHost}
             username={username || 'Aventurier'}
+            systemId={sessionSystemId}
             onLeave={() => setAppState('hub')}
           />
         </div>
