@@ -198,45 +198,46 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
   const filtered = visibleCharacters.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex flex-col h-full bg-[#eaddce] text-[#3e2723] p-4 gap-4 pointer-events-auto border-4 border-[#8b5a2b] rounded-lg shadow-[inset_0_0_50px_rgba(139,90,43,0.3)] font-serif relative">
-      {/* Texture de vieux papier */}
-      <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/old-wall.png')" }}></div>
-
+    <div className="flex flex-col h-full bg-[#050508] text-white p-3 sm:p-4 gap-3 pointer-events-auto font-sans relative overflow-hidden">
       {/* En-tête / Recherche */}
-      <div className="flex items-center gap-2 bg-[#f1e6d4] border-2 border-[#8b5a2b] rounded-lg p-2 shadow-inner relative z-10">
-        <Search className="w-5 h-5 text-[#8b5a2b]" />
+      <div className="flex items-center gap-2 bg-[#090a10] border border-white/10 rounded-xl px-3 py-2 shadow-inner shrink-0">
+        <Search className="w-4 h-4 text-slate-400 shrink-0" />
         <input 
           type="text" 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher..."
-          className="bg-transparent border-none outline-none flex-1 text-sm font-semibold text-[#3e2723] placeholder:text-[#8b5a2b]/60"
+          placeholder="Rechercher un inquisiteur..."
+          className="bg-transparent border-none outline-none flex-1 text-xs text-white placeholder-slate-500"
         />
       </div>
 
       {/* Filtres & Actions (MJ uniquement) */}
       {isTauri() && (
-        <div className="flex flex-col gap-2 relative z-10">
-          <Button variant="glass" onClick={handleCreate} className="w-full gap-2 border-[#8b5a2b] hover:bg-[#8b5a2b]/20 text-[#4e342e] font-bold">
-            <Plus className="w-4 h-4" /> Créer un Inquisiteur
-          </Button>
+        <div className="flex flex-col gap-2 shrink-0">
+          <button
+            onClick={handleCreate}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(225,29,72,0.3)] transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Créer un Inquisiteur</span>
+          </button>
           
-          <div className="flex bg-[#d5c3aa] border border-[#8b5a2b] rounded-lg p-1">
+          <div className="flex bg-[#090a10] border border-white/10 rounded-lg p-1">
             <button 
               onClick={() => setActiveFilter('all')}
-              className={`flex-1 text-xs py-1.5 rounded transition-colors ${activeFilter === 'all' ? 'bg-[#8b5a2b] text-[#f4e4bc] font-bold' : 'text-[#5c3a21] hover:text-[#3e2723]'}`}
+              className={`flex-1 text-[11px] py-1 rounded font-bold transition-colors ${activeFilter === 'all' ? 'bg-rose-600 text-white shadow-[0_0_8px_rgba(225,29,72,0.3)]' : 'text-slate-400 hover:text-white'}`}
             >
               Tous
             </button>
             <button 
               onClick={() => setActiveFilter('players')}
-              className={`flex-1 text-xs py-1.5 rounded transition-colors ${activeFilter === 'players' ? 'bg-[#8b5a2b] text-[#f4e4bc] font-bold' : 'text-[#5c3a21] hover:text-[#3e2723]'}`}
+              className={`flex-1 text-[11px] py-1 rounded font-bold transition-colors ${activeFilter === 'players' ? 'bg-rose-600 text-white shadow-[0_0_8px_rgba(225,29,72,0.3)]' : 'text-slate-400 hover:text-white'}`}
             >
               Joueurs
             </button>
             <button 
               onClick={() => setActiveFilter('npcs')}
-              className={`flex-1 text-xs py-1.5 rounded transition-colors ${activeFilter === 'npcs' ? 'bg-[#8b5a2b] text-[#f4e4bc] font-bold' : 'text-[#5c3a21] hover:text-[#3e2723]'}`}
+              className={`flex-1 text-[11px] py-1 rounded font-bold transition-colors ${activeFilter === 'npcs' ? 'bg-rose-600 text-white shadow-[0_0_8px_rgba(225,29,72,0.3)]' : 'text-slate-400 hover:text-white'}`}
             >
               PNJ
             </button>
@@ -244,23 +245,23 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
         </div>
       )}
 
-      {/* Liste */}
-      <div className="flex-1 overflow-y-auto hide-scrollbar flex flex-col gap-2 relative z-10">
+      {/* Liste des personnages */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2">
         {loading ? (
-          <div className="text-center text-[#5c3a21] text-sm mt-10 animate-pulse font-bold">Incantation en cours...</div>
+          <div className="text-center text-slate-400 text-xs mt-10 animate-pulse font-bold">Chargement des inquisiteurs...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center text-[#8b5a2b] text-sm mt-10 italic">
+          <div className="text-center text-slate-500 text-xs mt-10 italic">
             {isTauri() ? "Aucun inquisiteur trouvé dans le grimoire." : "Le Maître de Jeu ne t'a confié aucun inquisiteur."}
           </div>
         ) : (
           filtered.map(c => (
-            <div key={c.id} className="flex items-center justify-between p-3 bg-[#f1e6d4] shadow-sm border border-[#8b5a2b]/50 rounded hover:border-[#8b5a2b] hover:bg-[#eaddce] transition-all">
-              <div className="flex items-center gap-3">
+            <div key={c.id} className="flex items-center justify-between p-2.5 sm:p-3 bg-[#090a10] border border-white/10 hover:border-white/20 rounded-xl transition-all shadow-sm gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
                 {c.avatarUrl ? (
                   <img 
                     src={c.avatarUrl.startsWith('blob:') ? c.avatarUrl : (isTauri() ? `http://signet.localhost/library/${c.avatarUrl}` : (FileTransferService.getFileUrl(c.avatarUrl) || ''))} 
                     alt={c.name} 
-                    className="w-10 h-10 rounded-full object-cover border border-[#8b5a2b]"
+                    className="w-10 h-10 rounded-xl object-cover border border-white/15 shrink-0"
                     onError={(e) => {
                       if (!isTauri() && !c.avatarUrl.startsWith('blob:') && !FileTransferService.hasFile(c.avatarUrl)) {
                         api.emit('NETWORK_OUTGOING', { type: 'REQUEST_FILE', payload: { hash: c.avatarUrl } });
@@ -269,50 +270,55 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
                     }}
                   />
                 ) : (
-                  <div className={`w-10 h-10 rounded-full border border-[#8b5a2b] bg-[#e0ccb4] flex items-center justify-center ${!c.owner_id ? 'text-[#8b5a2b]' : 'text-[#4e342e]'}`}>
+                  <div className={`w-10 h-10 rounded-xl border border-white/15 bg-black/40 flex items-center justify-center shrink-0 ${!c.owner_id ? 'text-rose-400' : 'text-purple-400'}`}>
                     {!c.owner_id ? <Skull className="w-5 h-5" /> : <User className="w-5 h-5" />}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <div className="font-bold text-[#3e2723] truncate max-w-[120px] sm:max-w-[160px] text-lg">{c.name}</div>
-                  <div className="text-xs text-[#8b5a2b] truncate italic">
-                    {c.owner_id ? `Lié à : ${c.owner_id}` : 'PNJ'}
+                  <div className="font-bold text-white truncate text-xs sm:text-sm">{c.name}</div>
+                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                    {c.owner_id ? `Lié à : ${c.owner_id}` : 'PNJ (Non lié)'}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Button variant="ghost" onClick={() => openSheet(c.id)} className="text-xs px-3 text-[#4e342e] hover:bg-[#d5c3aa]">
+                <button
+                  onClick={() => openSheet(c.id)}
+                  className="text-xs px-2.5 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 font-bold transition-colors"
+                >
                   Ouvrir
-                </Button>
-                <Button 
-                  variant="ghost" 
+                </button>
+                <button 
                   onClick={() => {
                     api.emit('CANVAS_TOGGLE_TOKEN', {
                       id: c.id,
                       name: c.name.substring(0, 2).toUpperCase(),
                       x: 5,
                       y: 5,
-                      color: c.owner_id ? 'bg-[#3e2723] text-[#eaddce] border-[#8b5a2b]' : 'bg-[#7a1c1c] text-white border-[#4a0d0d]',
+                      color: c.owner_id ? 'bg-indigo-900 text-indigo-200 border-indigo-500' : 'bg-rose-950 text-rose-200 border-rose-800',
                       owner: c.owner_id,
                       avatarUrl: c.avatarUrl
                     });
                   }} 
-                  className="text-[#8b5a2b] hover:text-[#4e342e] hover:bg-[#d5c3aa] px-2" 
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" 
                   title="Placer / Retirer sur la carte"
                 >
                   <MapPin className="w-4 h-4" />
-                </Button>
+                </button>
                 {isTauri() && (
-                  <Button variant="ghost" onClick={() => handleDelete(c.id)} className="text-red-700 hover:text-red-900 hover:bg-red-200/50 px-2" title="Supprimer">
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition-colors"
+                    title="Supprimer"
+                  >
                     <Trash2 className="w-4 h-4" />
-                  </Button>
+                  </button>
                 )}
               </div>
             </div>
           ))
         )}
       </div>
-
     </div>
   );
 }

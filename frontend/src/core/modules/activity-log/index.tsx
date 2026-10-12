@@ -28,8 +28,7 @@ export const CoreActivityLogModule: SignetModule = {
       'Journal d\'Activité',
       <ActivityLogWindow api={api} />,
       {
-        icon: <ScrollText className="w-5 h-5 text-indigo-400" />,
-        transparent: true,
+        icon: <ScrollText className="w-5 h-5 text-indigo-400" />
       }
     );
 

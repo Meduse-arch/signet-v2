@@ -42,8 +42,7 @@ export const SystemFlowerModule = {
       'Personnages',
       <FlowerAppWindow api={api} />,
       {
-        icon: <Users className="w-5 h-5 text-pink-400" />,
-        transparent: true
+        icon: <Users className="w-5 h-5 text-pink-400" />
       }
     );
 
@@ -53,10 +52,7 @@ export const SystemFlowerModule = {
       'Compendium',
       <FlowerCompendiumWindow api={api} />,
       {
-        icon: <Library className="w-5 h-5 text-fuchsia-400" />,
-        transparent: true,
-        width: 400,
-        height: 600
+        icon: <Library className="w-5 h-5 text-fuchsia-400" />
       }
     );
 

@@ -24,6 +24,7 @@ export class SignetAPI {
     getAssetUrl: (hash: string) => string;
   };
   private readonly modId: string;
+  private listeners: Array<{ event: string; callback: (payload: any) => void }> = [];
 
   constructor(modId: string, getUsername: () => string) {
     this.modId = modId;
@@ -76,13 +77,15 @@ export class SignetAPI {
           component
         });
       },
-      registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, icon?: React.ReactNode, transparent?: boolean, hideHeader?: boolean, startSlim?: boolean, collapseMode?: 'slim' | 'hide' }) => {
+      registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, defaultWidth?: number, defaultHeight?: number, icon?: React.ReactNode, transparent?: boolean, hideHeader?: boolean, startSlim?: boolean, collapseMode?: 'slim' | 'hide' }) => {
         this.events.emit('SYSTEM_UI_REGISTER_WINDOW', {
           modId: this.modId,
           windowId,
           title,
           component,
           defaultPosition: options?.defaultPosition || 'floating',
+          defaultWidth: options?.defaultWidth,
+          defaultHeight: options?.defaultHeight,
           icon: options?.icon,
           transparent: options?.transparent,
           hideHeader: options?.hideHeader,
@@ -121,6 +124,7 @@ export class SignetAPI {
    * S'abonne à un événement du VTT.
    */
   on(event: string, callback: (payload: any) => void): void {
+    this.listeners.push({ event, callback });
     this.events.on(event, callback);
   }
 
@@ -128,7 +132,18 @@ export class SignetAPI {
    * Se désabonne d'un événement du VTT.
    */
   off(event: string, callback: (payload: any) => void): void {
+    this.listeners = this.listeners.filter(l => !(l.event === event && l.callback === callback));
     this.events.off(event, callback);
+  }
+
+  /**
+   * Nettoie tous les écouteurs enregistrés par ce module
+   */
+  destroy(): void {
+    for (const { event, callback } of this.listeners) {
+      this.events.off(event, callback);
+    }
+    this.listeners = [];
   }
 
   // === NOUVEAU: MOTEUR DE DÉS ===

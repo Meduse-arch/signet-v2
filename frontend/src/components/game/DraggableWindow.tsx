@@ -12,6 +12,8 @@ interface DraggableWindowProps {
   children: React.ReactNode;
   defaultPosition?: WindowPosition;
   isOpen: boolean;
+  defaultWidth?: number;
+  defaultHeight?: number;
   onFocus: () => void;
   zIndex: number;
   occupiedZones?: string[];
@@ -27,6 +29,8 @@ export function DraggableWindow({
   icon, 
   children, 
   defaultPosition = 'floating',
+  defaultWidth,
+  defaultHeight,
   isOpen,
   onFocus,
   zIndex,
@@ -44,7 +48,7 @@ export function DraggableWindow({
     return defaultPosition;
   });
   const [pos, setPos] = useState({ x: 100, y: 100 });
-  const [size, setSize] = useState({ w: 400, h: 500 });
+  const [size, setSize] = useState({ w: defaultWidth ?? 460, h: defaultHeight ?? 580 });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(startSlim);
@@ -306,7 +310,7 @@ export function DraggableWindow({
     if (!containerRef.current) return null;
     return createPortal(
       <div className="flex flex-col h-full w-full">
-        <div className="bg-white/5 border-b border-white/10 p-3 flex justify-between items-center shrink-0">
+        <div className="bg-[#090a10] border-b border-white/10 p-3 flex justify-between items-center shrink-0">
           <h3 className="text-zinc-300 text-sm font-bold tracking-widest uppercase">{title} (Pop-out)</h3>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar relative">
@@ -355,7 +359,7 @@ export function DraggableWindow({
         {/* Header : toujours visible si flottant replié, pour permettre le dé-repliement */}
         {!hideHeader && (!isCollapsed || dockState === 'floating') && (
           <div 
-            className={`pointer-events-auto bg-white/5 border-b border-white/10 p-3 flex justify-between items-center shrink-0 ${dockState === 'fullscreen' ? '' : 'cursor-grab active:cursor-grabbing'}`}
+            className={`pointer-events-auto bg-[#090a10] border-b border-white/10 p-3 flex justify-between items-center shrink-0 ${dockState === 'fullscreen' ? '' : 'cursor-grab active:cursor-grabbing'}`}
             onPointerDown={dockState === 'fullscreen' ? undefined : handlePointerDown}
           >
             <div className="flex items-center gap-2 pointer-events-none select-none">

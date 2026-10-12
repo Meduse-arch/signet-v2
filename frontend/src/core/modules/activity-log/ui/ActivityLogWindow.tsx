@@ -72,9 +72,9 @@ export function ActivityLogWindow({ api }: ActivityLogWindowProps) {
   };
 
   return (
-    <div className="flex flex-col h-full w-full pointer-events-auto bg-black/40 backdrop-blur-md overflow-hidden">
-      {/* Filters */}
-      <div className="flex gap-2 p-3 bg-white/5 border-b border-white/10 shrink-0">
+    <div className="flex flex-col h-full w-full pointer-events-auto bg-[#050508] overflow-hidden">
+      {/* Filters - Solid Header */}
+      <div className="flex gap-2 p-3 bg-[#090a10] border-b border-white/10 shrink-0">
         <select 
           value={typeFilter} 
           onChange={(e) => setTypeFilter(e.target.value as any)}

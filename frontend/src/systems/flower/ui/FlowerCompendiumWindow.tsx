@@ -208,8 +208,8 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-slate-950/80 text-white overflow-hidden backdrop-blur-xl border border-white/10 shadow-2xl">
-      <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-black/40">
+    <div className="w-full h-full flex flex-col bg-[#050508] text-white overflow-hidden border border-white/10 shadow-2xl">
+      <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-[#090a10] shrink-0">
         <Library className="w-6 h-6 text-rose-400" />
         <div>
           <h2 className="text-lg font-black text-white tracking-tight">
@@ -219,7 +219,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
         </div>
       </div>
 
-      <div className="flex border-b border-white/10 bg-black/20">
+      <div className="flex border-b border-white/10 bg-[#090a10] shrink-0">
         <button
           onClick={() => { setActiveTab('skill'); setEditingId(null); }}
           className={`flex-1 py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'skill' ? 'border-rose-500 text-rose-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}

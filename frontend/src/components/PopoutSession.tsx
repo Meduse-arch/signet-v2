@@ -73,8 +73,8 @@ export function PopoutSession({ roomId, moduleId, signalUrl, username }: PopoutS
   // The popout is a fullscreen container for the module
   return (
     <div className="w-full h-screen bg-[#050508] text-white overflow-hidden flex flex-col">
-      {/* Title bar for desktop drag region */}
-      <div data-tauri-drag-region className="w-full h-8 bg-black/40 flex items-center px-4 shrink-0 border-b border-white/5">
+      {/* Title bar for desktop drag region - Solid Opaque */}
+      <div data-tauri-drag-region className="w-full h-8 bg-[#090a10] flex items-center px-4 shrink-0 border-b border-white/10">
          <span className="text-xs font-bold text-white/50 tracking-widest uppercase">{windowDef.title} (Pop-out)</span>
       </div>
       <div className="flex-1 relative overflow-hidden">

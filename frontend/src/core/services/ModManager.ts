@@ -32,6 +32,8 @@ export interface RegisteredWindow {
   icon?: React.ReactNode;
   component: React.ReactNode;
   defaultPosition: WindowPosition;
+  defaultWidth?: number;
+  defaultHeight?: number;
   transparent?: boolean;
   hideHeader?: boolean;
   startSlim?: boolean;
@@ -239,6 +241,10 @@ class ModManagerService {
           console.error(`[ModManager] Error during cleanup of module ${modId}:`, err);
         }
       }
+      const api = this.apis.get(modId);
+      if (api) {
+        api.destroy();
+      }
       this.activeMods.delete(modId);
       this.apis.delete(modId);
       console.log(`[ModManager] Module ${modId} unloaded.`);
@@ -261,6 +267,10 @@ class ModManagerService {
         } catch (err) {
           console.error(`[ModManager] Error during cleanup of module ${modId}:`, err);
         }
+      }
+      const api = this.apis.get(modId);
+      if (api) {
+        api.destroy();
       }
     }
     this.activeMods.clear();

@@ -769,7 +769,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-950/80 text-white p-4 sm:p-6 gap-4 sm:gap-6 pointer-events-auto overflow-y-auto custom-scrollbar border border-rose-900/30 rounded-xl relative backdrop-blur-md shadow-[inset_0_0_50px_rgba(225,29,72,0.04)]">
+    <div className="flex flex-col h-full bg-[#050508] text-white p-4 sm:p-6 gap-4 sm:gap-6 pointer-events-auto overflow-y-auto custom-scrollbar border border-rose-900/30 rounded-xl relative shadow-[inset_0_0_50px_rgba(225,29,72,0.04)]">
       
       {/* Boutons Haut Droite */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5 flex-wrap justify-end max-w-[60%]">

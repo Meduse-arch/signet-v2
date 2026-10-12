@@ -45,6 +45,7 @@ export function DiceWindow({ api }: DiceWindowProps) {
         type: 'dice',
         actor: api.user.getName(),
         actorId: api.user.getName(),
+        accountName: api.user.getName(),
         summary: `a lancé ${diceString} : ${total}`,
         details: { formula: diceString, total, results },
         visibility: 'all'
@@ -64,7 +65,7 @@ export function DiceWindow({ api }: DiceWindowProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-black/40 text-white p-4 gap-6 pointer-events-auto">
+    <div className="flex flex-col h-full bg-[#050508] text-white p-4 gap-6 pointer-events-auto overflow-y-auto">
       
       {/* Dés Classiques */}
       <div>

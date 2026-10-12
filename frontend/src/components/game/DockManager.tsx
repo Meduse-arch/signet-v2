@@ -102,6 +102,8 @@ export function DockManager() {
             title={win.title}
             icon={win.icon}
             defaultPosition={win.defaultPosition}
+            defaultWidth={win.defaultWidth}
+            defaultHeight={win.defaultHeight}
             isOpen={isOpen}
             onFocus={() => bringToFront(win.windowId)}
             zIndex={zIndex}

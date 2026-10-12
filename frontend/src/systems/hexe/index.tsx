@@ -1,7 +1,7 @@
-import React from 'react';
 import { SignetAPI } from '../../core/services/SignetAPI';
-import { Skull } from 'lucide-react';
+import { Skull, Shield } from 'lucide-react';
 import { HexeAppWindow } from './ui/HexeAppWindow';
+import { HexeArsenalWindow } from './ui/HexeArsenalWindow';
 import { HexeDiceOverlay } from './ui/HexeDiceOverlay';
 
 const MOD_ID = 'system-hexe';
@@ -19,7 +19,7 @@ export const SystemHexeModule = {
       <HexeDiceOverlay api={api} />
     );
 
-    // 1. Enregistre le bouton dans la barre latérale / menu
+    // 1. Enregistre le bouton Personnages dans la barre latérale / menu
     api.ui.registerAction(
       'hexe-app',
       'Hexe',
@@ -27,16 +27,35 @@ export const SystemHexeModule = {
       'WINDOW_TOGGLE'
     );
 
-    // 2. Enregistre la fenêtre associée au bouton
+    // 2. Enregistre l'Arsenal (Forge d'équipements, armes & armures)
+    api.ui.registerAction(
+      'hexe-arsenal',
+      'Arsenal',
+      <Shield className="w-5 h-5 text-rose-500" />,
+      'WINDOW_TOGGLE'
+    );
+
+    // 3. Enregistre la fenêtre associée aux Personnages
     api.ui.registerWindow(
       'hexe-app',
       'Personnages Hexe',
       <HexeAppWindow api={api} />,
       {
         icon: <Skull className="w-5 h-5 text-red-500" />,
-        transparent: true,
-        width: 600,
-        height: 800
+        defaultWidth: 480,
+        defaultHeight: 640
+      }
+    );
+
+    // 4. Enregistre la fenêtre de l'Arsenal
+    api.ui.registerWindow(
+      'hexe-arsenal',
+      'Arsenal Hexe',
+      <HexeArsenalWindow api={api} />,
+      {
+        icon: <Shield className="w-5 h-5 text-rose-500" />,
+        defaultWidth: 520,
+        defaultHeight: 640
       }
     );
 

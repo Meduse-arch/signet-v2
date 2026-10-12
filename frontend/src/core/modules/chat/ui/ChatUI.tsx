@@ -30,8 +30,6 @@ export function ChatUI() {
 
     coreEventBus.on('CHAT_NEW_MESSAGE', handleNewMessage);
 
-    coreEventBus.on('CHAT_NEW_MESSAGE', handleNewMessage);
-
     return () => {
       coreEventBus.off('CHAT_NEW_MESSAGE', handleNewMessage);
     };

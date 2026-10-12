@@ -29,7 +29,10 @@ export const CoreChatRollModule: SignetModule = {
       api.events.emit('WINDOW_TOGGLE', 'toggle-chat');
     });
 
-    api.on('CHAT_COMMAND', async (payload: any) => {
+    let lastRollTime = 0;
+    let lastRollCmd = '';
+
+    const handleChatCommand = async (payload: any) => {
       const cmd = payload.command;
       if (!cmd || typeof cmd !== 'string') return;
       
@@ -37,6 +40,14 @@ export const CoreChatRollModule: SignetModule = {
       
       // On vérifie si la commande est /roll ou /r
       if (lowerCmd.startsWith('/roll ') || lowerCmd.startsWith('/r ')) {
+        const now = Date.now();
+        // Évite tout double/triple déclenchement intempestif
+        if (lowerCmd === lastRollCmd && now - lastRollTime < 300) {
+          return;
+        }
+        lastRollTime = now;
+        lastRollCmd = lowerCmd;
+
         // Extraction de la formule (ex: "2d20")
         const formula = lowerCmd.replace(/^\/r(oll)?\s+/, '').trim();
         
@@ -47,10 +58,11 @@ export const CoreChatRollModule: SignetModule = {
 
         if (results && results.length > 0) {
           const total = results.reduce((a, b) => a + b, 0);
+          const authorName = api.user.getName();
 
           // Formatage du message spécial
-          const payload = {
-            author: api.user.getName(),
+          const rollPayload = {
+            author: authorName,
             text: `a lancé ${formula} : ${total}`,
             timestamp: Date.now(),
             type: 'roll'
@@ -59,23 +71,30 @@ export const CoreChatRollModule: SignetModule = {
           // Enregistrement dans le Journal d'Activité
           api.log({
             type: 'dice',
-            actor: api.user.getName(), // Le joueur lui-même
-            actorId: api.user.getName(),
+            actor: authorName,
+            actorId: authorName,
+            accountName: authorName,
             summary: `a lancé ${formula} : ${total}`,
             details: { formula, total, results },
             visibility: 'all'
           });
 
           // Affichage local
-          api.emit('CHAT_NEW_MESSAGE', payload);
+          api.emit('CHAT_NEW_MESSAGE', rollPayload);
 
           // Diffusion réseau
           api.emit('NETWORK_OUTGOING', {
             type: 'CHAT_MESSAGE',
-            payload: payload
+            payload: rollPayload
           });
         }
       }
-    });
+    };
+
+    api.on('CHAT_COMMAND', handleChatCommand);
+  },
+
+  cleanup: () => {
+    console.log('[ChatRollModule] Cleaned up.');
   }
 };
