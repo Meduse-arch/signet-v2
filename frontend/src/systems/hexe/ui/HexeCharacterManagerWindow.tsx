@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SignetAPI } from '../../../core/services/SignetAPI';
-import { Search, UserPlus, BookUser, User, Skull, Trash2, MapPin, Plus } from 'lucide-react';
-import { Button } from '../../../components/ui/Button';
+import { Search, User, Skull, Trash2, MapPin, Plus } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { FileTransferService } from '../../../core/services/FileTransferService';
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SignetAPI } from '../../../core/services/SignetAPI';
 import { HexeCharacterManagerWindow } from './HexeCharacterManagerWindow';
 import { HexeCharacterSheetWindow } from './HexeCharacterSheetWindow';

@@ -1,9 +1,80 @@
 // --- Stats ---
 
 export type HexeStatKey = 'str' | 'dex' | 'agi' | 'tec' | 'vit' | 'luc';
+export const ALL_STATS: HexeStatKey[] = ['str', 'dex', 'agi', 'tec', 'vit', 'luc'];
 
 export interface HexeStat {
   level: number;
+}
+
+// --- Dés Personnalisés ---
+
+export interface HexeDiceTerm {
+  count: number;
+  sides: number;
+}
+
+export interface HexeDiceFormula {
+  terms: HexeDiceTerm[];
+  flatModifier?: number;
+}
+
+// --- Effets & Compétences ---
+
+export type HexeActivationType = 'passive' | 'toggle' | 'active';
+
+export type HexeResourceKey = 'hp' | 'mp' | 'stm' | 'chance';
+
+export type HexeEffect =
+  | {
+      type: 'statLevel';
+      stat: HexeStatKey;
+      value: number; // ex: +2
+    }
+  | {
+      type: 'rollModifier';
+      value: number; // ex: +2 au résultat final
+      condition?: string; // ex: 'jet d\'attaque'
+    }
+  | {
+      type: 'resourceChange';
+      resource: HexeResourceKey;
+      target: 'current' | 'maximum';
+      operation: 'add' | 'set' | 'restore' | 'spend';
+      value?: number;
+      dice?: HexeDiceFormula;
+    }
+  | {
+      type: 'custom';
+      description: string;
+    };
+
+export interface HexeSkill {
+  id: string;
+  name: string;
+  description?: string;
+  activationType: HexeActivationType;
+  effects: HexeEffect[];
+  dice?: HexeDiceFormula;
+  skillLevel?: number;
+  duration?: string;
+  conditions?: string[];
+  costs?: Partial<Record<HexeResourceKey, number>>;
+  custom?: boolean;
+  /** Si la compétence provient d'une arme/équipement spécifique */
+  sourceEquipmentId?: string;
+}
+
+// --- Armes, Rangs & Pentacles ---
+
+export type HexeWeaponRank = 'F' | 'D' | 'C' | 'B' | 'A' | 'S';
+export type HexeWeaponNature = 'classic' | 'ego' | 'possessed';
+export type HexePentacleOrientation = 'upright' | 'inverted';
+
+export interface HexeWeaponSymbol {
+  orientation: HexePentacleOrientation;
+  filled: boolean;
+  hasCircle: boolean;
 }
 
 // --- Équipement ---
@@ -41,6 +112,16 @@ export interface HexeEquipment {
   /** L'objet est actuellement équipé (faux pour les consommables) */
   isEquipped: boolean;
   description?: string;
+
+  // Armes : rangs et symbolique des pentacles
+  rank?: HexeWeaponRank;
+  nature?: HexeWeaponNature;
+  symbol?: HexeWeaponSymbol;
+  abilityIds?: string[];
+
+  // Effets et jets de dés personnalisés
+  effects?: HexeEffect[];
+  dice?: HexeDiceFormula;
 }
 
 export interface HexeInventoryItem {
@@ -78,6 +159,11 @@ export interface HexeCharacter {
   equipment?: HexeEquipment[];
   /** Objets simples (consommables, clés, etc.) */
   inventory?: HexeInventoryItem[];
+
+  /** Compétences acquises ou conférées */
+  skills?: HexeSkill[];
+  /** IDs des compétences toggle actuellement activées */
+  activeToggles?: string[];
 }
 
 export const DEFAULT_HEXE_STATS = {

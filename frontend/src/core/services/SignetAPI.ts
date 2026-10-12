@@ -12,7 +12,7 @@ export class SignetAPI {
   public readonly events: EventBus;
   public readonly ui: {
     registerOverlay: (overlayId: string, component: React.ReactNode) => void;
-    registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, icon?: React.ReactNode, transparent?: boolean, hideHeader?: boolean, startSlim?: boolean, collapseMode?: 'slim' | 'hide' }) => void;
+    registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, defaultWidth?: number, defaultHeight?: number, icon?: React.ReactNode, transparent?: boolean, hideHeader?: boolean, startSlim?: boolean, collapseMode?: 'slim' | 'hide' }) => void;
     registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => void;
     setActionState: (actionId: string, isActive: boolean) => void;
   };

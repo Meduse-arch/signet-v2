@@ -1,7 +1,8 @@
 import { SignetAPI } from '../../core/services/SignetAPI';
-import { Skull, Shield } from 'lucide-react';
+import { Skull, Shield, BookOpen } from 'lucide-react';
 import { HexeAppWindow } from './ui/HexeAppWindow';
 import { HexeArsenalWindow } from './ui/HexeArsenalWindow';
+import { HexeGrimoireWindow } from './ui/HexeGrimoireWindow';
 import { HexeDiceOverlay } from './ui/HexeDiceOverlay';
 
 const MOD_ID = 'system-hexe';
@@ -35,7 +36,15 @@ export const SystemHexeModule = {
       'WINDOW_TOGGLE'
     );
 
-    // 3. Enregistre la fenêtre associée aux Personnages
+    // 3. Enregistre le Grimoire (Forge & catalogue des compétences, sorts & dons)
+    api.ui.registerAction(
+      'hexe-grimoire',
+      'Grimoire',
+      <BookOpen className="w-5 h-5 text-purple-400" />,
+      'WINDOW_TOGGLE'
+    );
+
+    // 4. Enregistre la fenêtre associée aux Personnages
     api.ui.registerWindow(
       'hexe-app',
       'Personnages Hexe',
@@ -47,7 +56,7 @@ export const SystemHexeModule = {
       }
     );
 
-    // 4. Enregistre la fenêtre de l'Arsenal
+    // 5. Enregistre la fenêtre de l'Arsenal
     api.ui.registerWindow(
       'hexe-arsenal',
       'Arsenal Hexe',
@@ -56,6 +65,18 @@ export const SystemHexeModule = {
         icon: <Shield className="w-5 h-5 text-rose-500" />,
         defaultWidth: 520,
         defaultHeight: 640
+      }
+    );
+
+    // 6. Enregistre la fenêtre du Grimoire
+    api.ui.registerWindow(
+      'hexe-grimoire',
+      'Grimoire Hexe',
+      <HexeGrimoireWindow api={api} />,
+      {
+        icon: <BookOpen className="w-5 h-5 text-purple-400" />,
+        defaultWidth: 540,
+        defaultHeight: 660
       }
     );
 

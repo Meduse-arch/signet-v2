@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { SignetAPI } from '../../../core/services/SignetAPI';
-import type { HexeCharacter, HexeEquipment, HexeStatKey, HexeEquipmentSlot } from '../types';
-import {
-  DEFAULT_HEXE_STATS, getDiceForLevel, getMaxHP, getMaxMP, getMaxSTM, getMaxChance,
-  STAT_LABELS, SLOT_LABELS, getEquipmentBonusForStat, getEffectiveStatLevel
-} from '../types';
 import {
   Droplet, Shield, Star, Sparkles, ArrowLeft, Swords, Backpack, BookOpen,
   Trash2, ChevronDown, ChevronUp, Package, Tag, Zap, X, Search, ExternalLink,
-  FlaskConical, Layers, Edit3
+  FlaskConical, Layers, Edit3, Plus, Play, ToggleLeft, ToggleRight, Dices
 } from 'lucide-react';
+import type {
+  HexeCharacter, HexeEquipment, HexeStatKey, HexeEquipmentSlot,
+  HexeSkill, HexeWeaponRank, HexeWeaponNature
+} from '../types';
+import {
+  ALL_STATS, DEFAULT_HEXE_STATS, getMaxHP, getMaxMP, getMaxSTM, getMaxChance,
+  STAT_LABELS, SLOT_LABELS, getDiceForLevel
+} from '../types';
+import {
+  calculateEffectiveState, executeSkillOrItem
+} from '../hexeEffectEngine';
+import {
+  parseDiceFormula, formatDiceFormula, rollDiceFormula
+} from '../hexeDiceEngine';
+import {
+  getSkillsCatalog, subscribeSkills
+} from '../hexeSkillStore';
+import { HexePentacleBadge } from './HexePentacleBadge';
+import { SkillPickerModal } from './SkillPickerModal';
 import { invoke } from '@tauri-apps/api/core';
 import { ModManager } from '../../../core/services/ModManager';
 import {
@@ -21,7 +35,6 @@ const isTauri = () => '__TAURI_INTERNALS__' in window;
 
 type SheetTab = 'attributs' | 'inventaire' | 'competences';
 
-const ALL_STATS: HexeStatKey[] = ['str', 'dex', 'agi', 'tec', 'vit', 'luc'];
 const STAT_SHORT: Record<HexeStatKey, string> = {
   str: 'STR', dex: 'DEX', agi: 'AGI', tec: 'TEC', vit: 'VIT', luc: 'LUC'
 };
@@ -77,10 +90,22 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
   // — Édition directe d'un équipement sur la fiche
   const [editingEquipment, setEditingEquipment] = useState<HexeEquipment | null>(null);
 
+  // — Modal Sélecteur de Compétences
+  const [showSkillPicker, setShowSkillPicker] = useState(false);
+  const [catalogSkills, setCatalogSkills] = useState<HexeSkill[]>([]);
+
   useEffect(() => {
     setArsenalTemplates(getTemplates());
     const unsub = subscribeTemplates(() => {
       setArsenalTemplates(getTemplates());
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    setCatalogSkills(getSkillsCatalog());
+    const unsub = subscribeSkills(() => {
+      setCatalogSkills(getSkillsCatalog());
     });
     return unsub;
   }, []);
@@ -155,13 +180,118 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
   };
 
   const rollStat = async (statKey: HexeStatKey) => {
-    const effectiveLevel = getEffectiveStatLevel(statKey, char.stats[statKey].level, char.equipment ?? []);
-    const diceStr = getDiceForLevel(effectiveLevel);
+    const effectiveState = calculateEffectiveState(char);
+    const effectiveLevel = effectiveState.levels[statKey];
+    const diceStr = effectiveState.dice[statKey];
     const results = await api.requestRoll([diceStr]);
-    const total = results && results.length > 0 ? results[0] : 0;
+    const rawTotal = results && results.length > 0 ? results[0] : 0;
 
-    api.emit('NETWORK_OUTGOING', { type: 'MOD_EVENT', modEventType: 'HEXE_ROLL_ANIMATION', payload: { total, label: `Jet de ${STAT_LABELS[statKey]}` } });
-    api.emit('NETWORK_OUTGOING', { type: 'CHAT_MESSAGE', payload: { text: `*invoque les forces pour **${STAT_LABELS[statKey]}**...\n🎲 **${diceStr}** ➔ **[ ${total} ]**`, sender: char.name } });
+    const applicableMods = effectiveState.rollModifiers;
+    const modTotal = applicableMods.reduce((sum, m) => sum + m.value, 0);
+    const total = rawTotal + modTotal;
+    const modText = modTotal !== 0 ? ` (${rawTotal} ${modTotal > 0 ? '+' : ''}${modTotal})` : '';
+
+    api.emit('NETWORK_OUTGOING', {
+      type: 'MOD_EVENT',
+      modEventType: 'HEXE_ROLL_ANIMATION',
+      payload: { total, label: `Jet de ${STAT_LABELS[statKey]}` }
+    });
+    api.emit('NETWORK_OUTGOING', {
+      type: 'CHAT_MESSAGE',
+      payload: {
+        text: `*invoque les forces pour **${STAT_LABELS[statKey]}** (Niv. ${effectiveLevel})...\n🎲 **${diceStr}** ➔ **[ ${total} ]**${modText}*`,
+        sender: char.name
+      }
+    });
+  };
+
+  const handleRollWeapon = (equip: HexeEquipment) => {
+    if (!equip.dice) return;
+    const rollResult = rollDiceFormula(equip.dice);
+    const formulaStr = formatDiceFormula(equip.dice);
+    const modText = rollResult.breakdown ? ` (${rollResult.breakdown})` : '';
+
+    api.emit('NETWORK_OUTGOING', {
+      type: 'MOD_EVENT',
+      modEventType: 'HEXE_ROLL_ANIMATION',
+      payload: { total: rollResult.total, label: `Attaque : ${equip.name}` }
+    });
+
+    api.emit('NETWORK_OUTGOING', {
+      type: 'CHAT_MESSAGE',
+      payload: {
+        text: `*frappe avec **${equip.name}** [${formulaStr}] ➔ **[ ${rollResult.total} ]**${modText}*`,
+        sender: char.name
+      }
+    });
+
+    api.log({
+      type: 'action',
+      actor: char.name,
+      actorId: char.id,
+      accountName: api.user.getName(),
+      summary: `a frappé avec ${equip.name} (${formulaStr}) : ${rollResult.total}`,
+      details: rollResult as unknown as Record<string, unknown>,
+      visibility: 'all'
+    });
+  };
+
+  // ─── Gestion compétences & activation ───────────────────────────────────────
+
+  const handleToggleSkill = (skillId: string) => {
+    const active = new Set(char.activeToggles || []);
+    if (active.has(skillId)) {
+      active.delete(skillId);
+    } else {
+      active.add(skillId);
+    }
+    updateCharacterLocally(prev => ({
+      ...prev,
+      activeToggles: Array.from(active) as string[]
+    }));
+  };
+
+  const handleTriggerSkill = (skill: HexeSkill) => {
+    const execResult = executeSkillOrItem(char, skill);
+    if (!execResult.success) {
+      alert(execResult.message);
+      return;
+    }
+
+    updateCharacterLocally(() => execResult.char);
+
+    api.emit('NETWORK_OUTGOING', {
+      type: 'CHAT_MESSAGE',
+      payload: {
+        text: execResult.message,
+        sender: char.name
+      }
+    });
+
+    api.log({
+      type: 'action',
+      actor: char.name,
+      actorId: char.id,
+      accountName: api.user.getName(),
+      summary: `a utilisé ${skill.name}`,
+      details: execResult as unknown as Record<string, unknown>,
+      visibility: 'all'
+    });
+  };
+
+  const handleAddSkill = (skill: HexeSkill) => {
+    updateCharacterLocally(prev => ({
+      ...prev,
+      skills: [...(prev.skills || []), skill]
+    }));
+  };
+
+  const handleDeleteSkill = (skillId: string) => {
+    updateCharacterLocally(prev => ({
+      ...prev,
+      skills: (prev.skills || []).filter(s => s.id !== skillId),
+      activeToggles: (prev.activeToggles || []).filter(id => id !== skillId)
+    }));
   };
 
   // ─── Gestion équipements & consommables ─────────────────────────────────────
@@ -217,20 +347,42 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
   };
 
   const handleConsumeItem = (equip: HexeEquipment) => {
-    updateEquipmentQty(equip.id, -1);
+    const execResult = executeSkillOrItem(char, {
+      name: equip.name,
+      effects: equip.effects || [],
+      dice: equip.dice
+    });
+
+    if (!execResult.success) {
+      alert(execResult.message);
+      return;
+    }
+
+    const updatedChar = {
+      ...execResult.char,
+      equipment: (execResult.char.equipment ?? []).map(e => {
+        if (e.id !== equip.id) return e;
+        const newQty = (e.quantity ?? 1) - 1;
+        return { ...e, quantity: newQty };
+      }).filter(e => (e.quantity ?? 1) > 0)
+    };
+
+    updateCharacterLocally(() => updatedChar);
+
     api.log({
       type: 'item',
       actor: char.name,
       actorId: char.id,
       accountName: api.user.getName(),
       summary: `a consommé 1x ${equip.name}`,
-      details: equip,
+      details: execResult as unknown as Record<string, unknown>,
       visibility: 'all'
     });
+
     api.emit('NETWORK_OUTGOING', {
       type: 'CHAT_MESSAGE',
       payload: {
-        text: `*consomme **${equip.name}***${equip.abilities?.[0]?.description ? ` — *${equip.abilities[0].description}*` : ''}`,
+        text: `*consomme **${equip.name}*** ${execResult.message.replace(`A activé **${equip.name}**`, '')}`,
         sender: char.name
       }
     });
@@ -364,49 +516,54 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
           </div>
         </div>
 
-        {/* 3. Barres de ressources vitales - Grille 2x2 en tuiles modernes */}
-        <div className="bg-[#07080d] border-b border-white/10 p-2.5 sm:p-3 shrink-0 grid grid-cols-2 gap-2">
-          <CompactResourceBar
-            icon={<Droplet className="w-3.5 h-3.5 text-rose-400" />}
-            label="HP"
-            current={char.resources.hp}
-            max={getMaxHP(char.stats.vit.level)}
-            color="#e11d48"
-            trackColor="rgba(225, 29, 72, 0.15)"
-            onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, hp: Math.max(0, p.resources.hp - 1) } }))}
-            onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, hp: Math.min(getMaxHP(p.stats.vit.level), p.resources.hp + 1) } }))}
-          />
-          <CompactResourceBar
-            icon={<Sparkles className="w-3.5 h-3.5 text-purple-400" />}
-            label="MP"
-            current={char.resources.mp}
-            max={getMaxMP(char.stats.tec.level)}
-            color="#a855f7"
-            trackColor="rgba(168, 85, 247, 0.15)"
-            onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, mp: Math.max(0, p.resources.mp - 1) } }))}
-            onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, mp: Math.min(getMaxMP(p.stats.tec.level), p.resources.mp + 1) } }))}
-          />
-          <CompactResourceBar
-            icon={<Shield className="w-3.5 h-3.5 text-emerald-400" />}
-            label="STM"
-            current={char.resources.stm}
-            max={getMaxSTM(char.stats.agi.level)}
-            color="#10b981"
-            trackColor="rgba(16, 185, 129, 0.15)"
-            onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, stm: Math.max(0, p.resources.stm - 1) } }))}
-            onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, stm: Math.min(getMaxSTM(p.stats.agi.level), p.resources.stm + 1) } }))}
-          />
-          <CompactResourceBar
-            icon={<Star className="w-3.5 h-3.5 text-amber-400" />}
-            label="Chance"
-            current={char.resources.chance}
-            max={getMaxChance(char.stats.luc.level)}
-            color="#f59e0b"
-            trackColor="rgba(245, 158, 11, 0.15)"
-            onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, chance: Math.max(0, p.resources.chance - 1) } }))}
-            onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, chance: Math.min(getMaxChance(p.stats.luc.level), p.resources.chance + 1) } }))}
-          />
-        </div>
+        {/* 3. Barres de ressources vitales (dynamiquement recalculées avec bonus d'effets/compétences) */}
+        {(() => {
+          const effectiveState = calculateEffectiveState(char);
+          return (
+            <div className="bg-[#07080d] border-b border-white/10 p-2.5 sm:p-3 shrink-0 grid grid-cols-2 gap-2">
+              <CompactResourceBar
+                icon={<Droplet className="w-3.5 h-3.5 text-rose-400" />}
+                label="HP"
+                current={char.resources.hp}
+                max={effectiveState.maxResources.hp}
+                color="#e11d48"
+                trackColor="rgba(225, 29, 72, 0.15)"
+                onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, hp: Math.max(0, p.resources.hp - 1) } }))}
+                onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, hp: Math.min(effectiveState.maxResources.hp, p.resources.hp + 1) } }))}
+              />
+              <CompactResourceBar
+                icon={<Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+                label="MP"
+                current={char.resources.mp}
+                max={effectiveState.maxResources.mp}
+                color="#a855f7"
+                trackColor="rgba(168, 85, 247, 0.15)"
+                onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, mp: Math.max(0, p.resources.mp - 1) } }))}
+                onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, mp: Math.min(effectiveState.maxResources.mp, p.resources.mp + 1) } }))}
+              />
+              <CompactResourceBar
+                icon={<Shield className="w-3.5 h-3.5 text-emerald-400" />}
+                label="STM"
+                current={char.resources.stm}
+                max={effectiveState.maxResources.stm}
+                color="#10b981"
+                trackColor="rgba(16, 185, 129, 0.15)"
+                onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, stm: Math.max(0, p.resources.stm - 1) } }))}
+                onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, stm: Math.min(effectiveState.maxResources.stm, p.resources.stm + 1) } }))}
+              />
+              <CompactResourceBar
+                icon={<Star className="w-3.5 h-3.5 text-amber-400" />}
+                label="Chance"
+                current={char.resources.chance}
+                max={effectiveState.maxResources.chance}
+                color="#f59e0b"
+                trackColor="rgba(245, 158, 11, 0.15)"
+                onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, chance: Math.max(0, p.resources.chance - 1) } }))}
+                onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, chance: Math.min(effectiveState.maxResources.chance, p.resources.chance + 1) } }))}
+              />
+            </div>
+          );
+        })()}
 
         {/* 4. Barre d'onglets - Compacte & Scroll-safe */}
         <div className="flex border-b border-white/10 shrink-0 bg-[#090a10] overflow-x-auto">
@@ -429,14 +586,16 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
         {/* 5. Contenu des onglets */}
         <div className="flex-1 p-4">
           {/* ── ONGLET ATTRIBUTS - 2 Colonnes propres et aérées ── */}
-          {activeTab === 'attributs' && (
-            <div className="grid grid-cols-2 gap-2.5">
-              {(Object.keys(char.stats) as Array<keyof HexeCharacter['stats']>).map(stat => {
-                const baseLevel = char.stats[stat].level;
-                const bonus = getEquipmentBonusForStat(stat as HexeStatKey, char.equipment ?? []);
-                const effectiveLevel = baseLevel + bonus;
-                const effectiveDice = getDiceForLevel(effectiveLevel);
-                const hasBonus = bonus > 0;
+          {activeTab === 'attributs' && (() => {
+            const effectiveState = calculateEffectiveState(char);
+            return (
+              <div className="grid grid-cols-2 gap-2.5">
+                {ALL_STATS.map(stat => {
+                  const baseLevel = char.stats[stat]?.level || 1;
+                  const effectiveLevel = effectiveState.levels[stat] || baseLevel;
+                  const effectiveDice = effectiveState.dice[stat] || getDiceForLevel(effectiveLevel);
+                  const bonus = effectiveLevel - baseLevel;
+                  const hasBonus = bonus > 0;
 
                 return (
                   <div
@@ -495,7 +654,8 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                 );
               })}
             </div>
-          )}
+          );
+        })()}
 
           {/* ── ONGLET INVENTAIRE ── */}
           {/* ── ONGLET INVENTAIRE ── */}
@@ -512,13 +672,14 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                     Aucun équipement porté. Équipez des armes, armures ou accessoires depuis votre sac ci-dessous.
                   </p>
                 ) : (
-                  equippedItems.map(equip => (
+                  equippedItems.map((equip: HexeEquipment) => (
                     <EquipmentCard
                       key={equip.id}
                       equip={equip}
                       expanded={expandedEquip.has(equip.id)}
                       onToggleExpand={() => toggleExpandEquip(equip.id)}
                       onToggleEquip={() => toggleEquipped(equip.id)}
+                      onRollWeapon={() => handleRollWeapon(equip)}
                       onEdit={() => setEditingEquipment(equip)}
                       onDelete={() => deleteEquipment(equip.id)}
                     />
@@ -562,13 +723,14 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                 ) : (
                   <>
                     {/* Équipements en réserve & Consommables */}
-                    {bagItems.map(equip => (
+                    {bagItems.map((equip: HexeEquipment) => (
                       <EquipmentCard
                         key={equip.id}
                         equip={equip}
                         expanded={expandedEquip.has(equip.id)}
                         onToggleExpand={() => toggleExpandEquip(equip.id)}
                         onToggleEquip={() => toggleEquipped(equip.id)}
+                        onRollWeapon={() => handleRollWeapon(equip)}
                         onConsume={() => handleConsumeItem(equip)}
                         onUpdateQty={(delta) => updateEquipmentQty(equip.id, delta)}
                         onEdit={() => setEditingEquipment(equip)}
@@ -635,14 +797,172 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
 
           {/* ── ONGLET COMPÉTENCES ── */}
           {activeTab === 'competences' && (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
-              <BookOpen className="w-10 h-10 text-rose-500/60 mb-2" />
-              <p className="font-bold text-sm text-slate-400 text-center">
-                Arts occultes et rituels
-              </p>
-              <p className="text-xs text-slate-600 text-center max-w-sm">
-                Les compétences et incantations de l'Inquisition seront inscrites dans cette section.
-              </p>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-rose-400" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    Arts & Incantations
+                  </span>
+                  <span className="text-[10px] font-bold bg-white/10 text-slate-300 rounded-full px-2 py-0.2 leading-none">
+                    {(char.skills || []).length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => api?.emit('SYSTEM_ACTION_TRIGGERED', 'hexe-grimoire')}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-purple-300 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/40 rounded-lg transition-all whitespace-nowrap"
+                    title="Ouvrir la fenêtre du Grimoire Hexe"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                    <span>Grimoire</span>
+                  </button>
+                  <button
+                    onClick={() => setShowSkillPicker(true)}
+                    className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all whitespace-nowrap"
+                  >
+                    <Plus className="w-3.5 h-3.5 shrink-0" />
+                    <span>+ Compétence</span>
+                  </button>
+                </div>
+              </div>
+
+              {(char.skills || []).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-500 bg-[#07080d]/60 border border-dashed border-white/10 rounded-2xl p-6">
+                  <BookOpen className="w-10 h-10 text-rose-500/40 mb-1" />
+                  <p className="font-bold text-sm text-slate-300 text-center">
+                    Aucune compétence acquise
+                  </p>
+                  <p className="text-xs text-slate-500 text-center max-w-sm">
+                    Cliquez sur "+ Compétence" pour piocher dans le Grimoire ou forger une technique sur-mesure.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {(char.skills || []).map(skill => {
+                    const isToggle = skill.activationType === 'toggle';
+                    const isActiveToggle = isToggle && (char.activeToggles || []).includes(skill.id);
+                    const isPassive = skill.activationType === 'passive';
+                    const isActive = skill.activationType === 'active';
+
+                    return (
+                      <div
+                        key={skill.id}
+                        className={`bg-[#090a10] border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+                          isActiveToggle
+                            ? 'border-rose-500/80 shadow-[0_0_15px_rgba(225,29,72,0.2)] bg-rose-950/20'
+                            : 'border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-white truncate">{skill.name}</span>
+
+                            {isPassive && (
+                              <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-800 border border-white/10 text-slate-300 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                <Sparkles className="w-2.5 h-2.5 text-purple-400" /> Passif
+                              </span>
+                            )}
+                            {isToggle && (
+                              <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 flex items-center gap-1 border ${
+                                isActiveToggle
+                                  ? 'bg-rose-600/30 border-rose-500/50 text-rose-300'
+                                  : 'bg-amber-950/60 border-amber-800/40 text-amber-300'
+                              }`}>
+                                <Layers className="w-2.5 h-2.5 text-amber-400" /> Toggle
+                              </span>
+                            )}
+                            {isActive && (
+                              <span className="text-[9px] font-bold uppercase tracking-wider bg-rose-950/60 border border-rose-800/40 text-rose-300 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                <Zap className="w-2.5 h-2.5 text-rose-400" /> Actif
+                              </span>
+                            )}
+
+                            {skill.costs?.mp && (
+                              <span className="text-[9px] font-bold text-purple-400 bg-purple-950/60 border border-purple-800/40 px-1.5 py-0.2 rounded">
+                                {skill.costs.mp} MP
+                              </span>
+                            )}
+                            {skill.costs?.stm && (
+                              <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.2 rounded">
+                                {skill.costs.stm} STM
+                              </span>
+                            )}
+                            {skill.dice && (
+                              <span className="text-[9px] font-black text-rose-300 bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.2 rounded">
+                                🎲 {skill.dice.terms?.map(t => `${t.count}d${t.sides}`).join('+')}
+                              </span>
+                            )}
+                          </div>
+
+                          {skill.description && (
+                            <p className="text-[11px] text-slate-400 italic line-clamp-2">{skill.description}</p>
+                          )}
+
+                          {skill.effects?.length > 0 && (
+                            <div className="flex gap-1.5 flex-wrap pt-0.5">
+                              {skill.effects.map((eff, i) => (
+                                <span
+                                  key={i}
+                                  className="text-[9px] font-medium text-slate-300 bg-white/5 border border-white/10 rounded px-1.5 py-0.2"
+                                >
+                                  {eff.type === 'statLevel' && `+${eff.value} ${STAT_LABELS[eff.stat]}`}
+                                  {eff.type === 'rollModifier' && `+${eff.value} aux jets`}
+                                  {eff.type === 'resourceChange' && `${eff.operation.toUpperCase()} ${eff.resource.toUpperCase()}`}
+                                  {eff.type === 'custom' && eff.description}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          {isToggle && (
+                            <button
+                              onClick={() => handleToggleSkill(skill.id)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                isActiveToggle
+                                  ? 'bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.4)]'
+                                  : 'bg-white/5 text-slate-400 hover:text-white border border-white/10 hover:bg-white/10'
+                              }`}
+                            >
+                              {isActiveToggle ? (
+                                <>
+                                  <ToggleRight className="w-4 h-4 text-white" />
+                                  <span>Actif</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ToggleLeft className="w-4 h-4 text-slate-400" />
+                                  <span>Inactif</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {isActive && (
+                            <button
+                              onClick={() => handleTriggerSkill(skill)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all whitespace-nowrap"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                              <span>Lancer</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleDeleteSkill(skill.id)}
+                            className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
+                            title="Oublier cette compétence"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -654,6 +974,15 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
           equipment={editingEquipment}
           onSave={handleSaveEquipment}
           onClose={() => setEditingEquipment(null)}
+        />
+      )}
+
+      {/* Modal sélecteur de compétences */}
+      {showSkillPicker && (
+        <SkillPickerModal
+          catalogSkills={catalogSkills}
+          onAddSkill={handleAddSkill}
+          onClose={() => setShowSkillPicker(false)}
         />
       )}
     </div>
@@ -695,6 +1024,7 @@ interface EquipmentCardProps {
   expanded: boolean;
   onToggleExpand: () => void;
   onToggleEquip: () => void;
+  onRollWeapon?: () => void;
   onConsume?: () => void;
   onUpdateQty?: (delta: number) => void;
   onEdit?: () => void;
@@ -702,10 +1032,10 @@ interface EquipmentCardProps {
 }
 
 function EquipmentCard({
-  equip, expanded, onToggleExpand, onToggleEquip, onConsume, onUpdateQty, onEdit, onDelete
+  equip, expanded, onToggleExpand, onToggleEquip, onRollWeapon, onConsume, onUpdateQty, onEdit, onDelete
 }: EquipmentCardProps) {
   const bonusEntries = Object.entries(equip.statBonuses ?? {}) as [HexeStatKey, number][];
-  const hasDetails = (equip.abilities?.length ?? 0) > 0 || (equip.properties?.length ?? 0) > 0 || !!equip.description;
+  const hasDetails = (equip.abilities?.length ?? 0) > 0 || (equip.properties?.length ?? 0) > 0 || !!equip.description || equip.slot === 'weapon';
   const isConsumable = equip.slot === 'consumable';
 
   return (
@@ -716,6 +1046,14 @@ function EquipmentCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-bold text-white truncate">{equip.name}</span>
+              {equip.slot === 'weapon' && (
+                <HexePentacleBadge
+                  rank={equip.rank || 'C'}
+                  nature={equip.nature || 'classic'}
+                  symbol={equip.symbol}
+                  size={20}
+                />
+              )}
               <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 leading-none shrink-0 flex items-center gap-1 border ${
                 isConsumable
                   ? 'bg-emerald-950/60 border-emerald-700/50 text-emerald-300'
@@ -796,16 +1134,28 @@ function EquipmentCard({
                 </button>
               </>
             ) : (
-              <button
-                onClick={onToggleEquip}
-                className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap ${
-                  equip.isEquipped
-                    ? 'bg-rose-600 text-white shadow-[0_0_10px_rgba(225,29,72,0.3)] hover:bg-rose-500'
-                    : 'bg-white/5 text-slate-300 hover:bg-white/15 border border-white/10'
-                }`}
-              >
-                {equip.isEquipped ? 'Porté' : 'Équiper'}
-              </button>
+              <>
+                {equip.slot === 'weapon' && equip.dice && onRollWeapon && (
+                  <button
+                    onClick={onRollWeapon}
+                    className="px-2 py-1 text-[10px] font-bold rounded-lg transition-colors bg-rose-950/70 hover:bg-rose-900 border border-rose-800/60 text-rose-300 flex items-center gap-1 shadow-sm whitespace-nowrap"
+                    title={`Lancer les dés (${formatDiceFormula(equip.dice)})`}
+                  >
+                    <Dices className="w-3 h-3 text-rose-400" />
+                    <span>{formatDiceFormula(equip.dice)}</span>
+                  </button>
+                )}
+                <button
+                  onClick={onToggleEquip}
+                  className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap ${
+                    equip.isEquipped
+                      ? 'bg-rose-600 text-white shadow-[0_0_10px_rgba(225,29,72,0.3)] hover:bg-rose-500'
+                      : 'bg-white/5 text-slate-300 hover:bg-white/15 border border-white/10'
+                  }`}
+                >
+                  {equip.isEquipped ? 'Porté' : 'Équiper'}
+                </button>
+              </>
             )}
 
             {onEdit && (
@@ -833,6 +1183,32 @@ function EquipmentCard({
         <div className="px-3 pb-3 pt-1 border-t border-white/5 bg-black/40 space-y-2">
           {equip.description && (
             <p className="text-xs italic text-slate-400">{equip.description}</p>
+          )}
+
+          {equip.slot === 'weapon' && (
+            <div className="bg-black/50 border border-white/10 rounded-lg p-2.5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <HexePentacleBadge
+                  rank={equip.rank || 'C'}
+                  nature={equip.nature || 'classic'}
+                  symbol={equip.symbol}
+                  size={32}
+                  showLabel={true}
+                />
+                <div className="text-[11px] text-slate-300">
+                  {equip.nature === 'ego'
+                    ? "Arme d'Ego : Volonté propre de l'arme."
+                    : equip.nature === 'possessed'
+                    ? "Arme Possédée : Entité occulte résidente."
+                    : "Arme Classique : Volonté directrice du porteur."}
+                </div>
+              </div>
+              {equip.dice && (
+                <span className="text-[10px] font-black text-rose-400 bg-rose-950/60 border border-rose-800/40 px-2 py-1 rounded shrink-0">
+                  {formatDiceFormula(equip.dice)}
+                </span>
+              )}
+            </div>
           )}
 
           {(equip.properties?.length ?? 0) > 0 && (
@@ -1086,6 +1462,9 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
   const [slot, setSlot] = useState<HexeEquipmentSlot>(equipment.slot);
   const [quantity, setQuantity] = useState(equipment.quantity ?? 1);
   const [description, setDescription] = useState(equipment.description ?? '');
+  const [rank, setRank] = useState<HexeWeaponRank>(equipment.rank || 'C');
+  const [nature, setNature] = useState<HexeWeaponNature>(equipment.nature || 'classic');
+  const [diceStr, setDiceStr] = useState(equipment.dice ? formatDiceFormula(equipment.dice) : '');
   const [statBonuses, setStatBonuses] = useState<Partial<Record<HexeStatKey, number>>>({ ...(equipment.statBonuses ?? {}) });
   const [properties, setProperties] = useState<string[]>([...(equipment.properties ?? [])]);
   const [abilities, setAbilities] = useState<{ id: string; name: string; description: string; condition?: string }[]>([
@@ -1151,12 +1530,22 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
     e.preventDefault();
     if (!name.trim()) return;
 
+    const parsedDice = diceStr.trim() ? parseDiceFormula(diceStr.trim()) : undefined;
+
     onSave({
       ...equipment,
       name: name.trim(),
       slot,
       quantity: slot === 'consumable' ? Math.max(1, quantity) : equipment.quantity,
       description: description.trim() || undefined,
+      rank: slot === 'weapon' ? rank : undefined,
+      nature: slot === 'weapon' ? nature : undefined,
+      symbol: slot === 'weapon' ? {
+        orientation: nature === 'classic' ? 'upright' : 'inverted',
+        filled: nature === 'possessed',
+        hasCircle: rank === 'S'
+      } : undefined,
+      dice: parsedDice || (slot === 'weapon' ? equipment.dice : undefined),
       statBonuses,
       properties,
       abilities
@@ -1229,6 +1618,108 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
             </div>
           )}
 
+          {/* Section spécifique Arme : Rangs & Pentacles (Section 8) */}
+          {slot === 'weapon' && (
+            <div className="border border-white/10 rounded-xl p-3 bg-black/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
+                    Symbolique & Rang (Pentacle Hexe)
+                  </label>
+                  <p className="text-[10px] text-slate-500">Convention visuelle et narrative des armes</p>
+                </div>
+                <HexePentacleBadge
+                  rank={rank}
+                  nature={nature}
+                  size={36}
+                  showLabel={true}
+                />
+              </div>
+
+              {/* Rangs F -> S */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-400 font-bold block">
+                  Rang ({rank === 'S' ? 'Pentacle complet cerclé' : `${['F', 'D', 'C', 'B', 'A'].indexOf(rank) + 1} branche(s)`})
+                </label>
+                <div className="grid grid-cols-6 gap-1">
+                  {(['F', 'D', 'C', 'B', 'A', 'S'] as HexeWeaponRank[]).map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRank(r)}
+                      className={`py-1 rounded font-black text-xs border transition-all ${
+                        rank === r
+                          ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.4)]'
+                          : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nature / Volonté */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-400 font-bold block">
+                  Nature de la Volonté
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setNature('classic')}
+                    className={`p-1.5 rounded text-left border transition-all ${
+                      nature === 'classic'
+                        ? 'bg-rose-950/60 border-rose-500/80 text-rose-300'
+                        : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="text-[10px] font-bold">Classique</div>
+                    <div className="text-[9px] text-slate-500">Volonté du porteur</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNature('ego')}
+                    className={`p-1.5 rounded text-left border transition-all ${
+                      nature === 'ego'
+                        ? 'bg-amber-950/60 border-amber-500/80 text-amber-300'
+                        : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="text-[10px] font-bold">Ego</div>
+                    <div className="text-[9px] text-slate-500">Volonté de l'arme</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNature('possessed')}
+                    className={`p-1.5 rounded text-left border transition-all ${
+                      nature === 'possessed'
+                        ? 'bg-red-950/70 border-red-500/80 text-red-300'
+                        : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="text-[10px] font-bold">Possédée</div>
+                    <div className="text-[9px] text-slate-500">Entité résidente</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Formule de dés */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-400 font-bold block">
+                  Formule de Dés (ex: 1d8+2, 2d6)
+                </label>
+                <input
+                  type="text"
+                  placeholder="ex: 1d8+2, 2d6, 1d20..."
+                  value={diceStr}
+                  onChange={e => setDiceStr(e.target.value)}
+                  className="w-full bg-[#050508] border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Description</label>
@@ -1248,15 +1739,15 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
               {Object.entries(statBonuses).length === 0 ? (
                 <span className="text-[11px] italic text-slate-500">Aucun bonus direct appliqué.</span>
               ) : (
-                Object.entries(statBonuses).map(([st, val]) => (
+                (Object.entries(statBonuses) as [HexeStatKey, number][]).map(([st, val]) => (
                   <span
                     key={st}
                     className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/50 rounded-lg px-2 py-0.5"
                   >
-                    <span>{STAT_SHORT[st as HexeStatKey]} +{val}</span>
+                    <span>{STAT_SHORT[st]} +{val}</span>
                     <button
                       type="button"
-                      onClick={() => handleRemoveBonus(st as HexeStatKey)}
+                      onClick={() => handleRemoveBonus(st)}
                       className="text-emerald-400 hover:text-white"
                     >
                       <X className="w-3 h-3" />

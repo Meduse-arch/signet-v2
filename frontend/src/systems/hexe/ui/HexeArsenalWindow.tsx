@@ -6,13 +6,18 @@ import {
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { invoke } from '@tauri-apps/api/core';
-import type { HexeEquipmentSlot, HexeStatKey, HexeCharacter } from '../types';
+import type {
+  HexeEquipmentSlot, HexeStatKey, HexeCharacter,
+  HexeWeaponRank, HexeWeaponNature
+} from '../types';
 import { SLOT_LABELS } from '../types';
 import {
   getTemplates, addTemplate, removeTemplate, updateTemplate,
   subscribeTemplates
 } from '../hexeEquipmentStore';
 import type { HexeEquipmentTemplate } from '../hexeEquipmentStore';
+import { HexePentacleBadge } from './HexePentacleBadge';
+import { parseDiceFormula, formatDiceFormula } from '../hexeDiceEngine';
 
 interface HexeArsenalWindowProps {
   api?: SignetAPI;
@@ -54,6 +59,9 @@ interface FormState {
   properties: string[];
   abilities: { id: string; name: string; description: string; condition?: string }[];
   description: string;
+  rank?: HexeWeaponRank;
+  nature?: HexeWeaponNature;
+  diceFormula?: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -62,7 +70,10 @@ const EMPTY_FORM: FormState = {
   statBonuses: {},
   properties: [],
   abilities: [],
-  description: ''
+  description: '',
+  rank: 'C',
+  nature: 'classic',
+  diceFormula: '',
 };
 
 export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
@@ -106,7 +117,10 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
       statBonuses: { ...(template.statBonuses || {}) },
       properties: [...(template.properties || [])],
       abilities: [...(template.abilities || [])],
-      description: template.description || ''
+      description: template.description || '',
+      rank: template.rank || 'C',
+      nature: template.nature || 'classic',
+      diceFormula: template.dice ? formatDiceFormula(template.dice) : ''
     });
     setIsCreating(true);
   };
@@ -118,7 +132,12 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
       statBonuses: { ...(template.statBonuses || {}) },
       properties: [...(template.properties || [])],
       abilities: (template.abilities || []).map(a => ({ ...a, id: `ab-${Date.now()}-${Math.random().toString(36).slice(2, 5)}` })),
-      description: template.description || ''
+      description: template.description || '',
+      rank: template.rank,
+      nature: template.nature,
+      symbol: template.symbol ? { ...template.symbol } : undefined,
+      dice: template.dice ? { ...template.dice, terms: template.dice.terms.map(t => ({ ...t })) } : undefined,
+      effects: template.effects ? [...template.effects] : undefined
     });
   };
 
@@ -156,6 +175,11 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                 templateId,
                 name: updatedTemplate.name,
                 slot: updatedTemplate.slot,
+                rank: updatedTemplate.rank,
+                nature: updatedTemplate.nature,
+                symbol: updatedTemplate.symbol,
+                dice: updatedTemplate.dice,
+                effects: updatedTemplate.effects,
                 statBonuses: { ...(updatedTemplate.statBonuses || {}) },
                 properties: [...(updatedTemplate.properties || [])],
                 abilities: [...(updatedTemplate.abilities || [])],
@@ -200,11 +224,25 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
     e.preventDefault();
     if (!form.name.trim()) return;
 
+    const parsedDice = form.diceFormula?.trim() ? parseDiceFormula(form.diceFormula.trim()) : undefined;
+    const isWeapon = form.slot === 'weapon';
+    const rank = isWeapon ? (form.rank || 'C') : undefined;
+    const nature = isWeapon ? (form.nature || 'classic') : undefined;
+    const symbol = isWeapon && rank && nature ? {
+      orientation: nature === 'classic' ? ('upright' as const) : ('inverted' as const),
+      filled: nature === 'possessed',
+      hasCircle: rank === 'S'
+    } : undefined;
+
     if (editingId) {
       const updatedTemplate: HexeEquipmentTemplate = {
         id: editingId,
         name: form.name.trim(),
         slot: form.slot,
+        rank,
+        nature,
+        symbol,
+        dice: parsedDice || undefined,
         statBonuses: form.statBonuses,
         properties: form.properties,
         abilities: form.abilities,
@@ -216,6 +254,10 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
       addTemplate({
         name: form.name.trim(),
         slot: form.slot,
+        rank,
+        nature,
+        symbol,
+        dice: parsedDice || undefined,
         statBonuses: form.statBonuses,
         properties: form.properties,
         abilities: form.abilities,
@@ -391,6 +433,108 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                 </select>
               </div>
             </div>
+
+            {/* Section spécifique Arme : Rangs & Pentacles (Section 8) */}
+            {form.slot === 'weapon' && (
+              <div className="border border-white/10 rounded-lg p-3 bg-[#050508]/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                      Symbolique & Rang (Pentacle Hexe)
+                    </label>
+                    <p className="text-[11px] text-slate-500">Convention visuelle et narrative des armes</p>
+                  </div>
+                  <HexePentacleBadge
+                    rank={form.rank || 'C'}
+                    nature={form.nature || 'classic'}
+                    size={36}
+                    showLabel={true}
+                  />
+                </div>
+
+                {/* Rangs F -> S */}
+                <div className="space-y-1">
+                  <label className="block text-[11px] text-slate-400 font-bold">
+                    Rang de l'Arme ({form.rank === 'S' ? 'Pentacle complet cerclé' : `${['F', 'D', 'C', 'B', 'A'].indexOf(form.rank || 'C') + 1} branche(s)`})
+                  </label>
+                  <div className="grid grid-cols-6 gap-1">
+                    {(['F', 'D', 'C', 'B', 'A', 'S'] as HexeWeaponRank[]).map(r => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, rank: r }))}
+                        className={`py-1 rounded font-black text-xs border transition-all ${
+                          form.rank === r
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.4)]'
+                            : 'bg-[#090a10] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Nature / Volonté */}
+                <div className="space-y-1">
+                  <label className="block text-[11px] text-slate-400 font-bold">
+                    Nature de la Volonté
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, nature: 'classic' }))}
+                      className={`p-2 rounded-lg text-left border transition-all ${
+                        form.nature === 'classic'
+                          ? 'bg-rose-950/60 border-rose-500/80 text-rose-300'
+                          : 'bg-[#090a10] border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="text-xs font-bold">Classique</div>
+                      <div className="text-[10px] text-slate-500">Volonté du porteur</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, nature: 'ego' }))}
+                      className={`p-2 rounded-lg text-left border transition-all ${
+                        form.nature === 'ego'
+                          ? 'bg-amber-950/60 border-amber-500/80 text-amber-300'
+                          : 'bg-[#090a10] border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="text-xs font-bold">Ego</div>
+                      <div className="text-[10px] text-slate-500">Volonté de l'arme</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, nature: 'possessed' }))}
+                      className={`p-2 rounded-lg text-left border transition-all ${
+                        form.nature === 'possessed'
+                          ? 'bg-red-950/70 border-red-500/80 text-red-300'
+                          : 'bg-[#090a10] border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="text-xs font-bold">Possédée</div>
+                      <div className="text-[10px] text-slate-500">Entité résidente</div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Formule de dés */}
+                <div className="space-y-1">
+                  <label className="block text-[11px] text-slate-400 font-bold">
+                    Formule de Dés (Dégâts ou jet spécifique, ex: 1d8+2, 2d6)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: 1d8+2, 2d6, 1d20..."
+                    value={form.diceFormula || ''}
+                    onChange={e => setForm(prev => ({ ...prev, diceFormula: e.target.value }))}
+                    className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Bonus de statistiques */}
             <div className="border border-white/10 rounded-lg p-3 bg-[#050508]/60">
@@ -675,7 +819,8 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
               filtered.map(item => {
                 const isExpanded = expandedCards.has(item.id);
                 const bonusEntries = Object.entries(item.statBonuses || {}) as [HexeStatKey, number][];
-                const hasDetails = (item.abilities?.length || 0) > 0 || (item.properties?.length || 0) > 0 || !!item.description;
+                const isWeapon = item.slot === 'weapon';
+                const hasDetails = (item.abilities?.length || 0) > 0 || (item.properties?.length || 0) > 0 || !!item.description || isWeapon;
 
                 return (
                   <div
@@ -694,6 +839,24 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                             <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-slate-400 rounded px-1.5 py-0.5 leading-none">
                               {SLOT_LABELS[item.slot]}
                             </span>
+                            {isWeapon && (
+                              <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded px-1.5 py-0.5">
+                                <HexePentacleBadge
+                                  rank={item.rank || 'C'}
+                                  nature={item.nature || 'classic'}
+                                  symbol={item.symbol}
+                                  size={16}
+                                />
+                                <span className="text-[10px] font-bold text-rose-300">
+                                  Rang {item.rank || 'C'}
+                                </span>
+                                {item.dice && (
+                                  <span className="text-[10px] font-mono font-semibold text-amber-300 ml-1">
+                                    🎲 {formatDiceFormula(item.dice)}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Résumé des bonus et tags */}
@@ -762,6 +925,32 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                     {/* Zone de détails dépliée */}
                     {isExpanded && hasDetails && (
                       <div className="px-3 pb-3 pt-1 border-t border-white/5 bg-black/30 space-y-2">
+                        {isWeapon && (
+                          <div className="flex items-center gap-3 p-2.5 rounded-lg bg-rose-950/20 border border-rose-900/30">
+                            <HexePentacleBadge
+                              rank={item.rank || 'C'}
+                              nature={item.nature || 'classic'}
+                              symbol={item.symbol}
+                              size={32}
+                            />
+                            <div className="text-xs">
+                              <div className="font-bold text-rose-200 flex items-center gap-2">
+                                <span>Rang {item.rank || 'C'}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 uppercase tracking-wider text-slate-300">
+                                  {item.nature === 'ego' ? "Arme d'Ego (Désir / Volonté propre)" : item.nature === 'possessed' ? "Arme Possédée (Entité résidente)" : "Arme Classique (Esprit du porteur)"}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-400 mt-0.5">
+                                {item.dice ? (
+                                  <span>Formule de jet : <strong className="text-amber-300 font-mono">{formatDiceFormula(item.dice)}</strong></span>
+                                ) : (
+                                  <span className="italic">Aucune formule de dés assignée</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {item.description && (
                           <p className="text-xs text-slate-300 italic">{item.description}</p>
                         )}
