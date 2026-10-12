@@ -269,7 +269,7 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
                     }}
                   />
                 ) : (
-                  <div className={`w-10 h-10 rounded-xl border border-white/15 bg-black/40 flex items-center justify-center shrink-0 ${!c.owner_id ? 'text-rose-400' : 'text-purple-400'}`}>
+                  <div className={`w-10 h-10 rounded-xl border border-white/15 bg-black/40 flex items-center justify-center shrink-0 ${!c.owner_id ? 'text-rose-400' : 'text-slate-300'}`}>
                     {!c.owner_id ? <Skull className="w-5 h-5" /> : <User className="w-5 h-5" />}
                   </div>
                 )}

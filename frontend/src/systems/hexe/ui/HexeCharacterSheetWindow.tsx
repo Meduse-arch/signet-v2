@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { SignetAPI } from '../../../core/services/SignetAPI';
 import {
   Droplet, Shield, Star, Sparkles, ArrowLeft, Swords, Backpack, BookOpen,
   Trash2, ChevronDown, ChevronUp, Package, Tag, Zap, X, Search, ExternalLink,
-  FlaskConical, Layers, Edit3, Plus, Play, ToggleLeft, ToggleRight, Dices
+  FlaskConical, Layers, Edit3, Plus, Play, ToggleLeft, ToggleRight, Dices, Flame, Coins
 } from 'lucide-react';
 import type {
   HexeCharacter, HexeEquipment, HexeStatKey, HexeEquipmentSlot,
-  HexeSkill, HexeWeaponRank, HexeWeaponNature
+  HexeSkill, HexeWeaponRank, HexeWeaponNature, HexeAbility, HexeActivationType,
+  HexeResourceKey, HexeEffect
 } from '../types';
 import {
   ALL_STATS, DEFAULT_HEXE_STATS, getMaxHP, getMaxMP, getMaxSTM, getMaxChance,
@@ -20,10 +21,10 @@ import {
   parseDiceFormula, formatDiceFormula, rollDiceFormula
 } from '../hexeDiceEngine';
 import {
-  getSkillsCatalog, subscribeSkills
+  getSkillsCatalog, subscribeSkills, getCharacterAvailableSkills, getEquipmentSkills
 } from '../hexeSkillStore';
-import { HexePentacleBadge } from './HexePentacleBadge';
-import { SkillPickerModal } from './SkillPickerModal';
+import { HexePentacleBadge, ALL_RANKS, RANK_DESCRIPTIONS } from './HexePentacleBadge';
+import { SkillImportModal } from './SkillImportModal';
 import { invoke } from '@tauri-apps/api/core';
 import { ModManager } from '../../../core/services/ModManager';
 import {
@@ -48,7 +49,7 @@ const SLOT_FILTER_OPTIONS: {
   { slot: 'all', label: 'Tous', icon: Layers, colorClass: 'text-slate-400' },
   { slot: 'weapon', label: 'Armes', icon: Swords, colorClass: 'text-rose-400' },
   { slot: 'armor', label: 'Armures', icon: Shield, colorClass: 'text-amber-400' },
-  { slot: 'accessory', label: 'Accessoires', icon: Sparkles, colorClass: 'text-purple-400' },
+  { slot: 'accessory', label: 'Accessoires', icon: Sparkles, colorClass: 'text-cyan-400' },
   { slot: 'consumable', label: 'Consommables', icon: FlaskConical, colorClass: 'text-emerald-400' },
   { slot: 'other', label: 'Autre', icon: Package, colorClass: 'text-sky-400' },
 ];
@@ -90,9 +91,27 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
   // — Édition directe d'un équipement sur la fiche
   const [editingEquipment, setEditingEquipment] = useState<HexeEquipment | null>(null);
 
-  // — Modal Sélecteur de Compétences
-  const [showSkillPicker, setShowSkillPicker] = useState(false);
+  // — Compétences : expansion plié/déplié & édition
+  const [expandedSkills, setExpandedSkills] = useState<Set<string>>(new Set());
+  const [editingSkill, setEditingSkill] = useState<HexeSkill | null>(null);
+
+  const toggleExpandSkill = (skillId: string) => {
+    setExpandedSkills(prev => {
+      const next = new Set(prev);
+      next.has(skillId) ? next.delete(skillId) : next.add(skillId);
+      return next;
+    });
+  };
+
+  // — Sélecteur Grimoire (Compétences)
+  const [showGrimoirePicker, setShowGrimoirePicker] = useState(false);
+  const [grimoireSearch, setGrimoireSearch] = useState('');
+  const [grimoireFilterType, setGrimoireFilterType] = useState<HexeActivationType | 'all'>('all');
   const [catalogSkills, setCatalogSkills] = useState<HexeSkill[]>([]);
+
+  const availableSkills = useMemo(() => {
+    return getCharacterAvailableSkills(char);
+  }, [char]);
 
   useEffect(() => {
     setArsenalTemplates(getTemplates());
@@ -292,6 +311,20 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
       skills: (prev.skills || []).filter(s => s.id !== skillId),
       activeToggles: (prev.activeToggles || []).filter(id => id !== skillId)
     }));
+  };
+
+  const handleSaveSkill = (updated: HexeSkill) => {
+    updateCharacterLocally(prev => {
+      const existing = (prev.skills || []).some(s => s.id === updated.id);
+      const nextSkills = existing
+        ? (prev.skills || []).map(s => s.id === updated.id ? updated : s)
+        : [...(prev.skills || []), updated];
+      return {
+        ...prev,
+        skills: nextSkills
+      };
+    });
+    setEditingSkill(null);
   };
 
   // ─── Gestion équipements & consommables ─────────────────────────────────────
@@ -532,12 +565,12 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                 onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, hp: Math.min(effectiveState.maxResources.hp, p.resources.hp + 1) } }))}
               />
               <CompactResourceBar
-                icon={<Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+                icon={<Sparkles className="w-3.5 h-3.5 text-blue-400" />}
                 label="MP"
                 current={char.resources.mp}
                 max={effectiveState.maxResources.mp}
-                color="#a855f7"
-                trackColor="rgba(168, 85, 247, 0.15)"
+                color="#2563eb"
+                trackColor="rgba(37, 99, 235, 0.15)"
                 onDecrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, mp: Math.max(0, p.resources.mp - 1) } }))}
                 onIncrement={() => updateCharacterLocally(p => ({ ...p, resources: { ...p.resources, mp: Math.min(effectiveState.maxResources.mp, p.resources.mp + 1) } }))}
               />
@@ -585,23 +618,61 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
 
         {/* 5. Contenu des onglets */}
         <div className="flex-1 p-4">
-          {/* ── ONGLET ATTRIBUTS - 2 Colonnes propres et aérées ── */}
+          {/* ── ONGLET ATTRIBUTS - 2 Colonnes propres et aérées avec pentagramme cramoisi en filigrane ── */}
           {activeTab === 'attributs' && (() => {
             const effectiveState = calculateEffectiveState(char);
             return (
-              <div className="grid grid-cols-2 gap-2.5">
-                {ALL_STATS.map(stat => {
-                  const baseLevel = char.stats[stat]?.level || 1;
-                  const effectiveLevel = effectiveState.levels[stat] || baseLevel;
-                  const effectiveDice = effectiveState.dice[stat] || getDiceForLevel(effectiveLevel);
-                  const bonus = effectiveLevel - baseLevel;
-                  const hasBonus = bonus > 0;
-
-                return (
-                  <div
-                    key={stat}
-                    className="bg-[#090a10] border border-white/10 hover:border-white/20 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between gap-2 transition-all group shadow-sm min-w-0"
+              <div className="relative">
+                {/* Pentagramme en filigrane cramoisi éclatant (couleur logo Signet/Hexe #e11d48) */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-35 sm:opacity-40">
+                  <svg
+                    viewBox="0 0 100 100"
+                    className="w-72 h-72 sm:w-80 sm:h-80 drop-shadow-[0_0_24px_rgba(225,29,72,0.65)] transition-transform duration-700 group-hover:scale-105"
                   >
+                    {/* Anneaux extérieurs et cercles ésotériques */}
+                    <circle cx="50" cy="50" r="47" stroke="#e11d48" strokeWidth="1" fill="none" opacity="0.6" />
+                    <circle cx="50" cy="50" r="44" stroke="#e11d48" strokeWidth="1.5" strokeDasharray="3 2" fill="none" opacity="0.8" />
+                    <circle cx="50" cy="50" r="24" stroke="#e11d48" strokeWidth="1" strokeDasharray="1.5 1.5" fill="none" opacity="0.5" />
+                    
+                    {/* Pentagramme complet tracé avec ses branches d'entrelacs */}
+                    <polygon
+                      points="50,4 62.5,38.5 98.5,38.5 69.5,60 80.5,95 50,73.5 19.5,95 30.5,60 1.5,38.5 37.5,38.5"
+                      fill="#e11d48"
+                      fillOpacity="0.08"
+                      stroke="#e11d48"
+                      strokeWidth="2.2"
+                      strokeLinejoin="round"
+                    />
+
+                    {/* Sommets illuminés en rouge cramoisi néon */}
+                    {[
+                      { x: 50, y: 4 },
+                      { x: 98.5, y: 38.5 },
+                      { x: 80.5, y: 95 },
+                      { x: 19.5, y: 95 },
+                      { x: 1.5, y: 38.5 }
+                    ].map((pt, idx) => (
+                      <circle key={idx} cx={pt.x} cy={pt.y} r="2.2" fill="#e11d48" stroke="#050508" strokeWidth="0.8" />
+                    ))}
+
+                    {/* Noyau central du pentagramme */}
+                    <circle cx="50" cy="50" r="3" fill="#e11d48" opacity="0.85" />
+                  </svg>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 relative z-10">
+                  {ALL_STATS.map(stat => {
+                    const baseLevel = char.stats[stat]?.level || 1;
+                    const effectiveLevel = effectiveState.levels[stat] || baseLevel;
+                    const effectiveDice = effectiveState.dice[stat] || getDiceForLevel(effectiveLevel);
+                    const bonus = effectiveLevel - baseLevel;
+                    const hasBonus = bonus > 0;
+
+                  return (
+                    <div
+                      key={stat}
+                      className="bg-[#090a10]/80 backdrop-blur-md border border-white/10 hover:border-rose-500/40 hover:bg-[#090a10]/90 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between gap-2 transition-all group shadow-sm min-w-0"
+                    >
                     <div className="flex items-center justify-between gap-1">
                       <span className="font-bold text-xs text-white truncate">
                         {STAT_LABELS[stat].split(' ')[0]}
@@ -654,8 +725,9 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                 );
               })}
             </div>
-          );
-        })()}
+          </div>
+        );
+      })()}
 
           {/* ── ONGLET INVENTAIRE ── */}
           {/* ── ONGLET INVENTAIRE ── */}
@@ -797,166 +869,319 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
 
           {/* ── ONGLET COMPÉTENCES ── */}
           {activeTab === 'competences' && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center justify-between pb-1 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-rose-400" />
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                    Arts & Incantations
+                    Compétences
                   </span>
                   <span className="text-[10px] font-bold bg-white/10 text-slate-300 rounded-full px-2 py-0.2 leading-none">
-                    {(char.skills || []).length}
+                    {availableSkills.length}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {availableSkills.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allExpanded = availableSkills.every(s => expandedSkills.has(s.skill.id));
+                        if (allExpanded) {
+                          setExpandedSkills(new Set());
+                        } else {
+                          setExpandedSkills(new Set(availableSkills.map(s => s.skill.id)));
+                        }
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors whitespace-nowrap"
+                      title={availableSkills.every(s => expandedSkills.has(s.skill.id)) ? 'Tout replier' : 'Tout déplier'}
+                    >
+                      {availableSkills.every(s => expandedSkills.has(s.skill.id)) ? (
+                        <>
+                          <ChevronUp className="w-3.5 h-3.5" />
+                          <span>Tout replier</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5" />
+                          <span>Tout déplier</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                   <button
-                    onClick={() => api?.emit('SYSTEM_ACTION_TRIGGERED', 'hexe-grimoire')}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-purple-300 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/40 rounded-lg transition-all whitespace-nowrap"
-                    title="Ouvrir la fenêtre du Grimoire Hexe"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                    <span>Grimoire</span>
-                  </button>
-                  <button
-                    onClick={() => setShowSkillPicker(true)}
+                    onClick={() => setShowGrimoirePicker(v => !v)}
                     className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all whitespace-nowrap"
                   >
-                    <Plus className="w-3.5 h-3.5 shrink-0" />
-                    <span>+ Compétence</span>
+                    <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                    <span>{showGrimoirePicker ? 'Fermer Grimoire' : '+ Grimoire'}</span>
                   </button>
                 </div>
               </div>
 
-              {(char.skills || []).length === 0 ? (
+              {/* Sélecteur Grimoire (Piocher des compétences comme l'Arsenal) */}
+              {showGrimoirePicker && (
+                <GrimoirePickerPanel
+                  skills={catalogSkills}
+                  search={grimoireSearch}
+                  setSearch={setGrimoireSearch}
+                  filterType={grimoireFilterType}
+                  setFilterType={setGrimoireFilterType}
+                  learnedSkillIds={(char.skills || []).map(s => s.id)}
+                  onSelect={handleAddSkill}
+                  onOpenGrimoireWindow={() => api?.emit('SYSTEM_ACTION_TRIGGERED', 'hexe-grimoire')}
+                  onClose={() => setShowGrimoirePicker(false)}
+                />
+              )}
+
+              {availableSkills.length === 0 && !showGrimoirePicker ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-500 bg-[#07080d]/60 border border-dashed border-white/10 rounded-2xl p-6">
                   <BookOpen className="w-10 h-10 text-rose-500/40 mb-1" />
                   <p className="font-bold text-sm text-slate-300 text-center">
-                    Aucune compétence acquise
+                    Aucune compétence acquise ou disponible
                   </p>
                   <p className="text-xs text-slate-500 text-center max-w-sm">
-                    Cliquez sur "+ Compétence" pour piocher dans le Grimoire ou forger une technique sur-mesure.
+                    Cliquez sur "+ Grimoire" pour piocher une compétence, ou équipez un objet en conférant.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2.5">
-                  {(char.skills || []).map(skill => {
-                    const isToggle = skill.activationType === 'toggle';
-                    const isActiveToggle = isToggle && (char.activeToggles || []).includes(skill.id);
-                    const isPassive = skill.activationType === 'passive';
-                    const isActive = skill.activationType === 'active';
+                <div className="space-y-4">
+                  {/* Cartes de Compétences au style visuel de l'inventaire */}
+                  {(['active', 'toggle', 'passive'] as const).map(groupType => {
+                    const groupEntries = availableSkills.filter(item => item.skill.activationType === groupType);
+                    if (groupEntries.length === 0) return null;
+
+                    const groupLabel = groupType === 'active' ? 'Capacités Actives & Sorts' : groupType === 'toggle' ? 'Auras & Toggles' : 'Dons & Passifs';
+                    const groupIcon = groupType === 'active' ? <Flame className="w-4 h-4 text-rose-400" /> : groupType === 'toggle' ? <Zap className="w-4 h-4 text-amber-400" /> : <Shield className="w-4 h-4 text-emerald-400" />;
 
                     return (
-                      <div
-                        key={skill.id}
-                        className={`bg-[#090a10] border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
-                          isActiveToggle
-                            ? 'border-rose-500/80 shadow-[0_0_15px_rgba(225,29,72,0.2)] bg-rose-950/20'
-                            : 'border-white/10 hover:border-white/20'
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-bold text-white truncate">{skill.name}</span>
-
-                            {isPassive && (
-                              <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-800 border border-white/10 text-slate-300 rounded px-1.5 py-0.5 flex items-center gap-1">
-                                <Sparkles className="w-2.5 h-2.5 text-purple-400" /> Passif
-                              </span>
-                            )}
-                            {isToggle && (
-                              <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 flex items-center gap-1 border ${
-                                isActiveToggle
-                                  ? 'bg-rose-600/30 border-rose-500/50 text-rose-300'
-                                  : 'bg-amber-950/60 border-amber-800/40 text-amber-300'
-                              }`}>
-                                <Layers className="w-2.5 h-2.5 text-amber-400" /> Toggle
-                              </span>
-                            )}
-                            {isActive && (
-                              <span className="text-[9px] font-bold uppercase tracking-wider bg-rose-950/60 border border-rose-800/40 text-rose-300 rounded px-1.5 py-0.5 flex items-center gap-1">
-                                <Zap className="w-2.5 h-2.5 text-rose-400" /> Actif
-                              </span>
-                            )}
-
-                            {skill.costs?.mp && (
-                              <span className="text-[9px] font-bold text-purple-400 bg-purple-950/60 border border-purple-800/40 px-1.5 py-0.2 rounded">
-                                {skill.costs.mp} MP
-                              </span>
-                            )}
-                            {skill.costs?.stm && (
-                              <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.2 rounded">
-                                {skill.costs.stm} STM
-                              </span>
-                            )}
-                            {skill.dice && (
-                              <span className="text-[9px] font-black text-rose-300 bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.2 rounded">
-                                🎲 {skill.dice.terms?.map(t => `${t.count}d${t.sides}`).join('+')}
-                              </span>
-                            )}
-                          </div>
-
-                          {skill.description && (
-                            <p className="text-[11px] text-slate-400 italic line-clamp-2">{skill.description}</p>
-                          )}
-
-                          {skill.effects?.length > 0 && (
-                            <div className="flex gap-1.5 flex-wrap pt-0.5">
-                              {skill.effects.map((eff, i) => (
-                                <span
-                                  key={i}
-                                  className="text-[9px] font-medium text-slate-300 bg-white/5 border border-white/10 rounded px-1.5 py-0.2"
-                                >
-                                  {eff.type === 'statLevel' && `+${eff.value} ${STAT_LABELS[eff.stat]}`}
-                                  {eff.type === 'rollModifier' && `+${eff.value} aux jets`}
-                                  {eff.type === 'resourceChange' && `${eff.operation.toUpperCase()} ${eff.resource.toUpperCase()}`}
-                                  {eff.type === 'custom' && eff.description}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                      <div key={groupType} className="space-y-2">
+                        <div className="flex items-center gap-2 px-1">
+                          {groupIcon}
+                          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{groupLabel}</span>
+                          <span className="text-[10px] font-bold text-slate-500 font-mono">({groupEntries.length})</span>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                          {isToggle && (
-                            <button
-                              onClick={() => handleToggleSkill(skill.id)}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                isActiveToggle
-                                  ? 'bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.4)]'
-                                  : 'bg-white/5 text-slate-400 hover:text-white border border-white/10 hover:bg-white/10'
-                              }`}
-                            >
-                              {isActiveToggle ? (
-                                <>
-                                  <ToggleRight className="w-4 h-4 text-white" />
-                                  <span>Actif</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleLeft className="w-4 h-4 text-slate-400" />
-                                  <span>Inactif</span>
-                                </>
-                              )}
-                            </button>
-                          )}
+                        <div className="space-y-2">
+                          {groupEntries.map(({ skill, sources, isLearned }) => {
+                            const isToggle = skill.activationType === 'toggle';
+                            const isActiveToggle = isToggle && (char.activeToggles || []).includes(skill.id);
+                            const isPassive = skill.activationType === 'passive';
+                            const isActive = skill.activationType === 'active';
+                            const isExpanded = expandedSkills.has(skill.id);
+                            const hasDetails = !!skill.description || (skill.effects && skill.effects.length > 0) || !!skill.duration || (skill.conditions && skill.conditions.length > 0);
 
-                          {isActive && (
-                            <button
-                              onClick={() => handleTriggerSkill(skill)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all whitespace-nowrap"
-                            >
-                              <Play className="w-3.5 h-3.5 fill-current" />
-                              <span>Lancer</span>
-                            </button>
-                          )}
+                            return (
+                              <div
+                                key={skill.id}
+                                className={`bg-[#090a10] border rounded-xl overflow-hidden transition-all ${
+                                  isActiveToggle
+                                    ? 'border-rose-500/80 shadow-[0_0_15px_rgba(225,29,72,0.25)] bg-rose-950/20'
+                                    : 'border-white/10 hover:border-white/20'
+                                }`}
+                              >
+                                <div className="p-3 flex flex-col gap-2">
+                                  {/* Ligne 1 : En-tête de la carte */}
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                                        isPassive ? 'bg-emerald-950/50 border-emerald-800/40 text-emerald-400' : isToggle ? 'bg-amber-950/50 border-amber-800/40 text-amber-400' : 'bg-rose-950/50 border-rose-800/40 text-rose-400'
+                                      }`}>
+                                        {isPassive && <Shield className="w-4 h-4" />}
+                                        {isToggle && <Zap className="w-4 h-4" />}
+                                        {isActive && <Flame className="w-4 h-4" />}
+                                      </div>
 
-                          <button
-                            onClick={() => handleDeleteSkill(skill.id)}
-                            className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
-                            title="Oublier cette compétence"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <h4 className="text-xs font-bold text-white truncate">{skill.name}</h4>
+                                          <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 border ${
+                                            isPassive
+                                              ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
+                                              : isToggle
+                                              ? isActiveToggle
+                                                ? 'bg-rose-600/30 border-rose-500/50 text-rose-300'
+                                                : 'bg-amber-950/60 border-amber-800/40 text-amber-300'
+                                              : 'bg-rose-950/60 border-rose-800/40 text-rose-300'
+                                          }`}>
+                                            {isPassive ? 'Passif' : isToggle ? (isActiveToggle ? 'Toggle (Actif)' : 'Toggle (Inactif)') : 'Actif'}
+                                          </span>
+
+                                          {/* Distinction capacités apprises vs accordées par un objet */}
+                                          {isLearned && (
+                                            <span className="text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 bg-white/5 border border-white/10 text-slate-300">
+                                              Appris
+                                            </span>
+                                          )}
+                                          {sources.filter(s => s !== 'Appris').map(sourceName => (
+                                            <span
+                                              key={sourceName}
+                                              className="text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 bg-rose-950/70 border border-rose-800/50 text-rose-300 flex items-center gap-1 shadow-sm"
+                                              title={`Accordé par l'équipement porté : ${sourceName}`}
+                                            >
+                                              <Swords className="w-2.5 h-2.5 text-rose-400" />
+                                              <span>{sourceName}</span>
+                                            </span>
+                                          ))}
+
+                                          {skill.skillLevel && (
+                                            <span className="text-[9px] font-bold bg-white/5 border border-white/10 text-slate-400 rounded px-1.5 py-0.5">
+                                              Niv. {skill.skillLevel}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {/* Coûts et dés */}
+                                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                          {skill.costs?.mp && (
+                                            <span className="text-[9px] font-bold text-blue-300 bg-blue-950/60 border border-blue-800/40 px-1.5 py-0.2 rounded">
+                                              {skill.costs.mp} MP
+                                            </span>
+                                          )}
+                                          {skill.costs?.stm && (
+                                            <span className="text-[9px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.2 rounded">
+                                              {skill.costs.stm} STM
+                                            </span>
+                                          )}
+                                          {skill.costs?.hp && (
+                                            <span className="text-[9px] font-bold text-rose-300 bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.2 rounded">
+                                              {skill.costs.hp} HP
+                                            </span>
+                                          )}
+                                          {skill.costs?.chance && (
+                                            <span className="text-[9px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.2 rounded">
+                                              {skill.costs.chance} Chance
+                                            </span>
+                                          )}
+                                          {skill.dice && (
+                                            <span className="text-[9px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded">
+                                              🎲 {formatDiceFormula(skill.dice)}
+                                            </span>
+                                          )}
+                                          {skill.duration && (
+                                            <span className="text-[9px] text-slate-400 bg-white/5 border border-white/10 rounded px-1.5 py-0.2">
+                                              ⏱ {skill.duration}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Actions & Bouton Plié/Déplié */}
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {isToggle && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleSkill(skill.id)}
+                                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                                            isActiveToggle
+                                              ? 'bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.4)]'
+                                              : 'bg-white/5 text-slate-400 hover:text-white border border-white/10 hover:bg-white/10'
+                                          }`}
+                                        >
+                                          {isActiveToggle ? <ToggleRight className="w-4 h-4 text-white" /> : <ToggleLeft className="w-4 h-4 text-slate-400" />}
+                                          <span>{isActiveToggle ? 'Actif' : 'Inactif'}</span>
+                                        </button>
+                                      )}
+
+                                      {isActive && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleTriggerSkill(skill)}
+                                          className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all whitespace-nowrap"
+                                        >
+                                          <Play className="w-3.5 h-3.5 fill-current" />
+                                          <span>Lancer</span>
+                                        </button>
+                                      )}
+
+                                      {isPassive && (
+                                        <span className="text-[10px] font-semibold text-emerald-400/90 italic px-2 py-0.5">
+                                          Permanent
+                                        </span>
+                                      )}
+
+                                      {/* Bouton modifier la compétence */}
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingSkill(skill)}
+                                        className="p-1 rounded text-slate-500 hover:text-white transition-colors"
+                                        title="Modifier cette compétence sur la fiche"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                      </button>
+
+                                      {isLearned ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteSkill(skill.id)}
+                                          className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
+                                          title="Oublier cette compétence apprise"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      ) : (
+                                        <span
+                                          className="p-1 text-slate-500"
+                                          title={`Accordé par : ${sources.join(', ')}. Déséquipez l'objet pour retirer.`}
+                                        >
+                                          <Shield className="w-3.5 h-3.5 text-rose-400/60" />
+                                        </span>
+                                      )}
+
+                                      {/* Bouton plié/déplié (Chevron) */}
+                                      {hasDetails && (
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleExpandSkill(skill.id)}
+                                          className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+                                          title={isExpanded ? 'Replier les détails' : 'Déplier les détails'}
+                                        >
+                                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Détails dépliés : Description, Conditions & Effets */}
+                                {isExpanded && hasDetails && (
+                                  <div className="px-3 pb-3 pt-2 border-t border-white/5 bg-black/40 space-y-2">
+                                    {skill.description && (
+                                      <p className="text-[11px] text-slate-300 italic border-l-2 border-rose-500/60 pl-2">
+                                        {skill.description}
+                                      </p>
+                                    )}
+
+                                    {skill.conditions && skill.conditions.length > 0 && (
+                                      <div className="flex gap-1 flex-wrap">
+                                        {skill.conditions.map((cond, i) => (
+                                          <span key={i} className="text-[9px] font-medium bg-white/5 border border-white/10 text-amber-300/90 rounded-full px-2 py-0.5">
+                                            Condition : {cond}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {skill.effects?.length > 0 && (
+                                      <div className="flex gap-1.5 flex-wrap pt-0.5">
+                                        {skill.effects.map((eff, i) => (
+                                          <span
+                                            key={i}
+                                            className="text-[9px] font-semibold text-slate-200 bg-white/5 border border-white/10 rounded px-1.5 py-0.5"
+                                          >
+                                            {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value} niv.`}
+                                            {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value} ${eff.condition ? `(${eff.condition})` : ''}`}
+                                            {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()} ${eff.value ? `(${eff.value})` : ''} ${eff.dice ? `(${formatDiceFormula(eff.dice)})` : ''}`}
+                                            {eff.type === 'custom' && eff.description}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -977,12 +1202,12 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
         />
       )}
 
-      {/* Modal sélecteur de compétences */}
-      {showSkillPicker && (
-        <SkillPickerModal
-          catalogSkills={catalogSkills}
-          onAddSkill={handleAddSkill}
-          onClose={() => setShowSkillPicker(false)}
+      {/* Modal d'édition directe d'une compétence sur la fiche */}
+      {editingSkill && (
+        <SkillEditModal
+          skill={editingSkill}
+          onSave={handleSaveSkill}
+          onClose={() => setEditingSkill(null)}
         />
       )}
     </div>
@@ -1035,7 +1260,8 @@ function EquipmentCard({
   equip, expanded, onToggleExpand, onToggleEquip, onRollWeapon, onConsume, onUpdateQty, onEdit, onDelete
 }: EquipmentCardProps) {
   const bonusEntries = Object.entries(equip.statBonuses ?? {}) as [HexeStatKey, number][];
-  const hasDetails = (equip.abilities?.length ?? 0) > 0 || (equip.properties?.length ?? 0) > 0 || !!equip.description || equip.slot === 'weapon';
+  const linkedSkills = getEquipmentSkills(equip);
+  const hasDetails = linkedSkills.length > 0 || (equip.properties?.length ?? 0) > 0 || !!equip.description || equip.slot === 'weapon';
   const isConsumable = equip.slot === 'consumable';
 
   return (
@@ -1046,14 +1272,12 @@ function EquipmentCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-bold text-white truncate">{equip.name}</span>
-              {equip.slot === 'weapon' && (
-                <HexePentacleBadge
-                  rank={equip.rank || 'C'}
-                  nature={equip.nature || 'classic'}
-                  symbol={equip.symbol}
-                  size={20}
-                />
-              )}
+              <HexePentacleBadge
+                rank={equip.rank || 'C'}
+                nature={equip.nature || 'classic'}
+                symbol={equip.symbol}
+                size={20}
+              />
               <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 leading-none shrink-0 flex items-center gap-1 border ${
                 isConsumable
                   ? 'bg-emerald-950/60 border-emerald-700/50 text-emerald-300'
@@ -1185,7 +1409,7 @@ function EquipmentCard({
             <p className="text-xs italic text-slate-400">{equip.description}</p>
           )}
 
-          {equip.slot === 'weapon' && (
+          {equip.rank && (
             <div className="bg-black/50 border border-white/10 rounded-lg p-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <HexePentacleBadge
@@ -1197,15 +1421,15 @@ function EquipmentCard({
                 />
                 <div className="text-[11px] text-slate-300">
                   {equip.nature === 'ego'
-                    ? "Arme d'Ego : Volonté propre de l'arme."
+                    ? "Objet d'Ego : Volonté propre de l'objet."
                     : equip.nature === 'possessed'
-                    ? "Arme Possédée : Entité occulte résidente."
-                    : "Arme Classique : Volonté directrice du porteur."}
+                    ? "Objet Possédé : Entité occulte résidente."
+                    : "Objet Classique : Volonté directrice du porteur."}
                 </div>
               </div>
               {equip.dice && (
                 <span className="text-[10px] font-black text-rose-400 bg-rose-950/60 border border-rose-800/40 px-2 py-1 rounded shrink-0">
-                  {formatDiceFormula(equip.dice)}
+                  🎲 {formatDiceFormula(equip.dice)}
                 </span>
               )}
             </div>
@@ -1221,20 +1445,255 @@ function EquipmentCard({
             </div>
           )}
 
-          {(equip.abilities?.length ?? 0) > 0 && equip.abilities!.map(ab => (
-            <div key={ab.id} className="bg-slate-900/90 border-l-2 border-rose-500 border border-white/10 rounded p-2">
-              <div className="flex items-center gap-1.5">
-                <Zap className="w-3 h-3 text-rose-400 shrink-0" />
-                <span className="text-xs font-bold text-rose-300">{ab.name}</span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">{ab.description}</p>
-              {ab.condition && (
-                <p className="text-[10px] italic text-amber-400/90 mt-0.5">Condition : {ab.condition}</p>
-              )}
+          {linkedSkills.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold block">
+                Capacités spéciales ({linkedSkills.length}) :
+              </span>
+              {linkedSkills.map(ab => (
+                <div key={ab.id} className="bg-slate-900/90 border-l-2 border-rose-500 border border-white/10 rounded p-2 text-xs">
+                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <Zap className="w-3 h-3 text-rose-400 shrink-0" />
+                      <span className="text-xs font-bold text-rose-300">{ab.name}</span>
+                      {ab.activationType && (
+                        <span className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded border ${
+                          ab.activationType === 'passive'
+                            ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
+                            : ab.activationType === 'toggle'
+                            ? 'bg-amber-950/60 border-amber-800/40 text-amber-300'
+                            : 'bg-rose-950/60 border-rose-800/40 text-rose-300'
+                        }`}>
+                          {ab.activationType === 'toggle' ? 'Toggle' : ab.activationType === 'active' ? 'Actif' : 'Passif'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {ab.dice && (
+                        <span className="text-[9px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded">
+                          🎲 {formatDiceFormula(ab.dice)}
+                        </span>
+                      )}
+                      {ab.costs?.mp && (
+                        <span className="text-[9px] text-blue-300 bg-blue-950/60 px-1 rounded">
+                          {ab.costs.mp} MP
+                        </span>
+                      )}
+                      {ab.costs?.stm && (
+                        <span className="text-[9px] text-emerald-300 bg-emerald-950/60 px-1 rounded">
+                          {ab.costs.stm} STM
+                        </span>
+                      )}
+                      {ab.costs?.hp && (
+                        <span className="text-[9px] text-rose-300 bg-rose-950/60 px-1 rounded">
+                          {ab.costs.hp} HP
+                        </span>
+                      )}
+                      {ab.costs?.chance && (
+                        <span className="text-[9px] text-amber-300 bg-amber-950/60 px-1 rounded">
+                          {ab.costs.chance} Chance
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {ab.description && <p className="text-xs text-slate-300 mt-0.5">{ab.description}</p>}
+                  {ab.conditions?.length ? (
+                    <p className="text-[10px] italic text-amber-400/90 mt-0.5">Condition : {ab.conditions.join(', ')}</p>
+                  ) : null}
+                  {ab.effects?.length ? (
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      {ab.effects.map((eff, i) => (
+                        <span key={i} className="text-[9px] text-slate-300 bg-white/5 border border-white/10 rounded px-1.5 py-0.2">
+                          {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
+                          {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
+                          {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()}`}
+                          {eff.type === 'custom' && eff.description}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+interface GrimoirePickerPanelProps {
+  skills: HexeSkill[];
+  search: string;
+  setSearch: (v: string) => void;
+  filterType: HexeActivationType | 'all';
+  setFilterType: (f: HexeActivationType | 'all') => void;
+  learnedSkillIds: string[];
+  onSelect: (skill: HexeSkill) => void;
+  onOpenGrimoireWindow: () => void;
+  onClose: () => void;
+}
+
+function GrimoirePickerPanel({
+  skills, search, setSearch, filterType, setFilterType, learnedSkillIds, onSelect, onOpenGrimoireWindow, onClose
+}: GrimoirePickerPanelProps) {
+  const filtered = skills.filter(s => {
+    if (filterType !== 'all' && s.activationType !== filterType) return false;
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    const matchName = s.name.toLowerCase().includes(q);
+    const matchDesc = (s.description || '').toLowerCase().includes(q);
+    const matchEff = (s.effects || []).some(e => e.type === 'custom' && e.description.toLowerCase().includes(q));
+    return matchName || matchDesc || matchEff;
+  });
+
+  const SKILL_FILTER_OPTIONS: {
+    type: HexeActivationType | 'all';
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    colorClass: string;
+  }[] = [
+    { type: 'all', label: 'Toutes', icon: Layers, colorClass: 'text-slate-400' },
+    { type: 'active', label: 'Actifs', icon: Flame, colorClass: 'text-rose-400' },
+    { type: 'toggle', label: 'Toggles', icon: Zap, colorClass: 'text-amber-400' },
+    { type: 'passive', label: 'Passifs', icon: Shield, colorClass: 'text-emerald-400' },
+  ];
+
+  return (
+    <div className="bg-slate-950 border border-white/15 rounded-xl p-3 flex flex-col gap-3 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-rose-400" />
+          <span className="text-xs font-black uppercase tracking-wider text-white">
+            Piocher dans le Grimoire
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onOpenGrimoireWindow}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-white/5 hover:bg-white/15 border border-white/10 text-slate-200 rounded-lg transition-colors"
+            title="Ouvrir la forge du Grimoire dans une fenêtre dédiée"
+          >
+            <ExternalLink className="w-3 h-3 text-rose-400" /> Forger...
+          </button>
+          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Chercher une compétence dans le Grimoire..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full bg-slate-900 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+          {SKILL_FILTER_OPTIONS.map(({ type, label, icon: Icon, colorClass }) => {
+            const count = type === 'all'
+              ? skills.length
+              : skills.filter(s => s.activationType === type).length;
+            const isActive = filterType === type;
+
+            return (
+              <button
+                key={type}
+                onClick={() => setFilterType(type)}
+                className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.35)]'
+                    : 'bg-black/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10'
+                }`}
+              >
+                <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-white' : colorClass}`} />
+                <span>{label}</span>
+                <span
+                  className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold transition-colors ${
+                    isActive
+                      ? 'bg-black/30 text-rose-100'
+                      : 'bg-white/5 text-slate-400 group-hover:text-slate-200'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+        {filtered.length === 0 ? (
+          <div className="text-center py-6 text-slate-500 text-xs italic">
+            Aucune compétence trouvée. Ouvrez le Grimoire pour en forger de nouvelles.
+          </div>
+        ) : (
+          filtered.map(s => {
+            const isAlreadyLearned = learnedSkillIds.includes(s.id);
+            return (
+              <div
+                key={s.id}
+                className="bg-slate-900/60 border border-white/10 hover:border-white/20 rounded-xl p-2.5 flex items-center justify-between gap-3 transition-colors"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-white truncate">{s.name}</span>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.2 border ${
+                      s.activationType === 'passive'
+                        ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
+                        : s.activationType === 'toggle'
+                        ? 'bg-amber-950/60 border-amber-800/40 text-amber-300'
+                        : 'bg-rose-950/60 border-rose-800/40 text-rose-300'
+                    }`}>
+                      {s.activationType === 'passive' ? 'Passif' : s.activationType === 'toggle' ? 'Toggle' : 'Actif'}
+                    </span>
+                    {s.dice && (
+                      <span className="text-[9px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded">
+                        🎲 {formatDiceFormula(s.dice)}
+                      </span>
+                    )}
+                    {s.costs?.mp && (
+                      <span className="text-[9px] text-blue-300 bg-blue-950/60 px-1 rounded font-bold">
+                        {s.costs.mp} MP
+                      </span>
+                    )}
+                    {s.costs?.stm && (
+                      <span className="text-[9px] text-emerald-300 bg-emerald-950/60 px-1 rounded font-bold">
+                        {s.costs.stm} STM
+                      </span>
+                    )}
+                  </div>
+
+                  {s.description && (
+                    <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 italic">
+                      {s.description}
+                    </p>
+                  )}
+                </div>
+
+                {isAlreadyLearned ? (
+                  <span className="px-2.5 py-1 text-[11px] font-bold text-slate-500 bg-white/5 border border-white/10 rounded-lg shrink-0">
+                    Acquise
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => onSelect(s)}
+                    className="px-3 py-1 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-lg shrink-0 transition-colors shadow-[0_0_10px_rgba(225,29,72,0.3)] whitespace-nowrap"
+                  >
+                    Prendre
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
@@ -1467,17 +1926,14 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
   const [diceStr, setDiceStr] = useState(equipment.dice ? formatDiceFormula(equipment.dice) : '');
   const [statBonuses, setStatBonuses] = useState<Partial<Record<HexeStatKey, number>>>({ ...(equipment.statBonuses ?? {}) });
   const [properties, setProperties] = useState<string[]>([...(equipment.properties ?? [])]);
-  const [abilities, setAbilities] = useState<{ id: string; name: string; description: string; condition?: string }[]>([
-    ...(equipment.abilities ?? [])
-  ]);
+  const [abilities, setAbilities] = useState<HexeAbility[]>([...(equipment.abilities ?? [])]);
+  const [abilityIds, setAbilityIds] = useState<string[]>([...(equipment.abilityIds ?? [])]);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Form helpers
   const [newProp, setNewProp] = useState('');
   const [newBonusStat, setNewBonusStat] = useState<HexeStatKey>('str');
   const [newBonusVal, setNewBonusVal] = useState(1);
-  const [newAbName, setNewAbName] = useState('');
-  const [newAbDesc, setNewAbDesc] = useState('');
-  const [newAbCond, setNewAbCond] = useState('');
 
   const handleAddProp = () => {
     if (!newProp.trim()) return;
@@ -1506,25 +1962,18 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
     });
   };
 
-  const handleAddAbility = () => {
-    if (!newAbName.trim() || !newAbDesc.trim()) return;
-    setAbilities(prev => [
-      ...prev,
-      {
-        id: `ab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        name: newAbName.trim(),
-        description: newAbDesc.trim(),
-        condition: newAbCond.trim() || undefined
-      }
-    ]);
-    setNewAbName('');
-    setNewAbDesc('');
-    setNewAbCond('');
-  };
-
-  const handleRemoveAbility = (id: string) => {
+  const handleRemoveSkill = (id: string) => {
+    setAbilityIds(prev => prev.filter(x => x !== id));
     setAbilities(prev => prev.filter(a => a.id !== id));
   };
+
+  const handleImportSkills = (newIds: string[]) => {
+    setAbilityIds(prev => Array.from(new Set([...prev, ...newIds])));
+  };
+
+  const linkedSkills = useMemo(() => {
+    return getEquipmentSkills({ abilityIds, abilities });
+  }, [abilityIds, abilities]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1538,17 +1987,18 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
       slot,
       quantity: slot === 'consumable' ? Math.max(1, quantity) : equipment.quantity,
       description: description.trim() || undefined,
-      rank: slot === 'weapon' ? rank : undefined,
-      nature: slot === 'weapon' ? nature : undefined,
-      symbol: slot === 'weapon' ? {
+      rank,
+      nature,
+      symbol: {
         orientation: nature === 'classic' ? 'upright' : 'inverted',
         filled: nature === 'possessed',
         hasCircle: rank === 'S'
-      } : undefined,
-      dice: parsedDice || (slot === 'weapon' ? equipment.dice : undefined),
+      },
+      dice: parsedDice || undefined,
       statBonuses,
       properties,
-      abilities
+      abilities,
+      abilityIds
     });
   };
 
@@ -1618,107 +2068,117 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
             </div>
           )}
 
-          {/* Section spécifique Arme : Rangs & Pentacles (Section 8) */}
-          {slot === 'weapon' && (
-            <div className="border border-white/10 rounded-xl p-3 bg-black/40 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
-                    Symbolique & Rang (Pentacle Hexe)
-                  </label>
-                  <p className="text-[10px] text-slate-500">Convention visuelle et narrative des armes</p>
-                </div>
-                <HexePentacleBadge
-                  rank={rank}
-                  nature={nature}
-                  size={36}
-                  showLabel={true}
-                />
-              </div>
-
-              {/* Rangs F -> S */}
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 font-bold block">
-                  Rang ({rank === 'S' ? 'Pentacle complet cerclé' : `${['F', 'D', 'C', 'B', 'A'].indexOf(rank) + 1} branche(s)`})
+          {/* Section Rangs & Pentacles — Applicable à tous les équipements */}
+          <div className="border border-white/10 rounded-xl p-3 bg-black/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
+                  Symbolique & Rang (Pentacle Hexe)
                 </label>
-                <div className="grid grid-cols-6 gap-1">
-                  {(['F', 'D', 'C', 'B', 'A', 'S'] as HexeWeaponRank[]).map(r => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRank(r)}
-                      className={`py-1 rounded font-black text-xs border transition-all ${
-                        rank === r
-                          ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.4)]'
-                          : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
+                <p className="text-[10px] text-slate-500">1 à 5 branches du pentacle ou anneau pour le rang ultime</p>
               </div>
+              <HexePentacleBadge
+                rank={rank}
+                nature={nature}
+                size={36}
+                showLabel={true}
+              />
+            </div>
 
-              {/* Nature / Volonté */}
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 font-bold block">
-                  Nature de la Volonté
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
+            {/* Rangs graphiques : aucun texte alphabétique */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold block">
+                Rang ({RANK_DESCRIPTIONS[rank]})
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
+                {ALL_RANKS.map(r => (
                   <button
+                    key={r}
                     type="button"
-                    onClick={() => setNature('classic')}
-                    className={`p-1.5 rounded text-left border transition-all ${
-                      nature === 'classic'
-                        ? 'bg-rose-950/60 border-rose-500/80 text-rose-300'
-                        : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                    onClick={() => setRank(r)}
+                    className={`py-1.5 px-1 rounded-lg flex flex-col items-center justify-center gap-1 border transition-all ${
+                      rank === r
+                        ? 'bg-rose-950/70 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.4)]'
+                        : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <div className="text-[10px] font-bold">Classique</div>
-                    <div className="text-[9px] text-slate-500">Volonté du porteur</div>
+                    <HexePentacleBadge
+                      rank={r}
+                      nature={nature}
+                      symbol={{
+                        orientation: nature === 'classic' ? 'upright' : 'inverted',
+                        filled: nature === 'possessed',
+                        hasCircle: r === 'S'
+                      }}
+                      size={24}
+                    />
+                    <span className="text-[9px] font-bold text-center leading-tight">
+                      {RANK_DESCRIPTIONS[r]}
+                    </span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setNature('ego')}
-                    className={`p-1.5 rounded text-left border transition-all ${
-                      nature === 'ego'
-                        ? 'bg-amber-950/60 border-amber-500/80 text-amber-300'
-                        : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <div className="text-[10px] font-bold">Ego</div>
-                    <div className="text-[9px] text-slate-500">Volonté de l'arme</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNature('possessed')}
-                    className={`p-1.5 rounded text-left border transition-all ${
-                      nature === 'possessed'
-                        ? 'bg-red-950/70 border-red-500/80 text-red-300'
-                        : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <div className="text-[10px] font-bold">Possédée</div>
-                    <div className="text-[9px] text-slate-500">Entité résidente</div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Formule de dés */}
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 font-bold block">
-                  Formule de Dés (ex: 1d8+2, 2d6)
-                </label>
-                <input
-                  type="text"
-                  placeholder="ex: 1d8+2, 2d6, 1d20..."
-                  value={diceStr}
-                  onChange={e => setDiceStr(e.target.value)}
-                  className="w-full bg-[#050508] border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
-                />
+                ))}
               </div>
             </div>
-          )}
+
+            {/* Nature / Volonté */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold block">
+                Nature de la Volonté
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setNature('classic')}
+                  className={`p-2 rounded-lg text-left border transition-all ${
+                    nature === 'classic'
+                      ? 'bg-rose-950/60 border-rose-500/80 text-rose-300'
+                      : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <div className="text-[11px] font-bold">Classique</div>
+                  <div className="text-[9px] text-slate-500">Volonté du porteur</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNature('ego')}
+                  className={`p-2 rounded-lg text-left border transition-all ${
+                    nature === 'ego'
+                      ? 'bg-amber-950/60 border-amber-500/80 text-amber-300'
+                      : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <div className="text-[11px] font-bold">Ego</div>
+                  <div className="text-[9px] text-slate-500">Volonté de l'objet</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNature('possessed')}
+                  className={`p-2 rounded-lg text-left border transition-all ${
+                    nature === 'possessed'
+                      ? 'bg-red-950/70 border-red-500/80 text-red-300'
+                      : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <div className="text-[11px] font-bold">Possédée</div>
+                  <div className="text-[9px] text-slate-500">Entité résidente</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Formule de dés (facultative) */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold block">
+                Formule de dés de base (Facultatif, ex: 1d8, 2d6+2)
+              </label>
+              <input
+                type="text"
+                placeholder="Facultatif (ex: 1d8, 2d6+2...)"
+                value={diceStr}
+                onChange={e => setDiceStr(e.target.value)}
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+              />
+            </div>
+          </div>
 
           {/* Description */}
           <div className="space-y-1">
@@ -1832,59 +2292,646 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
 
           {/* Capacités spéciales */}
           <div className="border border-white/10 rounded-xl p-3 bg-black/30 space-y-2.5">
-            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">Capacités spéciales</label>
-            <div className="space-y-2">
-              {abilities.map(ab => (
-                <div key={ab.id} className="bg-slate-900/90 border-l-2 border-rose-500 border border-white/10 rounded-lg p-2.5 flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <Zap className="w-3 h-3 text-rose-400 shrink-0" />
-                      <span className="font-bold text-rose-300">{ab.name}</span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 mt-0.5">{ab.description}</p>
-                    {ab.condition && (
-                      <p className="text-[10px] italic text-amber-400/90 mt-0.5">Condition : {ab.condition}</p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveAbility(ab.id)}
-                    className="text-slate-400 hover:text-rose-400 p-1"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-[#050508] border border-white/10 rounded-lg p-2.5 space-y-2">
-              <input
-                type="text"
-                placeholder="Nom de la capacité..."
-                value={newAbName}
-                onChange={e => setNewAbName(e.target.value)}
-                className="w-full bg-slate-900 border border-white/10 rounded px-2.5 py-1 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
-              />
-              <textarea
-                rows={2}
-                placeholder="Description / effet mécanique..."
-                value={newAbDesc}
-                onChange={e => setNewAbDesc(e.target.value)}
-                className="w-full bg-slate-900 border border-white/10 rounded px-2.5 py-1 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 resize-none"
-              />
-              <input
-                type="text"
-                placeholder="Condition d'activation (optionnelle)..."
-                value={newAbCond}
-                onChange={e => setNewAbCond(e.target.value)}
-                className="w-full bg-slate-900 border border-white/10 rounded px-2.5 py-1 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
-              />
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
+                  Capacités spéciales ({linkedSkills.length})
+                </label>
+                <p className="text-[10px] text-slate-500">
+                  Capacités associées depuis le Grimoire ou le catalogue Hexe
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={handleAddAbility}
-                className="w-full py-1 bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 text-rose-300 font-bold rounded flex items-center justify-center gap-1.5 transition-colors"
+                onClick={() => setShowImportModal(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all"
               >
-                + Ajouter cette capacité
+                <Plus className="w-3 h-3" />
+                <span>+ Importer une capacité</span>
+              </button>
+            </div>
+
+            {linkedSkills.length === 0 ? (
+              <div className="p-3 border border-dashed border-white/10 rounded-lg bg-[#050508] text-center">
+                <p className="text-slate-400 text-xs">Aucune capacité spéciale sur cet équipement.</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Cliquez sur « + Importer une capacité » pour piocher dans le Grimoire sans créer de doublon.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {linkedSkills.map(ab => (
+                  <div
+                    key={ab.id}
+                    className="bg-slate-900/90 border-l-2 border-rose-500 border border-white/10 rounded-lg p-2.5 flex items-start justify-between gap-2"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Zap className="w-3 h-3 text-rose-400 shrink-0" />
+                        <span className="font-bold text-rose-300">{ab.name}</span>
+                        <span className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded border ${
+                          ab.activationType === 'passive'
+                            ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
+                            : ab.activationType === 'toggle'
+                            ? 'bg-amber-950/60 border-amber-800/40 text-amber-300'
+                            : 'bg-rose-950/60 border-rose-800/40 text-rose-300'
+                        }`}>
+                          {ab.activationType === 'toggle' ? 'Toggle' : ab.activationType === 'active' ? 'Actif' : 'Passif'}
+                        </span>
+                        {ab.dice && (
+                          <span className="text-[9px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded">
+                            🎲 {formatDiceFormula(ab.dice)}
+                          </span>
+                        )}
+                        {ab.costs?.mp && (
+                          <span className="text-[9px] text-blue-300 bg-blue-950/60 px-1 rounded">
+                            {ab.costs.mp} MP
+                          </span>
+                        )}
+                        {ab.costs?.stm && (
+                          <span className="text-[9px] text-emerald-300 bg-emerald-950/60 px-1 rounded">
+                            {ab.costs.stm} STM
+                          </span>
+                        )}
+                        {ab.costs?.hp && (
+                          <span className="text-[9px] text-rose-300 bg-rose-950/60 px-1 rounded">
+                            {ab.costs.hp} HP
+                          </span>
+                        )}
+                        {ab.costs?.chance && (
+                          <span className="text-[9px] text-amber-300 bg-amber-950/60 px-1 rounded">
+                            {ab.costs.chance} Chance
+                          </span>
+                        )}
+                      </div>
+                      {ab.description && (
+                        <p className="text-[11px] text-slate-300 mt-0.5">{ab.description}</p>
+                      )}
+                      {ab.conditions?.length ? (
+                        <p className="text-[10px] italic text-amber-400/90 mt-0.5">Condition : {ab.conditions.join(', ')}</p>
+                      ) : null}
+                      {ab.effects?.length ? (
+                        <div className="flex gap-1 flex-wrap mt-1">
+                          {ab.effects.map((eff, i) => (
+                            <span key={i} className="text-[9px] text-slate-300 bg-white/5 border border-white/10 rounded px-1.5 py-0.2">
+                              {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
+                              {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
+                              {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()}`}
+                              {eff.type === 'custom' && eff.description}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(ab.id)}
+                      className="text-slate-400 hover:text-rose-400 p-1 rounded hover:bg-white/5 transition-colors"
+                      title="Retirer cette capacité de l'équipement"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer buttons */}
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 text-slate-400 hover:text-white transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-[0_0_12px_rgba(225,29,72,0.35)] transition-all"
+            >
+              Enregistrer les modifications
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {showImportModal && (
+        <SkillImportModal
+          alreadyLinkedIds={linkedSkills.map(s => s.id)}
+          onImportSkillIds={handleImportSkills}
+          onClose={() => setShowImportModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Modal d'Édition de Compétence ───────────────────────────────────────────
+
+interface SkillEditModalProps {
+  skill: HexeSkill;
+  onSave: (updated: HexeSkill) => void;
+  onClose: () => void;
+}
+
+function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
+  const [name, setName] = useState(skill.name);
+  const [activationType, setActivationType] = useState<HexeActivationType>(skill.activationType || 'passive');
+  const [skillLevel, setSkillLevel] = useState<number | ''>(skill.skillLevel ?? '');
+  const [description, setDescription] = useState(skill.description ?? '');
+  const [duration, setDuration] = useState(skill.duration ?? '');
+  const [conditionText, setConditionText] = useState((skill.conditions || []).join(', '));
+  const [diceStr, setDiceStr] = useState(skill.dice ? formatDiceFormula(skill.dice) : '');
+  const [costs, setCosts] = useState<{ mp?: number; stm?: number; hp?: number; chance?: number }>({
+    mp: skill.costs?.mp,
+    stm: skill.costs?.stm,
+    hp: skill.costs?.hp,
+    chance: skill.costs?.chance
+  });
+  const [effects, setEffects] = useState<HexeEffect[]>([...(skill.effects || [])]);
+
+  // Sous-formulaire d'ajout d'effet
+  const [newEffectType, setNewEffectType] = useState<'statLevel' | 'rollModifier' | 'resourceChange' | 'custom'>('statLevel');
+  const [newEffStat, setNewEffStat] = useState<HexeStatKey>('str');
+  const [newEffStatVal, setNewEffStatVal] = useState<number>(1);
+  const [newEffRollVal, setNewEffRollVal] = useState<number>(2);
+  const [newEffRollCond, setNewEffRollCond] = useState<string>('');
+  const [newEffRes, setNewEffRes] = useState<HexeResourceKey>('hp');
+  const [newEffResTarget, setNewEffResTarget] = useState<'current' | 'maximum'>('current');
+  const [newEffResOp, setNewEffResOp] = useState<'restore' | 'spend' | 'add' | 'set'>('restore');
+  const [newEffResMode, setNewEffResMode] = useState<'value' | 'dice'>('value');
+  const [newEffResVal, setNewEffResVal] = useState<number>(5);
+  const [newEffResDice, setNewEffResDice] = useState<string>('2d4');
+  const [newEffCustomDesc, setNewEffCustomDesc] = useState<string>('');
+
+  const handleAddEffect = () => {
+    let eff: HexeEffect | null = null;
+    if (newEffectType === 'statLevel') {
+      eff = { type: 'statLevel', stat: newEffStat, value: newEffStatVal };
+    } else if (newEffectType === 'rollModifier') {
+      eff = { type: 'rollModifier', value: newEffRollVal, condition: newEffRollCond.trim() || undefined };
+    } else if (newEffectType === 'resourceChange') {
+      if (newEffResMode === 'value') {
+        eff = { type: 'resourceChange', resource: newEffRes, target: newEffResTarget, operation: newEffResOp, value: newEffResVal };
+      } else {
+        const parsed = parseDiceFormula(newEffResDice.trim());
+        if (parsed) {
+          eff = { type: 'resourceChange', resource: newEffRes, target: newEffResTarget, operation: newEffResOp, dice: parsed };
+        } else {
+          eff = { type: 'resourceChange', resource: newEffRes, target: newEffResTarget, operation: newEffResOp, value: 1 };
+        }
+      }
+    } else if (newEffectType === 'custom') {
+      if (newEffCustomDesc.trim()) {
+        eff = { type: 'custom', description: newEffCustomDesc.trim() };
+      }
+    }
+    if (eff) {
+      setEffects(prev => [...prev, eff!]);
+      if (newEffectType === 'custom') setNewEffCustomDesc('');
+    }
+  };
+
+  const handleRemoveEffect = (idx: number) => {
+    setEffects(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    const parsedDice = diceStr.trim() ? parseDiceFormula(diceStr.trim()) : undefined;
+    const condList = conditionText
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const activeCosts: Partial<Record<HexeResourceKey, number>> = {};
+    if (activationType !== 'passive') {
+      if (costs.mp && costs.mp > 0) activeCosts.mp = costs.mp;
+      if (costs.stm && costs.stm > 0) activeCosts.stm = costs.stm;
+      if (costs.hp && costs.hp > 0) activeCosts.hp = costs.hp;
+      if (costs.chance && costs.chance > 0) activeCosts.chance = costs.chance;
+    }
+
+    onSave({
+      ...skill,
+      name: name.trim(),
+      activationType,
+      skillLevel: typeof skillLevel === 'number' && skillLevel > 0 ? skillLevel : undefined,
+      description: description.trim() || undefined,
+      duration: duration.trim() || undefined,
+      conditions: condList.length > 0 ? condList : undefined,
+      costs: Object.keys(activeCosts).length > 0 ? activeCosts : undefined,
+      dice: parsedDice || undefined,
+      effects
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#090a10] border border-white/15 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#050508]/80 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-rose-600/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+              <Edit3 className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white">Modifier la compétence</h3>
+              <p className="text-[11px] text-slate-400">Personnalisation sur la fiche du joueur</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Scrollable Form Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar text-xs">
+          {/* Mode d'activation */}
+          <div className="space-y-1">
+            <label className="text-[10px] text-slate-400 font-bold block">Mode d'activation</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['passive', 'toggle', 'active'] as HexeActivationType[]).map(t => {
+                const isSel = activationType === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setActivationType(t)}
+                    className={`p-2 rounded-lg border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                      isSel
+                        ? t === 'passive'
+                          ? 'bg-emerald-950/70 border-emerald-500 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                          : t === 'toggle'
+                          ? 'bg-amber-950/70 border-amber-500 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                          : 'bg-rose-950/70 border-rose-500 text-rose-200 shadow-[0_0_12px_rgba(225,29,72,0.25)]'
+                        : 'bg-[#050508] border-white/10 text-slate-400 hover:border-white/20'
+                    }`}
+                  >
+                    {t === 'passive' && <Shield className="w-3.5 h-3.5" />}
+                    {t === 'toggle' && <Zap className="w-3.5 h-3.5" />}
+                    {t === 'active' && <Flame className="w-3.5 h-3.5" />}
+                    <span className="capitalize">{t === 'passive' ? 'Passif' : t === 'toggle' ? 'Toggle' : 'Actif'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Nom & Niveau */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+            <div className="sm:col-span-3 space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold block">Nom de la compétence *</label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-rose-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold block">Niveau</label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                placeholder="Ex: 1"
+                value={skillLevel}
+                onChange={e => setSkillLevel(e.target.value ? Number(e.target.value) : '')}
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-rose-500"
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1">
+            <label className="text-[10px] text-slate-400 font-bold block">Description narrative</label>
+            <textarea
+              rows={2}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Description ou explication du sort ou don..."
+              className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-rose-500 custom-scrollbar"
+            />
+          </div>
+
+          {/* Coûts en ressources (si non passif) */}
+          {activationType !== 'passive' && (
+            <div className="p-2.5 bg-[#050508] border border-white/10 rounded-xl space-y-2">
+              <label className="text-[10px] font-bold text-slate-300 flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-amber-400" />
+                Coûts en ressources (Activation ou Entretien)
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <span className="text-[9px] text-blue-300 font-bold block mb-0.5">MP (Mana)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={costs.mp || ''}
+                    onChange={e => setCosts(p => ({ ...p, mp: Number(e.target.value) || undefined }))}
+                    className="w-full bg-slate-900 border border-blue-900/40 rounded px-2 py-1 text-white"
+                  />
+                </div>
+                <div>
+                  <span className="text-[9px] text-emerald-300 font-bold block mb-0.5">STM (Endurance)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={costs.stm || ''}
+                    onChange={e => setCosts(p => ({ ...p, stm: Number(e.target.value) || undefined }))}
+                    className="w-full bg-slate-900 border border-emerald-900/40 rounded px-2 py-1 text-white"
+                  />
+                </div>
+                <div>
+                  <span className="text-[9px] text-rose-300 font-bold block mb-0.5">HP (Sacrifice)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={costs.hp || ''}
+                    onChange={e => setCosts(p => ({ ...p, hp: Number(e.target.value) || undefined }))}
+                    className="w-full bg-slate-900 border border-rose-900/40 rounded px-2 py-1 text-white"
+                  />
+                </div>
+                <div>
+                  <span className="text-[9px] text-amber-300 font-bold block mb-0.5">Chance</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={costs.chance || ''}
+                    onChange={e => setCosts(p => ({ ...p, chance: Number(e.target.value) || undefined }))}
+                    className="w-full bg-slate-900 border border-amber-900/40 rounded px-2 py-1 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Durée & Conditions & Dés */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold block">Durée (opt.)</label>
+              <input
+                type="text"
+                placeholder="Ex: 3 tours..."
+                value={duration}
+                onChange={e => setDuration(e.target.value)}
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-2.5 py-1.5 text-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold block">Conditions (opt.)</label>
+              <input
+                type="text"
+                placeholder="Ex: Contact, Nuit..."
+                value={conditionText}
+                onChange={e => setConditionText(e.target.value)}
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-2.5 py-1.5 text-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold block">Dés (opt.)</label>
+              <input
+                type="text"
+                placeholder="Ex: 2d6+2"
+                value={diceStr}
+                onChange={e => setDiceStr(e.target.value)}
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-2.5 py-1.5 text-amber-300 font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Effets mécaniques */}
+          <div className="p-3 bg-slate-950/80 border border-white/10 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                Effets mécaniques & descriptifs ({effects.length})
+              </span>
+            </div>
+
+            {effects.length > 0 && (
+              <div className="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
+                {effects.map((eff, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/40 border border-white/10 text-xs"
+                  >
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                      {eff.type === 'statLevel' && (
+                        <span className="text-emerald-300 font-bold">
+                          Stat : {STAT_SHORT[eff.stat]} {eff.value > 0 ? `+${eff.value}` : eff.value}
+                        </span>
+                      )}
+                      {eff.type === 'rollModifier' && (
+                        <span className="text-cyan-300 font-bold">
+                          Jet : {eff.value > 0 ? `+${eff.value}` : eff.value} {eff.condition ? `(${eff.condition})` : ''}
+                        </span>
+                      )}
+                      {eff.type === 'resourceChange' && (
+                        <span className="text-rose-300 font-bold">
+                          {eff.operation} {eff.target === 'maximum' ? 'MAX ' : ''}{eff.resource.toUpperCase()} {eff.value ? `(${eff.value})` : ''} {eff.dice ? `(${formatDiceFormula(eff.dice)})` : ''}
+                        </span>
+                      )}
+                      {eff.type === 'custom' && (
+                        <span className="text-slate-300 italic truncate">« {eff.description} »</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveEffect(idx)}
+                      className="text-slate-500 hover:text-rose-400 p-1 rounded transition-colors"
+                      title="Supprimer l'effet"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Ajouter un effet */}
+            <div className="p-2.5 rounded-lg bg-black/30 border border-dashed border-white/10 space-y-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setNewEffectType('statLevel')}
+                  className={`py-1 px-1.5 rounded text-[10px] font-bold border transition-colors ${
+                    newEffectType === 'statLevel' ? 'bg-emerald-950/70 border-emerald-500 text-emerald-300' : 'bg-black/20 border-white/5 text-slate-400'
+                  }`}
+                >
+                  Niveau Stat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewEffectType('rollModifier')}
+                  className={`py-1 px-1.5 rounded text-[10px] font-bold border transition-colors ${
+                    newEffectType === 'rollModifier' ? 'bg-cyan-950/70 border-cyan-500 text-cyan-300' : 'bg-black/20 border-white/5 text-slate-400'
+                  }`}
+                >
+                  Modif. Jet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewEffectType('resourceChange')}
+                  className={`py-1 px-1.5 rounded text-[10px] font-bold border transition-colors ${
+                    newEffectType === 'resourceChange' ? 'bg-rose-950/70 border-rose-500 text-rose-300' : 'bg-black/20 border-white/5 text-slate-400'
+                  }`}
+                >
+                  Ressource
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewEffectType('custom')}
+                  className={`py-1 px-1.5 rounded text-[10px] font-bold border transition-colors ${
+                    newEffectType === 'custom' ? 'bg-rose-950/70 border-rose-500 text-rose-300' : 'bg-black/20 border-white/5 text-slate-400'
+                  }`}
+                >
+                  Descriptif
+                </button>
+              </div>
+
+              {newEffectType === 'statLevel' && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={newEffStat}
+                    onChange={e => setNewEffStat(e.target.value as HexeStatKey)}
+                    className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                  >
+                    {ALL_STATS.map(s => (
+                      <option key={s} value={s}>{STAT_LABELS[s]}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    value={newEffStatVal}
+                    onChange={e => setNewEffStatVal(Number(e.target.value))}
+                    className="w-16 bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-center text-white"
+                  />
+                  <span className="text-xs text-slate-400">niveaux</span>
+                </div>
+              )}
+
+              {newEffectType === 'rollModifier' && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-slate-400">Bonus</span>
+                    <input
+                      type="number"
+                      value={newEffRollVal}
+                      onChange={e => setNewEffRollVal(Number(e.target.value))}
+                      className="w-16 bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-center text-white"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <input
+                      type="text"
+                      placeholder="Condition (ex: Jet d'attaque)"
+                      value={newEffRollCond}
+                      onChange={e => setNewEffRollCond(e.target.value)}
+                      className="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {newEffectType === 'resourceChange' && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={newEffRes}
+                      onChange={e => setNewEffRes(e.target.value as HexeResourceKey)}
+                      className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                    >
+                      <option value="hp">HP (Vie)</option>
+                      <option value="mp">MP (Mana)</option>
+                      <option value="stm">STM (Endurance)</option>
+                      <option value="chance">Chance</option>
+                    </select>
+                    <select
+                      value={newEffResTarget}
+                      onChange={e => setNewEffResTarget(e.target.value as any)}
+                      className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                    >
+                      <option value="current">Valeur actuelle</option>
+                      <option value="maximum">Maximum</option>
+                    </select>
+                    <select
+                      value={newEffResOp}
+                      onChange={e => setNewEffResOp(e.target.value as any)}
+                      className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                    >
+                      <option value="restore">Restaurer</option>
+                      <option value="spend">Dépenser / Subir</option>
+                      <option value="add">Ajouter (+)</option>
+                      <option value="set">Fixer (=)</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex rounded border border-white/10 overflow-hidden shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setNewEffResMode('value')}
+                        className={`px-2 py-0.5 text-[10px] font-bold ${newEffResMode === 'value' ? 'bg-white/20 text-white' : 'text-slate-400'}`}
+                      >
+                        Fixe
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewEffResMode('dice')}
+                        className={`px-2 py-0.5 text-[10px] font-bold ${newEffResMode === 'dice' ? 'bg-white/20 text-white' : 'text-slate-400'}`}
+                      >
+                        Dés
+                      </button>
+                    </div>
+                    {newEffResMode === 'value' ? (
+                      <input
+                        type="number"
+                        value={newEffResVal}
+                        onChange={e => setNewEffResVal(Number(e.target.value))}
+                        className="w-20 bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-center text-white"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="2d4"
+                        value={newEffResDice}
+                        onChange={e => setNewEffResDice(e.target.value)}
+                        className="w-24 bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs font-mono text-amber-300"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {newEffectType === 'custom' && (
+                <input
+                  type="text"
+                  placeholder="Description de l'effet narratif..."
+                  value={newEffCustomDesc}
+                  onChange={e => setNewEffCustomDesc(e.target.value)}
+                  className="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                />
+              )}
+
+              <button
+                type="button"
+                onClick={handleAddEffect}
+                className="w-full py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-200 font-bold transition-colors"
+              >
+                + Ajouter cet effet
               </button>
             </div>
           </div>

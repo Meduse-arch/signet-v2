@@ -124,6 +124,37 @@ const DEFAULT_SKILLS: HexeSkill[] = [
       }
     ],
     custom: false
+  },
+  {
+    id: 'skill-frappe-chirurgicale',
+    name: 'Frappe Chirurgicale',
+    description: 'Une botte précise et létale visant les faiblesses articulaires et ignorant la protection adverse.',
+    activationType: 'active',
+    costs: { stm: 1 },
+    effects: [
+      { type: 'custom', description: 'Ignore la première réduction d\'armure de la cible.' }
+    ],
+    custom: false
+  },
+  {
+    id: 'skill-entite-vorace',
+    name: 'Entité Vorace',
+    description: 'L\'esprit occulte scellé dans l\'objet insuffle une soif sanguinaire à chaque assaut.',
+    activationType: 'passive',
+    effects: [
+      { type: 'rollModifier', value: 1, condition: 'Attaques en état de fureur ou blessé' }
+    ],
+    custom: false
+  },
+  {
+    id: 'skill-doigts-agiles',
+    name: 'Doigts Agiles',
+    description: 'Une dextérité surnaturelle facilitant le déverrouillage de serrures et mécanismes complexes.',
+    activationType: 'passive',
+    effects: [
+      { type: 'rollModifier', value: 2, condition: 'Jets de Dextérité ou de crochetage' }
+    ],
+    custom: false
   }
 ];
 
@@ -135,7 +166,18 @@ function loadSkills(): HexeSkill[] {
       return DEFAULT_SKILLS;
     }
     const parsed = JSON.parse(raw) as HexeSkill[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_SKILLS;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return DEFAULT_SKILLS;
+    }
+    // Assure l'inclusion des compétences par défaut manquantes
+    const existingIds = new Set(parsed.map(p => p.id));
+    const missingDefaults = DEFAULT_SKILLS.filter(d => !existingIds.has(d.id));
+    if (missingDefaults.length > 0) {
+      const merged = [...parsed, ...missingDefaults];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      return merged;
+    }
+    return parsed;
   } catch {
     return DEFAULT_SKILLS;
   }
@@ -162,6 +204,10 @@ export function subscribeSkills(callback: () => void): () => void {
 
 export function getSkillsCatalog(): HexeSkill[] {
   return loadSkills();
+}
+
+export function getSkillById(id: string): HexeSkill | undefined {
+  return loadSkills().find(s => s.id === id);
 }
 
 export function addSkillToCatalog(skill: Omit<HexeSkill, 'id'>): HexeSkill {
@@ -194,4 +240,103 @@ export function instantiateSkill(skill: HexeSkill, sourceEquipmentId?: string): 
     id: `char-skill-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     sourceEquipmentId
   };
+}
+
+/**
+ * Convertit une ancienne HexeAbility inline en HexeSkill pour compatibilité transparente.
+ */
+export function abilityToSkill(ab: import('./types').HexeAbility): HexeSkill {
+  return {
+    id: ab.id,
+    name: ab.name,
+    description: ab.description,
+    activationType: ab.activationType || 'passive',
+    effects: ab.effects || [],
+    dice: ab.dice,
+    costs: ab.costs,
+    conditions: ab.condition ? [ab.condition] : undefined,
+    custom: true
+  };
+}
+
+/**
+ * Résout toutes les compétences associées à un équipement :
+ * 1. Depuis abilityIds (identifiants officiels pointant vers le catalogue partagé)
+ * 2. Depuis les éventuelles anciennes abilities inline
+ */
+export function getEquipmentSkills(equip: { abilityIds?: string[]; abilities?: import('./types').HexeAbility[] }): HexeSkill[] {
+  const catalog = getSkillsCatalog();
+  const catalogMap = new Map(catalog.map(s => [s.id, s]));
+  const result: HexeSkill[] = [];
+  const seenIds = new Set<string>();
+
+  // 1. Depuis abilityIds
+  for (const id of equip.abilityIds || []) {
+    const found = catalogMap.get(id);
+    if (found && !seenIds.has(found.id)) {
+      result.push(found);
+      seenIds.add(found.id);
+    }
+  }
+
+  // 2. Rétrocompatibilité : anciennes abilities inline
+  for (const ab of equip.abilities || []) {
+    if (!seenIds.has(ab.id)) {
+      result.push(abilityToSkill(ab));
+      seenIds.add(ab.id);
+    }
+  }
+
+  return result;
+}
+
+export interface CharacterSkillSource {
+  skill: HexeSkill;
+  sources: string[];
+  isLearned: boolean;
+  isEquippedOnly: boolean;
+}
+
+/**
+ * Calcule l'ensemble des compétences disponibles pour un personnage :
+ * - Compétences apprises directement (char.skills)
+ * - Compétences accordées par les équipements actuellement portés (isEquipped === true)
+ * Si un objet est déséquipé, ses compétences ne sont plus disponibles via cet objet,
+ * mais restent conservées si le personnage les a apprises ou si un autre équipement porté les fournit.
+ */
+export function getCharacterAvailableSkills(char: import('./types').HexeCharacter): CharacterSkillSource[] {
+  const map = new Map<string, CharacterSkillSource>();
+
+  // 1. Compétences apprises directement par le personnage
+  for (const skill of char.skills || []) {
+    map.set(skill.id, {
+      skill,
+      sources: ['Appris'],
+      isLearned: true,
+      isEquippedOnly: false
+    });
+  }
+
+  // 2. Compétences accordées par les équipements équipés
+  for (const equip of char.equipment || []) {
+    if (!equip.isEquipped) continue;
+    const equipSkills = getEquipmentSkills(equip);
+    for (const skill of equipSkills) {
+      const existing = map.get(skill.id);
+      if (existing) {
+        if (!existing.sources.includes(equip.name)) {
+          existing.sources.push(equip.name);
+        }
+      } else {
+        map.set(skill.id, {
+          skill,
+          sources: [equip.name],
+          isLearned: false,
+          isEquippedOnly: true
+        });
+      }
+    }
+  }
+
+  return Array.from(map.values());
 }

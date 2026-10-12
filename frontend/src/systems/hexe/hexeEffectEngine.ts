@@ -17,10 +17,12 @@ export interface HexeEffectiveStats {
  * 2. Compétences passives (activationType === 'passive')
  * 3. Compétences toggle actuellement activées (activationType === 'toggle' && activeToggles.includes(id))
  */
+import { getCharacterAvailableSkills } from './hexeSkillStore';
+
 export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; source: string }[] {
   const result: { effect: HexeEffect; source: string }[] = [];
 
-  // 1. Équipements portés
+  // 1. Équipements portés (effets directs, bonus de stats et resourceModifiers)
   for (const equip of char.equipment || []) {
     if (!equip.isEquipped) continue;
 
@@ -54,15 +56,17 @@ export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; sou
     }
   }
 
-  // 2. Compétences (passives et toggles activés)
+  // 2. Compétences disponibles (apprises ET accordées par les équipements équipés)
   const activeToggles = new Set(char.activeToggles || []);
-  for (const skill of char.skills || []) {
+  const available = getCharacterAvailableSkills(char);
+
+  for (const { skill, sources } of available) {
     const isPassive = skill.activationType === 'passive';
     const isToggleOn = skill.activationType === 'toggle' && activeToggles.has(skill.id);
 
     if (isPassive || isToggleOn) {
       for (const eff of skill.effects || []) {
-        result.push({ effect: eff, source: skill.name });
+        result.push({ effect: eff, source: `${skill.name} (${sources.join(', ')})` });
       }
     }
   }
@@ -73,12 +77,17 @@ export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; sou
 /**
  * Calcule tous les niveaux effectifs de statistiques, les dés associés,
  * et les maximums de ressources en tenant compte de tous les bonus actifs.
+ *
+ * RÈGLE FONDAMENTALE : Les équipements ne modifient PAS automatiquement les ressources.
+ * Les maximums de ressources de base sont calculés à partir des stats de BASE du personnage.
+ * Un équipement ne modifie un maximum de ressource que s'il possède un effet explicite
+ * de type 'resourceChange' (par ex. une relique ou compétence passive spécifique).
  */
 export function calculateEffectiveState(char: HexeCharacter): HexeEffectiveStats {
   const activeEffects = getActiveEffects(char);
 
-  // 1. Niveaux de statistiques effectifs
-  const levels: Record<HexeStatKey, number> = {
+  // 1. Niveaux de statistiques de base
+  const baseLevels: Record<HexeStatKey, number> = {
     str: char.stats?.str?.level || 1,
     dex: char.stats?.dex?.level || 1,
     agi: char.stats?.agi?.level || 1,
@@ -86,6 +95,9 @@ export function calculateEffectiveState(char: HexeCharacter): HexeEffectiveStats
     vit: char.stats?.vit?.level || 1,
     luc: char.stats?.luc?.level || 1,
   };
+
+  // Niveaux effectifs modifiés par les effets de stats
+  const levels: Record<HexeStatKey, number> = { ...baseLevels };
 
   const rollModifiers: { value: number; condition?: string; source: string }[] = [];
   const maxResourceModifiers: Record<HexeResourceKey, number> = {
@@ -117,12 +129,12 @@ export function calculateEffectiveState(char: HexeCharacter): HexeEffectiveStats
     luc: getDiceForLevel(levels.luc),
   };
 
-  // 3. Maximums de ressources basés sur les formules de Hexe + bonus
+  // 3. Maximums de ressources basés STRICTEMENT sur les stats de base du personnage + effets de ressources explicites
   const maxResources: Record<HexeResourceKey, number> = {
-    hp: getMaxHP(levels.vit) + maxResourceModifiers.hp,
-    mp: getMaxMP(levels.tec) + maxResourceModifiers.mp,
-    stm: getMaxSTM(levels.agi) + maxResourceModifiers.stm,
-    chance: getMaxChance(levels.luc) + maxResourceModifiers.chance,
+    hp: getMaxHP(baseLevels.vit) + maxResourceModifiers.hp,
+    mp: getMaxMP(baseLevels.tec) + maxResourceModifiers.mp,
+    stm: getMaxSTM(baseLevels.agi) + maxResourceModifiers.stm,
+    chance: getMaxChance(baseLevels.luc) + maxResourceModifiers.chance,
   };
 
   return {

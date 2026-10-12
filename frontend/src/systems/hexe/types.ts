@@ -65,9 +65,31 @@ export interface HexeSkill {
   sourceEquipmentId?: string;
 }
 
-// --- Armes, Rangs & Pentacles ---
+// --- Équipements, Rangs & Pentacles ---
 
 export type HexeWeaponRank = 'F' | 'D' | 'C' | 'B' | 'A' | 'S';
+export type HexeItemRank = HexeWeaponRank;
+
+export const ALL_RANKS: HexeWeaponRank[] = ['F', 'D', 'C', 'B', 'A', 'S'];
+
+export const RANK_BRANCH_COUNTS: Record<HexeWeaponRank, number> = {
+  F: 1,
+  D: 2,
+  C: 3,
+  B: 4,
+  A: 5,
+  S: 5
+};
+
+export const RANK_DESCRIPTIONS: Record<HexeWeaponRank, string> = {
+  F: '1 branche',
+  D: '2 branches',
+  C: '3 branches',
+  B: '4 branches',
+  A: '5 branches',
+  S: 'Rang Ultime (Cercle)'
+};
+
 export type HexeWeaponNature = 'classic' | 'ego' | 'possessed';
 export type HexePentacleOrientation = 'upright' | 'inverted';
 
@@ -86,6 +108,11 @@ export interface HexeAbility {
   name: string;
   description: string;
   condition?: string;
+  activationType?: HexeActivationType;
+  dice?: HexeDiceFormula;
+  costs?: { mp?: number; stm?: number; hp?: number; chance?: number };
+  duration?: string;
+  effects?: HexeEffect[];
 }
 
 export interface HexeResourceModifier {
@@ -105,7 +132,7 @@ export interface HexeEquipment {
   statBonuses?: Partial<Record<HexeStatKey, number>>;
   /** Mots-clés descriptifs ou mécaniques. Ex: ['légère', 'silencieuse'] */
   properties?: string[];
-  /** Capacités spéciales nommées */
+  /** Capacités spéciales nommées avec leurs propres jets/coûts/effets */
   abilities?: HexeAbility[];
   /** Modifications rares sur les ressources */
   resourceModifiers?: HexeResourceModifier[];
@@ -113,13 +140,13 @@ export interface HexeEquipment {
   isEquipped: boolean;
   description?: string;
 
-  // Armes : rangs et symbolique des pentacles
+  // Système de rangs et symbolique des pentacles (applicable à tous les équipements)
   rank?: HexeWeaponRank;
   nature?: HexeWeaponNature;
   symbol?: HexeWeaponSymbol;
   abilityIds?: string[];
 
-  // Effets et jets de dés personnalisés
+  // Effets et formule de dés de base (facultative)
   effects?: HexeEffect[];
   dice?: HexeDiceFormula;
 }

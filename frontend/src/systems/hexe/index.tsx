@@ -40,7 +40,7 @@ export const SystemHexeModule = {
     api.ui.registerAction(
       'hexe-grimoire',
       'Grimoire',
-      <BookOpen className="w-5 h-5 text-purple-400" />,
+      <BookOpen className="w-5 h-5 text-rose-500" />,
       'WINDOW_TOGGLE'
     );
 
@@ -74,7 +74,7 @@ export const SystemHexeModule = {
       'Grimoire Hexe',
       <HexeGrimoireWindow api={api} />,
       {
-        icon: <BookOpen className="w-5 h-5 text-purple-400" />,
+        icon: <BookOpen className="w-5 h-5 text-rose-500" />,
         defaultWidth: 540,
         defaultHeight: 660
       }

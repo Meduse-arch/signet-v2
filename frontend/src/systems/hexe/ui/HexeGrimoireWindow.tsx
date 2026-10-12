@@ -340,13 +340,13 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
       {/* Header */}
       <div className="p-3 sm:p-4 border-b border-white/10 bg-slate-950/80 backdrop-blur-md flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-purple-950/40 border border-purple-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-            <BookOpen className="w-5 h-5 text-purple-400" />
+          <div className="w-9 h-9 rounded-xl bg-rose-950/40 border border-rose-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(225,29,72,0.25)]">
+            <BookOpen className="w-5 h-5 text-rose-400" />
           </div>
           <div className="min-w-0">
             <h2 className="text-sm font-black text-white tracking-wide flex items-center gap-2">
               Grimoire Hexe
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-950/60 border border-purple-800/40 text-purple-300 font-mono font-normal">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-950/60 border border-rose-800/40 text-rose-300 font-mono font-normal">
                 {skills.length} sorts & dons
               </span>
             </h2>
@@ -371,7 +371,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
           <form onSubmit={handleSaveForm} className="max-w-xl mx-auto space-y-4 pb-6">
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
+                <Sparkles className="w-4 h-4 text-rose-400" />
                 {editingId ? 'Modifier la Compétence' : 'Forger une Nouvelle Compétence'}
               </h3>
               <button
@@ -556,7 +556,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
             <div className="p-3 bg-slate-950/90 border border-white/10 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-rose-400" />
                   Effets mécaniques & descriptifs ({form.effects.length})
                 </span>
                 <span className="text-[10px] text-slate-400">Section 4 du document de règles</span>
@@ -638,7 +638,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                     type="button"
                     onClick={() => setNewEffectType('custom')}
                     className={`py-1 px-2 rounded text-[11px] font-bold border transition-colors ${
-                      newEffectType === 'custom' ? 'bg-purple-950/70 border-purple-500 text-purple-300' : 'bg-black/20 border-white/5 text-slate-400'
+                      newEffectType === 'custom' ? 'bg-rose-950/70 border-rose-500 text-rose-300' : 'bg-black/20 border-white/5 text-slate-400'
                     }`}
                   >
                     Descriptif
@@ -811,7 +811,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                 placeholder="Rechercher par nom, effet ou description..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-slate-900/80 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                className="w-full bg-slate-900/80 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
               />
             </div>
 
@@ -826,7 +826,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                     onClick={() => setActiveFilter(tab)}
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
                       isSel
-                        ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                        ? 'bg-rose-600 text-white shadow-[0_0_10px_rgba(225,29,72,0.35)]'
                         : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
                     }`}
                   >
@@ -938,7 +938,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                         )}
                         <button
                           onClick={() => handleStartEdit(skill)}
-                          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors"
                           title="Modifier"
                         >
                           <Edit3 className="w-4 h-4" />
@@ -969,7 +969,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
 
                         {skill.duration && (
                           <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                            <Clock className="w-3.5 h-3.5 text-purple-400" />
+                            <Clock className="w-3.5 h-3.5 text-rose-400" />
                             <span>Durée : <strong className="text-slate-200">{skill.duration}</strong></span>
                           </div>
                         )}
@@ -998,7 +998,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                             {skill.effects.map((eff, i) => (
                               <div
                                 key={i}
-                                className="bg-slate-900/80 border-l-2 border-purple-500 border border-white/10 rounded p-2 text-xs"
+                                className="bg-slate-900/80 border-l-2 border-rose-500 border border-white/10 rounded p-2 text-xs"
                               >
                                 {eff.type === 'statLevel' && (
                                   <div className="text-emerald-300 font-bold">

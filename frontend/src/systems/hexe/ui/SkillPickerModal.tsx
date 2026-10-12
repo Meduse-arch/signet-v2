@@ -6,7 +6,7 @@ import { ALL_STATS, STAT_LABELS } from '../types';
 import { parseDiceFormula, formatDiceFormula } from '../hexeDiceEngine';
 import { instantiateSkill, addSkillToCatalog } from '../hexeSkillStore';
 import {
-  Sparkles, Zap, Layers, Plus, Search, X, Trash2
+  Shield, Sparkles, Zap, Layers, Plus, Search, X, Trash2
 } from 'lucide-react';
 
 interface SkillPickerModalProps {
@@ -107,8 +107,8 @@ export function SkillPickerModal({
     switch (type) {
       case 'passive':
         return (
-          <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-800 border border-white/10 text-slate-300 rounded px-1.5 py-0.5 flex items-center gap-1">
-            <Sparkles className="w-2.5 h-2.5 text-purple-400" /> Passif
+          <span className="text-[9px] font-bold uppercase tracking-wider bg-emerald-950/60 border border-emerald-800/40 text-emerald-300 rounded px-1.5 py-0.5 flex items-center gap-1">
+            <Shield className="w-2.5 h-2.5 text-emerald-400" /> Passif
           </span>
         );
       case 'toggle':
@@ -460,7 +460,7 @@ export function SkillPickerModal({
 
                         {/* Coûts éventuels */}
                         {skill.costs?.mp && (
-                          <span className="text-[9px] font-bold text-purple-400 bg-purple-950/60 border border-purple-800/40 px-1.5 py-0.2 rounded">
+                          <span className="text-[9px] font-bold text-blue-300 bg-blue-950/60 border border-blue-800/40 px-1.5 py-0.2 rounded">
                             {skill.costs.mp} MP
                           </span>
                         )}
