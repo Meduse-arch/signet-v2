@@ -23,12 +23,14 @@ import {
 } from '../hexeSkillStore';
 import { parseDiceFormula, formatDiceFormula } from '../hexeDiceEngine';
 import { invoke } from '@tauri-apps/api/core';
+import { HexeImagePicker, HexeItemImage, HexeItemDetailBanner } from './HexeImagePicker';
 
 const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 interface FormState {
   name: string;
   description: string;
+  imageUrl?: string;
   activationType: HexeActivationType;
   skillLevel: number | '';
   costs: { mp?: number; stm?: number; hp?: number; chance?: number };
@@ -41,6 +43,7 @@ interface FormState {
 const EMPTY_FORM: FormState = {
   name: '',
   description: '',
+  imageUrl: undefined,
   activationType: 'active',
   skillLevel: '',
   costs: {},
@@ -64,9 +67,11 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   // Effect builder state in form
-  const [newEffectType, setNewEffectType] = useState<'statLevel' | 'rollModifier' | 'resourceChange' | 'custom'>('statLevel');
+  const [newEffectType, setNewEffectType] = useState<'statLevel' | 'rollModifier' | 'resourceChange' | 'carryCapacity' | 'custom'>('statLevel');
   const [newEffStat, setNewEffStat] = useState<HexeStatKey>('str');
   const [newEffStatVal, setNewEffStatVal] = useState<number>(1);
+  const [newEffCapacityType, setNewEffCapacityType] = useState<'flat' | 'percent'>('flat');
+  const [newEffCapacityVal, setNewEffCapacityVal] = useState<number>(5);
   const [newEffRollVal, setNewEffRollVal] = useState<number>(2);
   const [newEffRollCond, setNewEffRollCond] = useState<string>('');
   const [newEffRes, setNewEffRes] = useState<HexeResourceKey>('hp');
@@ -101,6 +106,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
               ...s,
               name: updatedSkill.name,
               description: updatedSkill.description,
+              imageUrl: updatedSkill.imageUrl,
               activationType: updatedSkill.activationType,
               effects: [...updatedSkill.effects],
               dice: updatedSkill.dice,
@@ -150,6 +156,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
     setForm({
       name: skill.name,
       description: skill.description || '',
+      imageUrl: skill.imageUrl,
       activationType: skill.activationType,
       skillLevel: skill.skillLevel ?? '',
       costs: skill.costs || {},
@@ -193,6 +200,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
     const skillPayload = {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
+      imageUrl: form.imageUrl,
       activationType: form.activationType,
       skillLevel: form.skillLevel !== '' ? Number(form.skillLevel) : undefined,
       costs: Object.keys(costsCleaned).length > 0 ? costsCleaned : undefined,
@@ -254,6 +262,12 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
           };
         }
       }
+    } else if (newEffectType === 'carryCapacity') {
+      eff = {
+        type: 'carryCapacity',
+        modifierType: newEffCapacityType,
+        value: Number(newEffCapacityVal) || 0
+      };
     } else if (newEffectType === 'custom') {
       if (newEffCustomDesc.trim()) {
         eff = {
@@ -453,6 +467,15 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
               />
             </div>
 
+            {/* Illustration de la compétence */}
+            <HexeImagePicker
+              value={form.imageUrl}
+              onChange={val => setForm(p => ({ ...p, imageUrl: val }))}
+              api={api}
+              fallbackType={form.activationType}
+              label="Illustration du Don ou Sort"
+            />
+
             {/* Coûts en ressources */}
             {form.activationType !== 'passive' && (
               <div className="p-3 bg-black/40 border border-white/10 rounded-xl space-y-2">
@@ -586,6 +609,11 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                             Ressource : {eff.operation} {eff.target === 'maximum' ? 'MAX' : ''} {eff.resource.toUpperCase()} {eff.value ? `(${eff.value})` : ''} {eff.dice ? `(${formatDiceFormula(eff.dice)})` : ''}
                           </span>
                         )}
+                        {eff.type === 'carryCapacity' && (
+                          <span className="text-amber-300 font-bold">
+                            Port : {eff.value > 0 ? `+${eff.value}` : eff.value} {eff.modifierType === 'percent' ? '%' : 'kg'}
+                          </span>
+                        )}
                         {eff.type === 'custom' && (
                           <span className="text-slate-300 italic truncate">
                             « {eff.description} »
@@ -606,7 +634,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
 
               {/* Formulaire d'ajout d'effet */}
               <div className="p-2.5 rounded-lg bg-black/30 border border-dashed border-white/10 space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
                   <button
                     type="button"
                     onClick={() => setNewEffectType('statLevel')}
@@ -633,6 +661,15 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                     }`}
                   >
                     Ressource
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewEffectType('carryCapacity')}
+                    className={`py-1 px-2 rounded text-[11px] font-bold border transition-colors ${
+                      newEffectType === 'carryCapacity' ? 'bg-amber-950/70 border-amber-500 text-amber-300' : 'bg-black/20 border-white/5 text-slate-400'
+                    }`}
+                  >
+                    Poids / Port
                   </button>
                   <button
                     type="button"
@@ -759,6 +796,44 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                   </div>
                 )}
 
+                {newEffectType === 'carryCapacity' && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1 bg-slate-900 border border-white/10 rounded p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setNewEffCapacityType('flat')}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                          newEffCapacityType === 'flat' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Fixe (+kg)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewEffCapacityType('percent')}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                          newEffCapacityType === 'percent' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Pourcent (+%)
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-slate-400">Valeur :</span>
+                      <input
+                        type="number"
+                        value={newEffCapacityVal}
+                        onChange={e => setNewEffCapacityVal(Number(e.target.value) || 0)}
+                        className="w-20 bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white font-mono"
+                        placeholder="Ex: 5"
+                      />
+                      <span className="text-xs font-bold text-amber-300">
+                        {newEffCapacityType === 'flat' ? 'kg' : '%'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {newEffectType === 'custom' && (
                   <div>
                     <input
@@ -862,11 +937,13 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                   >
                     <div className="p-3 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center shrink-0">
-                          {skill.activationType === 'passive' && <Shield className="w-4 h-4 text-emerald-400" />}
-                          {skill.activationType === 'toggle' && <Zap className="w-4 h-4 text-amber-400" />}
-                          {skill.activationType === 'active' && <Flame className="w-4 h-4 text-rose-400" />}
-                        </div>
+                        <HexeItemImage
+                          src={skill.imageUrl}
+                          alt={skill.name}
+                          fallbackType={skill.activationType}
+                          className="w-9 h-9 rounded-lg shrink-0"
+                          api={api}
+                        />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="text-sm font-bold text-white truncate">{skill.name}</h4>
@@ -913,6 +990,7 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                                 {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} +${eff.value} niv.`}
                                 {eff.type === 'rollModifier' && `Jet +${eff.value}`}
                                 {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()}`}
+                                {eff.type === 'carryCapacity' && `Port ${eff.value > 0 ? `+${eff.value}` : eff.value}${eff.modifierType === 'percent' ? '%' : 'kg'}`}
                                 {eff.type === 'custom' && eff.description}
                               </span>
                             ))}
@@ -963,6 +1041,16 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                     {/* Zone de détails dépliée */}
                     {isExpanded && hasDetails && (
                       <div className="px-3 pb-3 pt-1 border-t border-white/5 bg-black/30 space-y-2">
+                        {skill.imageUrl ? (
+                          <HexeItemDetailBanner
+                            src={skill.imageUrl}
+                            alt={skill.name}
+                            fallbackType={skill.activationType}
+                            className="w-full h-40 sm:h-48 rounded-xl mb-2"
+                            api={api}
+                          />
+                        ) : null}
+
                         {skill.description && (
                           <p className="text-xs text-slate-300 italic">{skill.description}</p>
                         )}
@@ -1013,6 +1101,11 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
                                 {eff.type === 'resourceChange' && (
                                   <div className="text-rose-300 font-bold">
                                     Ressource {eff.resource.toUpperCase()} ({eff.target === 'maximum' ? 'Maximum' : 'Actuelle'}) : {eff.operation} {eff.value ? `${eff.value}` : ''} {eff.dice ? formatDiceFormula(eff.dice) : ''}
+                                  </div>
+                                )}
+                                {eff.type === 'carryCapacity' && (
+                                  <div className="text-amber-300 font-bold">
+                                    Capacité de port : {eff.value > 0 ? `+${eff.value}` : eff.value} {eff.modifierType === 'percent' ? '%' : 'kg'}
                                   </div>
                                 )}
                                 {eff.type === 'custom' && (

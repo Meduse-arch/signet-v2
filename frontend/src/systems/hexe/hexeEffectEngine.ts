@@ -1,7 +1,10 @@
 import type {
-  HexeCharacter, HexeStatKey, HexeResourceKey, HexeEffect, HexeSkill
+  HexeCharacter, HexeStatKey, HexeResourceKey, HexeEffect, HexeSkill,
+  HexeEncumbranceState, HexeEncumbranceTier
 } from './types';
-import { getMaxHP, getMaxMP, getMaxSTM, getMaxChance, getDiceForLevel } from './types';
+import {
+  getMaxHP, getMaxMP, getMaxSTM, getMaxChance, getDiceForLevel, getBaseCarryCapacity
+} from './types';
 import { rollDiceFormula, type HexeRollResult } from './hexeDiceEngine';
 
 export interface HexeEffectiveStats {
@@ -9,6 +12,7 @@ export interface HexeEffectiveStats {
   dice: Record<HexeStatKey, string>;
   maxResources: Record<HexeResourceKey, number>;
   rollModifiers: { value: number; condition?: string; source: string }[];
+  encumbrance: HexeEncumbranceState;
 }
 
 /**
@@ -19,8 +23,12 @@ export interface HexeEffectiveStats {
  */
 import { getCharacterAvailableSkills } from './hexeSkillStore';
 
-export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; source: string }[] {
-  const result: { effect: HexeEffect; source: string }[] = [];
+export function getActiveEffects(char: HexeCharacter): {
+  effect: HexeEffect;
+  source: string;
+  sourceType: 'equipment' | 'skill';
+}[] {
+  const result: { effect: HexeEffect; source: string; sourceType: 'equipment' | 'skill' }[] = [];
 
   // 1. Équipements portés (effets directs, bonus de stats et resourceModifiers)
   for (const equip of char.equipment || []) {
@@ -28,7 +36,7 @@ export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; sou
 
     // Effets directs de l'équipement
     for (const eff of equip.effects || []) {
-      result.push({ effect: eff, source: equip.name });
+      result.push({ effect: eff, source: equip.name, sourceType: 'equipment' });
     }
 
     // Compatibilité : statBonuses directs existants
@@ -37,6 +45,7 @@ export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; sou
         result.push({
           effect: { type: 'statLevel', stat: st as HexeStatKey, value: val },
           source: equip.name,
+          sourceType: 'equipment',
         });
       }
     }
@@ -52,6 +61,7 @@ export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; sou
           value: mod.value,
         },
         source: equip.name,
+        sourceType: 'equipment',
       });
     }
   }
@@ -66,7 +76,7 @@ export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; sou
 
     if (isPassive || isToggleOn) {
       for (const eff of skill.effects || []) {
-        result.push({ effect: eff, source: `${skill.name} (${sources.join(', ')})` });
+        result.push({ effect: eff, source: `${skill.name} (${sources.join(', ')})`, sourceType: 'skill' });
       }
     }
   }
@@ -76,12 +86,18 @@ export function getActiveEffects(char: HexeCharacter): { effect: HexeEffect; sou
 
 /**
  * Calcule tous les niveaux effectifs de statistiques, les dés associés,
- * et les maximums de ressources en tenant compte de tous les bonus actifs.
+ * les maximums de ressources et l'encombrement / poids transporté en tenant compte de tous les bonus actifs.
  *
  * RÈGLE FONDAMENTALE : Les équipements ne modifient PAS automatiquement les ressources.
  * Les maximums de ressources de base sont calculés à partir des stats de BASE du personnage.
  * Un équipement ne modifie un maximum de ressource que s'il possède un effet explicite
  * de type 'resourceChange' (par ex. une relique ou compétence passive spécifique).
+ *
+ * RÈGLE DE POIDS & FORCE :
+ * Les bonus de Force (STR) conférés par un équipement (arme, armure, accessoire) n'augmentent PAS
+ * la capacité de port maximale (poids max). Seule la Force de base et les compétences (dons,
+ * passifs, auras/toggles, sorts) augmentent la capacité de port naturelle. Les compétences
+ * peuvent également modifier directement le poids max via des effets explicites de type 'carryCapacity'.
  */
 export function calculateEffectiveState(char: HexeCharacter): HexeEffectiveStats {
   const activeEffects = getActiveEffects(char);
@@ -96,8 +112,9 @@ export function calculateEffectiveState(char: HexeCharacter): HexeEffectiveStats
     luc: char.stats?.luc?.level || 1,
   };
 
-  // Niveaux effectifs modifiés par les effets de stats
+  // Niveaux effectifs modifiés par les effets de stats (avant pénalités de charge)
   const levels: Record<HexeStatKey, number> = { ...baseLevels };
+  let skillStrBonus = 0;
 
   const rollModifiers: { value: number; condition?: string; source: string }[] = [];
   const maxResourceModifiers: Record<HexeResourceKey, number> = {
@@ -107,19 +124,78 @@ export function calculateEffectiveState(char: HexeCharacter): HexeEffectiveStats
     chance: 0,
   };
 
-  for (const { effect, source } of activeEffects) {
+  let flatCapacityBonus = 0;
+  let percentCapacityBonus = 0;
+
+  for (const { effect, source, sourceType } of activeEffects) {
     if (effect.type === 'statLevel') {
       levels[effect.stat] = (levels[effect.stat] || 1) + effect.value;
+      if (effect.stat === 'str' && sourceType === 'skill') {
+        skillStrBonus += effect.value;
+      }
     } else if (effect.type === 'rollModifier') {
       rollModifiers.push({ value: effect.value, condition: effect.condition, source });
     } else if (effect.type === 'resourceChange' && effect.target === 'maximum') {
       if (effect.operation === 'add' && effect.value) {
         maxResourceModifiers[effect.resource] += effect.value;
       }
+    } else if (effect.type === 'carryCapacity') {
+      if (effect.modifierType === 'flat') {
+        flatCapacityBonus += effect.value;
+      } else if (effect.modifierType === 'percent') {
+        percentCapacityBonus += effect.value;
+      }
     }
   }
 
-  // 2. Dés associés aux niveaux effectifs
+  // 2. Calcul du Poids transporté (tous objets : équipés + sac + consommables + inventaire)
+  let totalWeight = 0;
+  for (const equip of char.equipment || []) {
+    const qty = equip.quantity ?? 1;
+    const w = equip.weight ?? 0;
+    totalWeight += w * qty;
+  }
+  for (const item of char.inventory || []) {
+    const qty = item.quantity ?? 1;
+    const w = item.weight ?? 0;
+    totalWeight += w * qty;
+  }
+  totalWeight = Math.round(totalWeight * 10) / 10;
+
+  // 3. Calcul de la Capacité Maximale de transport
+  // Formule de base : 10 + (STR pour portage × 5)
+  // Seule la Force de base et les compétences augmentent le portage, pas les bonus de Force des équipements.
+  const carryStr = Math.max(1, baseLevels.str + skillStrBonus);
+  const baseCapacity = getBaseCarryCapacity(carryStr);
+  const rawMax = (baseCapacity + flatCapacityBonus) * (1 + percentCapacityBonus / 100);
+  const maxWeight = Math.max(1, Math.round(rawMax * 10) / 10);
+
+  // 4. Seuils de charge et pénalités
+  const ratio = maxWeight > 0 ? totalWeight / maxWeight : 0;
+  let tier: HexeEncumbranceTier = 'light';
+  let agiPenalty = 0;
+
+  if (ratio >= 1.0) {
+    tier = 'overburdened';
+    agiPenalty = 2;
+  } else if (ratio >= 0.75) {
+    tier = 'heavy';
+    agiPenalty = 1;
+  }
+
+  const isOverencumbered = tier === 'overburdened';
+
+  // Application de la pénalité sur le niveau effectif d'AGI (sans toucher à la carac de base)
+  if (agiPenalty > 0) {
+    levels.agi = Math.max(1, levels.agi - agiPenalty);
+    rollModifiers.push({
+      value: -agiPenalty,
+      condition: "Pénalité d'encombrement sur l'AGI",
+      source: tier === 'overburdened' ? 'Charge excessive (≥ 100%)' : 'Charge lourde (≥ 75%)'
+    });
+  }
+
+  // 5. Dés associés aux niveaux effectifs finaux
   const dice: Record<HexeStatKey, string> = {
     str: getDiceForLevel(levels.str),
     dex: getDiceForLevel(levels.dex),
@@ -129,7 +205,7 @@ export function calculateEffectiveState(char: HexeCharacter): HexeEffectiveStats
     luc: getDiceForLevel(levels.luc),
   };
 
-  // 3. Maximums de ressources basés STRICTEMENT sur les stats de base du personnage + effets de ressources explicites
+  // 6. Maximums de ressources basés STRICTEMENT sur les stats de base du personnage + effets de ressources explicites
   const maxResources: Record<HexeResourceKey, number> = {
     hp: getMaxHP(baseLevels.vit) + maxResourceModifiers.hp,
     mp: getMaxMP(baseLevels.tec) + maxResourceModifiers.mp,
@@ -137,11 +213,21 @@ export function calculateEffectiveState(char: HexeCharacter): HexeEffectiveStats
     chance: getMaxChance(baseLevels.luc) + maxResourceModifiers.chance,
   };
 
+  const encumbrance: HexeEncumbranceState = {
+    totalWeight,
+    maxWeight,
+    ratio,
+    tier,
+    agiPenalty,
+    isOverencumbered,
+  };
+
   return {
     levels,
     dice,
     maxResources,
     rollModifiers,
+    encumbrance,
   };
 }
 

@@ -31,6 +31,7 @@ import {
   getTemplates, instantiateTemplate, subscribeTemplates
 } from '../hexeEquipmentStore';
 import type { HexeEquipmentTemplate } from '../hexeEquipmentStore';
+import { HexeImagePicker, HexeItemImage, HexeItemDetailBanner } from './HexeImagePicker';
 
 const isTauri = () => '__TAURI_INTERNALS__' in window;
 
@@ -111,6 +112,10 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
 
   const availableSkills = useMemo(() => {
     return getCharacterAvailableSkills(char);
+  }, [char]);
+
+  const effectiveState = useMemo(() => {
+    return calculateEffectiveState(char);
   }, [char]);
 
   useEffect(() => {
@@ -730,9 +735,63 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
       })()}
 
           {/* ── ONGLET INVENTAIRE ── */}
-          {/* ── ONGLET INVENTAIRE ── */}
           {activeTab === 'inventaire' && (
             <div className="flex flex-col gap-6">
+              {/* Barre discrète de poids et capacité */}
+              <div className="flex items-center justify-between gap-3 bg-[#090a10] border border-white/10 rounded-xl px-3.5 py-2.5 shrink-0 shadow-sm">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 whitespace-nowrap">
+                    <span>Poids :</span>
+                    <strong className={
+                      effectiveState.encumbrance.tier === 'overburdened'
+                        ? 'text-rose-400 font-black'
+                        : effectiveState.encumbrance.tier === 'heavy'
+                        ? 'text-amber-400 font-black'
+                        : 'text-white font-black'
+                    }>
+                      {effectiveState.encumbrance.totalWeight}
+                    </strong>
+                    <span className="text-slate-500 font-normal">/ {effectiveState.encumbrance.maxWeight} kg</span>
+                  </span>
+
+                  {/* Jauge visuelle */}
+                  <div className="w-20 sm:w-32 h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/10 shrink-0">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        effectiveState.encumbrance.tier === 'overburdened'
+                          ? 'bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.8)]'
+                          : effectiveState.encumbrance.tier === 'heavy'
+                          ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]'
+                          : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.round(effectiveState.encumbrance.ratio * 100))}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {effectiveState.encumbrance.tier === 'light' ? (
+                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800/30 px-2 py-0.5 rounded-full">
+                      Charge normale
+                    </span>
+                  ) : effectiveState.encumbrance.tier === 'heavy' ? (
+                    <span
+                      className="text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800/40 px-2 py-0.5 rounded-full"
+                      title="Charge lourde (≥ 75%) : -1 au niveau effectif d'AGI"
+                    >
+                      -1 AGI (Lourd)
+                    </span>
+                  ) : (
+                    <span
+                      className="text-[10px] font-bold text-rose-300 bg-rose-950/70 border border-rose-800/50 px-2 py-0.5 rounded-full"
+                      title="Charge excessive (≥ 100%) : -2 au niveau effectif d'AGI et sprint impossible"
+                    >
+                      -2 AGI (Encombré)
+                    </span>
+                  )}
+                </div>
+              </div>
+
               {/* Section 1 — Équipements portés */}
               <InventorySection
                 title="Équipements portés"
@@ -748,6 +807,7 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                     <EquipmentCard
                       key={equip.id}
                       equip={equip}
+                      api={api}
                       expanded={expandedEquip.has(equip.id)}
                       onToggleExpand={() => toggleExpandEquip(equip.id)}
                       onToggleEquip={() => toggleEquipped(equip.id)}
@@ -785,6 +845,7 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                     onSelect={addEquipmentFromArsenal}
                     onOpenArsenalWindow={() => api.emit('SYSTEM_ACTION_TRIGGERED', 'hexe-arsenal')}
                     onClose={() => setShowArsenalPicker(false)}
+                    api={api}
                   />
                 )}
 
@@ -799,6 +860,7 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                       <EquipmentCard
                         key={equip.id}
                         equip={equip}
+                        api={api}
                         expanded={expandedEquip.has(equip.id)}
                         onToggleExpand={() => toggleExpandEquip(equip.id)}
                         onToggleEquip={() => toggleEquipped(equip.id)}
@@ -816,20 +878,34 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                         key={item.id}
                         className="flex items-center justify-between gap-3 bg-slate-900/60 border border-white/10 rounded-xl px-3 py-2"
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white truncate block">
-                              {item.name}
-                            </span>
-                            <span className="text-[9px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-slate-400 rounded px-1.5 py-0.5 leading-none shrink-0">
-                              Objet
-                            </span>
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <HexeItemImage
+                            src={item.imageUrl}
+                            alt={item.name}
+                            fallbackSlot="other"
+                            className="w-7 h-7 rounded-lg shrink-0"
+                            api={api}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white truncate block">
+                                {item.name}
+                              </span>
+                              <span className="text-[9px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-slate-400 rounded px-1.5 py-0.5 leading-none shrink-0">
+                                Objet
+                              </span>
+                              {item.weight !== undefined && item.weight > 0 && (
+                                <span className="text-[9px] font-bold text-slate-400 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 leading-none shrink-0">
+                                  ⚖️ {item.quantity && item.quantity > 1 ? `${item.weight}×${item.quantity}=${Math.round(item.weight * item.quantity * 10)/10}` : item.weight} kg
+                                </span>
+                              )}
+                            </div>
+                            {item.description && (
+                              <span className="text-[10px] text-slate-400 italic truncate block mt-0.5">
+                                {item.description}
+                              </span>
+                            )}
                           </div>
-                          {item.description && (
-                            <span className="text-[10px] text-slate-400 italic truncate block mt-0.5">
-                              {item.description}
-                            </span>
-                          )}
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -930,6 +1006,7 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                   onSelect={handleAddSkill}
                   onOpenGrimoireWindow={() => api?.emit('SYSTEM_ACTION_TRIGGERED', 'hexe-grimoire')}
                   onClose={() => setShowGrimoirePicker(false)}
+                  api={api}
                 />
               )}
 
@@ -968,7 +1045,7 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                             const isPassive = skill.activationType === 'passive';
                             const isActive = skill.activationType === 'active';
                             const isExpanded = expandedSkills.has(skill.id);
-                            const hasDetails = !!skill.description || (skill.effects && skill.effects.length > 0) || !!skill.duration || (skill.conditions && skill.conditions.length > 0);
+                            const hasDetails = !!skill.description || (skill.effects && skill.effects.length > 0) || !!skill.duration || (skill.conditions && skill.conditions.length > 0) || !!skill.imageUrl;
 
                             return (
                               <div
@@ -983,13 +1060,13 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                                   {/* Ligne 1 : En-tête de la carte */}
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-                                        isPassive ? 'bg-emerald-950/50 border-emerald-800/40 text-emerald-400' : isToggle ? 'bg-amber-950/50 border-amber-800/40 text-amber-400' : 'bg-rose-950/50 border-rose-800/40 text-rose-400'
-                                      }`}>
-                                        {isPassive && <Shield className="w-4 h-4" />}
-                                        {isToggle && <Zap className="w-4 h-4" />}
-                                        {isActive && <Flame className="w-4 h-4" />}
-                                      </div>
+                                      <HexeItemImage
+                                        src={skill.imageUrl}
+                                        alt={skill.name}
+                                        fallbackType={skill.activationType}
+                                        className="w-8 h-8 rounded-lg shrink-0"
+                                        api={api}
+                                      />
 
                                       <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2 flex-wrap">
@@ -1146,6 +1223,16 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                                 {/* Détails dépliés : Description, Conditions & Effets */}
                                 {isExpanded && hasDetails && (
                                   <div className="px-3 pb-3 pt-2 border-t border-white/5 bg-black/40 space-y-2">
+                                    {skill.imageUrl ? (
+                                      <HexeItemDetailBanner
+                                        src={skill.imageUrl}
+                                        alt={skill.name}
+                                        fallbackType={skill.activationType}
+                                        className="w-full h-32 sm:h-40 rounded-xl mb-2"
+                                        api={api}
+                                      />
+                                    ) : null}
+
                                     {skill.description && (
                                       <p className="text-[11px] text-slate-300 italic border-l-2 border-rose-500/60 pl-2">
                                         {skill.description}
@@ -1172,6 +1259,7 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
                                             {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value} niv.`}
                                             {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value} ${eff.condition ? `(${eff.condition})` : ''}`}
                                             {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()} ${eff.value ? `(${eff.value})` : ''} ${eff.dice ? `(${formatDiceFormula(eff.dice)})` : ''}`}
+                                            {eff.type === 'carryCapacity' && `Port ${eff.value > 0 ? `+${eff.value}` : eff.value}${eff.modifierType === 'percent' ? '%' : 'kg'}`}
                                             {eff.type === 'custom' && eff.description}
                                           </span>
                                         ))}
@@ -1199,6 +1287,7 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
           equipment={editingEquipment}
           onSave={handleSaveEquipment}
           onClose={() => setEditingEquipment(null)}
+          api={api}
         />
       )}
 
@@ -1208,6 +1297,7 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
           skill={editingSkill}
           onSave={handleSaveSkill}
           onClose={() => setEditingSkill(null)}
+          api={api}
         />
       )}
     </div>
@@ -1254,52 +1344,68 @@ interface EquipmentCardProps {
   onUpdateQty?: (delta: number) => void;
   onEdit?: () => void;
   onDelete: () => void;
+  api?: SignetAPI;
 }
 
 function EquipmentCard({
-  equip, expanded, onToggleExpand, onToggleEquip, onRollWeapon, onConsume, onUpdateQty, onEdit, onDelete
+  equip, expanded, onToggleExpand, onToggleEquip, onRollWeapon, onConsume, onUpdateQty, onEdit, onDelete, api
 }: EquipmentCardProps) {
   const bonusEntries = Object.entries(equip.statBonuses ?? {}) as [HexeStatKey, number][];
   const linkedSkills = getEquipmentSkills(equip);
-  const hasDetails = linkedSkills.length > 0 || (equip.properties?.length ?? 0) > 0 || !!equip.description || equip.slot === 'weapon';
+  const hasDetails = linkedSkills.length > 0 || (equip.properties?.length ?? 0) > 0 || !!equip.description || !!equip.imageUrl || equip.slot === 'weapon';
   const isConsumable = equip.slot === 'consumable';
 
   return (
     <div className={`bg-[#090a10] border rounded-xl overflow-hidden transition-all ${equip.isEquipped ? 'border-rose-500/60 shadow-[0_0_15px_rgba(225,29,72,0.15)]' : 'border-white/10'}`}>
       <div className="p-3 flex flex-col gap-2">
-        {/* Ligne 1 : Nom, Badge Slot, et Bonus */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs font-bold text-white truncate">{equip.name}</span>
-              <HexePentacleBadge
-                rank={equip.rank || 'C'}
-                nature={equip.nature || 'classic'}
-                symbol={equip.symbol}
-                size={20}
-              />
-              <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 leading-none shrink-0 flex items-center gap-1 border ${
-                isConsumable
-                  ? 'bg-emerald-950/60 border-emerald-700/50 text-emerald-300'
-                  : equip.slot === 'other'
-                    ? 'bg-sky-950/50 border-sky-700/40 text-sky-300'
-                    : 'bg-white/5 border-white/10 text-slate-400'
-              }`}>
-                {isConsumable && <FlaskConical className="w-2.5 h-2.5" />}
-                {equip.slot === 'other' && <Package className="w-2.5 h-2.5" />}
-                {SLOT_LABELS[equip.slot]}
-              </span>
-            </div>
+        {/* Ligne 1 : Miniature, Nom, Badge Slot, Poids et Bonus */}
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+            <HexeItemImage
+              src={equip.imageUrl}
+              alt={equip.name}
+              fallbackSlot={equip.slot}
+              className="w-9 h-9 rounded-lg shrink-0 mt-0.5"
+              api={api}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-white truncate">{equip.name}</span>
+                <HexePentacleBadge
+                  rank={equip.rank || 'C'}
+                  nature={equip.nature || 'classic'}
+                  symbol={equip.symbol}
+                  size={20}
+                />
+                <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 leading-none shrink-0 flex items-center gap-1 border ${
+                  isConsumable
+                    ? 'bg-emerald-950/60 border-emerald-700/50 text-emerald-300'
+                    : equip.slot === 'other'
+                      ? 'bg-sky-950/50 border-sky-700/40 text-sky-300'
+                      : 'bg-white/5 border-white/10 text-slate-400'
+                }`}>
+                  {isConsumable && <FlaskConical className="w-2.5 h-2.5" />}
+                  {equip.slot === 'other' && <Package className="w-2.5 h-2.5" />}
+                  {SLOT_LABELS[equip.slot]}
+                </span>
 
-            {bonusEntries.length > 0 && (
-              <div className="flex gap-1 mt-1 flex-wrap">
-                {bonusEntries.map(([stat, val]) => (
-                  <span key={stat} className="text-[9px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/40 rounded px-1.5 py-0.2 leading-tight">
-                    {STAT_SHORT[stat]} +{val}
+                {equip.weight !== undefined && equip.weight > 0 && (
+                  <span className="text-[9px] font-bold text-slate-400 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 leading-none shrink-0" title="Poids unitaire / total">
+                    ⚖️ {equip.quantity && equip.quantity > 1 ? `${equip.weight}×${equip.quantity}=${Math.round(equip.weight * equip.quantity * 10)/10}` : equip.weight} kg
                   </span>
-                ))}
+                )}
               </div>
-            )}
+
+              {bonusEntries.length > 0 && (
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {bonusEntries.map(([stat, val]) => (
+                    <span key={stat} className="text-[9px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/40 rounded px-1.5 py-0.2 leading-tight">
+                      {STAT_SHORT[stat]} +{val}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Bouton déplier détails si présents */}
@@ -1405,6 +1511,16 @@ function EquipmentCard({
 
       {expanded && hasDetails && (
         <div className="px-3 pb-3 pt-1 border-t border-white/5 bg-black/40 space-y-2">
+          {equip.imageUrl ? (
+            <HexeItemDetailBanner
+              src={equip.imageUrl}
+              alt={equip.name}
+              fallbackSlot={equip.slot}
+              className="w-full h-36 sm:h-44 rounded-xl mb-2"
+              api={api}
+            />
+          ) : null}
+
           {equip.description && (
             <p className="text-xs italic text-slate-400">{equip.description}</p>
           )}
@@ -1507,6 +1623,7 @@ function EquipmentCard({
                           {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                           {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                           {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()}`}
+                          {eff.type === 'carryCapacity' && `Port ${eff.value > 0 ? `+${eff.value}` : eff.value}${eff.modifierType === 'percent' ? '%' : 'kg'}`}
                           {eff.type === 'custom' && eff.description}
                         </span>
                       ))}
@@ -1532,10 +1649,11 @@ interface GrimoirePickerPanelProps {
   onSelect: (skill: HexeSkill) => void;
   onOpenGrimoireWindow: () => void;
   onClose: () => void;
+  api?: SignetAPI;
 }
 
 function GrimoirePickerPanel({
-  skills, search, setSearch, filterType, setFilterType, learnedSkillIds, onSelect, onOpenGrimoireWindow, onClose
+  skills, search, setSearch, filterType, setFilterType, learnedSkillIds, onSelect, onOpenGrimoireWindow, onClose, api
 }: GrimoirePickerPanelProps) {
   const filtered = skills.filter(s => {
     if (filterType !== 'all' && s.activationType !== filterType) return false;
@@ -1641,9 +1759,17 @@ function GrimoirePickerPanel({
                 key={s.id}
                 className="bg-slate-900/60 border border-white/10 hover:border-white/20 rounded-xl p-2.5 flex items-center justify-between gap-3 transition-colors"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-white truncate">{s.name}</span>
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <HexeItemImage
+                    src={s.imageUrl}
+                    alt={s.name}
+                    fallbackType={s.activationType}
+                    className="w-8 h-8 rounded-lg shrink-0"
+                    api={api}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-white truncate">{s.name}</span>
                     <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.2 border ${
                       s.activationType === 'passive'
                         ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
@@ -1676,6 +1802,7 @@ function GrimoirePickerPanel({
                     </p>
                   )}
                 </div>
+              </div>
 
                 {isAlreadyLearned ? (
                   <span className="px-2.5 py-1 text-[11px] font-bold text-slate-500 bg-white/5 border border-white/10 rounded-lg shrink-0">
@@ -1707,10 +1834,11 @@ interface ArsenalPickerPanelProps {
   onSelect: (template: HexeEquipmentTemplate) => void;
   onOpenArsenalWindow: () => void;
   onClose: () => void;
+  api?: SignetAPI;
 }
 
 function ArsenalPickerPanel({
-  templates, search, setSearch, slotFilter, setSlotFilter, onSelect, onOpenArsenalWindow, onClose
+  templates, search, setSearch, slotFilter, setSlotFilter, onSelect, onOpenArsenalWindow, onClose, api
 }: ArsenalPickerPanelProps) {
   const filtered = templates.filter(t => {
     if (slotFilter !== 'all' && t.slot !== slotFilter) return false;
@@ -1804,21 +1932,34 @@ function ArsenalPickerPanel({
                 key={t.id}
                 className="bg-slate-900/60 border border-white/10 hover:border-white/20 rounded-xl p-2.5 flex items-center justify-between gap-3 transition-colors"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-white truncate">{t.name}</span>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.2 border flex items-center gap-1 ${
-                      t.slot === 'consumable'
-                        ? 'bg-emerald-950/60 border-emerald-700/50 text-emerald-300'
-                        : t.slot === 'other'
-                          ? 'bg-sky-950/50 border-sky-700/40 text-sky-300'
-                          : 'bg-white/5 border-white/10 text-slate-400'
-                    }`}>
-                      {t.slot === 'consumable' && <FlaskConical className="w-2.5 h-2.5" />}
-                      {t.slot === 'other' && <Package className="w-2.5 h-2.5" />}
-                      {SLOT_LABELS[t.slot]}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <HexeItemImage
+                    src={t.imageUrl}
+                    alt={t.name}
+                    fallbackSlot={t.slot}
+                    className="w-8 h-8 rounded-lg shrink-0"
+                    api={api}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-white truncate">{t.name}</span>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.2 border flex items-center gap-1 ${
+                        t.slot === 'consumable'
+                          ? 'bg-emerald-950/60 border-emerald-700/50 text-emerald-300'
+                          : t.slot === 'other'
+                            ? 'bg-sky-950/50 border-sky-700/40 text-sky-300'
+                            : 'bg-white/5 border-white/10 text-slate-400'
+                      }`}>
+                        {t.slot === 'consumable' && <FlaskConical className="w-2.5 h-2.5" />}
+                        {t.slot === 'other' && <Package className="w-2.5 h-2.5" />}
+                        {SLOT_LABELS[t.slot]}
+                      </span>
+                      {t.weight !== undefined && t.weight > 0 && (
+                        <span className="text-[9px] font-bold text-slate-400 bg-white/5 border border-white/10 rounded px-1.5 py-0.2 leading-none shrink-0">
+                          ⚖️ {t.weight} kg
+                        </span>
+                      )}
+                    </div>
 
                   <div className="flex items-center gap-1 mt-1 flex-wrap">
                     {bonusEntries.map(([st, val]) => (
@@ -1833,6 +1974,7 @@ function ArsenalPickerPanel({
                     ))}
                   </div>
                 </div>
+              </div>
 
                 <button
                   onClick={() => onSelect(t)}
@@ -1914,11 +2056,14 @@ interface EquipmentEditModalProps {
   equipment: HexeEquipment;
   onSave: (updated: HexeEquipment) => void;
   onClose: () => void;
+  api?: SignetAPI;
 }
 
-function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalProps) {
+function EquipmentEditModal({ equipment, onSave, onClose, api }: EquipmentEditModalProps) {
   const [name, setName] = useState(equipment.name);
   const [slot, setSlot] = useState<HexeEquipmentSlot>(equipment.slot);
+  const [weight, setWeight] = useState<number | ''>(equipment.weight ?? '');
+  const [imageUrl, setImageUrl] = useState<string>(equipment.imageUrl ?? '');
   const [quantity, setQuantity] = useState(equipment.quantity ?? 1);
   const [description, setDescription] = useState(equipment.description ?? '');
   const [rank, setRank] = useState<HexeWeaponRank>(equipment.rank || 'C');
@@ -1985,6 +2130,8 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
       ...equipment,
       name: name.trim(),
       slot,
+      weight: typeof weight === 'number' && weight >= 0 ? weight : (weight === '' ? undefined : Number(weight) || 0),
+      imageUrl: imageUrl.trim() || undefined,
       quantity: slot === 'consumable' ? Math.max(1, quantity) : equipment.quantity,
       description: description.trim() || undefined,
       rank,
@@ -2027,8 +2174,8 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar text-xs">
-          {/* Nom & Slot */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Nom, Slot & Poids */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="sm:col-span-2 space-y-1">
               <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Nom de l'objet *</label>
               <input
@@ -2053,7 +2200,28 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
                 <option value="other">Autre</option>
               </select>
             </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Poids unit. (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={weight}
+                onChange={e => setWeight(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-rose-500 font-mono"
+              />
+            </div>
           </div>
+
+          {/* Illustration de l'équipement */}
+          <HexeImagePicker
+            label="Illustration de l'équipement"
+            imageUrl={imageUrl}
+            onChange={(url) => setImageUrl(url || '')}
+            fallbackSlot={slot}
+            api={api}
+          />
 
           {slot === 'consumable' && (
             <div className="space-y-1">
@@ -2377,6 +2545,7 @@ function EquipmentEditModal({ equipment, onSave, onClose }: EquipmentEditModalPr
                               {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                               {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                               {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()}`}
+                              {eff.type === 'carryCapacity' && `Port ${eff.value > 0 ? `+${eff.value}` : eff.value}${eff.modifierType === 'percent' ? '%' : 'kg'}`}
                               {eff.type === 'custom' && eff.description}
                             </span>
                           ))}
@@ -2433,11 +2602,13 @@ interface SkillEditModalProps {
   skill: HexeSkill;
   onSave: (updated: HexeSkill) => void;
   onClose: () => void;
+  api?: SignetAPI;
 }
 
-function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
+function SkillEditModal({ skill, onSave, onClose, api }: SkillEditModalProps) {
   const [name, setName] = useState(skill.name);
   const [activationType, setActivationType] = useState<HexeActivationType>(skill.activationType || 'passive');
+  const [imageUrl, setImageUrl] = useState<string>(skill.imageUrl ?? '');
   const [skillLevel, setSkillLevel] = useState<number | ''>(skill.skillLevel ?? '');
   const [description, setDescription] = useState(skill.description ?? '');
   const [duration, setDuration] = useState(skill.duration ?? '');
@@ -2452,7 +2623,7 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
   const [effects, setEffects] = useState<HexeEffect[]>([...(skill.effects || [])]);
 
   // Sous-formulaire d'ajout d'effet
-  const [newEffectType, setNewEffectType] = useState<'statLevel' | 'rollModifier' | 'resourceChange' | 'custom'>('statLevel');
+  const [newEffectType, setNewEffectType] = useState<'statLevel' | 'rollModifier' | 'resourceChange' | 'carryCapacity' | 'custom'>('statLevel');
   const [newEffStat, setNewEffStat] = useState<HexeStatKey>('str');
   const [newEffStatVal, setNewEffStatVal] = useState<number>(1);
   const [newEffRollVal, setNewEffRollVal] = useState<number>(2);
@@ -2463,6 +2634,8 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
   const [newEffResMode, setNewEffResMode] = useState<'value' | 'dice'>('value');
   const [newEffResVal, setNewEffResVal] = useState<number>(5);
   const [newEffResDice, setNewEffResDice] = useState<string>('2d4');
+  const [newEffCapacityType, setNewEffCapacityType] = useState<'flat' | 'percent'>('flat');
+  const [newEffCapacityVal, setNewEffCapacityVal] = useState<number>(5);
   const [newEffCustomDesc, setNewEffCustomDesc] = useState<string>('');
 
   const handleAddEffect = () => {
@@ -2482,6 +2655,12 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
           eff = { type: 'resourceChange', resource: newEffRes, target: newEffResTarget, operation: newEffResOp, value: 1 };
         }
       }
+    } else if (newEffectType === 'carryCapacity') {
+      eff = {
+        type: 'carryCapacity',
+        modifierType: newEffCapacityType,
+        value: Number(newEffCapacityVal) || 0
+      };
     } else if (newEffectType === 'custom') {
       if (newEffCustomDesc.trim()) {
         eff = { type: 'custom', description: newEffCustomDesc.trim() };
@@ -2519,6 +2698,7 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
       ...skill,
       name: name.trim(),
       activationType,
+      imageUrl: imageUrl.trim() || undefined,
       skillLevel: typeof skillLevel === 'number' && skillLevel > 0 ? skillLevel : undefined,
       description: description.trim() || undefined,
       duration: duration.trim() || undefined,
@@ -2610,6 +2790,15 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
               />
             </div>
           </div>
+
+          {/* Illustration de la compétence */}
+          <HexeImagePicker
+            label="Illustration de la compétence"
+            imageUrl={imageUrl}
+            onChange={(url) => setImageUrl(url || '')}
+            fallbackType={activationType}
+            api={api}
+          />
 
           {/* Description */}
           <div className="space-y-1">
@@ -2745,6 +2934,11 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
                           {eff.operation} {eff.target === 'maximum' ? 'MAX ' : ''}{eff.resource.toUpperCase()} {eff.value ? `(${eff.value})` : ''} {eff.dice ? `(${formatDiceFormula(eff.dice)})` : ''}
                         </span>
                       )}
+                      {eff.type === 'carryCapacity' && (
+                        <span className="text-amber-300 font-bold">
+                          Capacité de port : {eff.value > 0 ? `+${eff.value}` : eff.value} {eff.modifierType === 'percent' ? '%' : 'kg'}
+                        </span>
+                      )}
                       {eff.type === 'custom' && (
                         <span className="text-slate-300 italic truncate">« {eff.description} »</span>
                       )}
@@ -2764,7 +2958,7 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
 
             {/* Ajouter un effet */}
             <div className="p-2.5 rounded-lg bg-black/30 border border-dashed border-white/10 space-y-2">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1">
                 <button
                   type="button"
                   onClick={() => setNewEffectType('statLevel')}
@@ -2791,6 +2985,15 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
                   }`}
                 >
                   Ressource
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewEffectType('carryCapacity')}
+                  className={`py-1 px-1.5 rounded text-[10px] font-bold border transition-colors ${
+                    newEffectType === 'carryCapacity' ? 'bg-amber-950/70 border-amber-500 text-amber-300' : 'bg-black/20 border-white/5 text-slate-400'
+                  }`}
+                >
+                  Poids / Port
                 </button>
                 <button
                   type="button"
@@ -2912,6 +3115,44 @@ function SkillEditModal({ skill, onSave, onClose }: SkillEditModalProps) {
                         className="w-24 bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs font-mono text-amber-300"
                       />
                     )}
+                  </div>
+                </div>
+              )}
+
+              {newEffectType === 'carryCapacity' && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1 bg-slate-900 border border-white/10 rounded p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setNewEffCapacityType('flat')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                        newEffCapacityType === 'flat' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Fixe (+kg)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewEffCapacityType('percent')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                        newEffCapacityType === 'percent' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Pourcent (+%)
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-slate-400">Valeur :</span>
+                    <input
+                      type="number"
+                      value={newEffCapacityVal}
+                      onChange={e => setNewEffCapacityVal(Number(e.target.value) || 0)}
+                      className="w-20 bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white font-mono"
+                      placeholder="Ex: 5"
+                    />
+                    <span className="text-xs font-bold text-amber-300">
+                      {newEffCapacityType === 'flat' ? 'kg' : '%'}
+                    </span>
                   </div>
                 </div>
               )}

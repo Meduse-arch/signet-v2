@@ -45,6 +45,11 @@ export type HexeEffect =
       dice?: HexeDiceFormula;
     }
   | {
+      type: 'carryCapacity';
+      modifierType: 'flat' | 'percent';
+      value: number; // ex: +10 (flat) ou +20 (+20%)
+    }
+  | {
       type: 'custom';
       description: string;
     };
@@ -63,6 +68,8 @@ export interface HexeSkill {
   custom?: boolean;
   /** Si la compétence provient d'une arme/équipement spécifique */
   sourceEquipmentId?: string;
+  /** Illustration ou icône personnalisée */
+  imageUrl?: string;
 }
 
 // --- Équipements, Rangs & Pentacles ---
@@ -113,6 +120,7 @@ export interface HexeAbility {
   costs?: { mp?: number; stm?: number; hp?: number; chance?: number };
   duration?: string;
   effects?: HexeEffect[];
+  imageUrl?: string;
 }
 
 export interface HexeResourceModifier {
@@ -140,6 +148,11 @@ export interface HexeEquipment {
   isEquipped: boolean;
   description?: string;
 
+  /** Illustration personnalisée de l'équipement */
+  imageUrl?: string;
+  /** Poids unitaire en kg ou unités de charge (défaut 0) */
+  weight?: number;
+
   // Système de rangs et symbolique des pentacles (applicable à tous les équipements)
   rank?: HexeWeaponRank;
   nature?: HexeWeaponNature;
@@ -156,6 +169,8 @@ export interface HexeInventoryItem {
   name: string;
   quantity: number;
   description?: string;
+  imageUrl?: string;
+  weight?: number;
 }
 
 export interface HexeResources {
@@ -266,3 +281,26 @@ export function getEffectiveStatLevel(
 ): number {
   return baseLevel + getEquipmentBonusForStat(statKey, equipment);
 }
+
+// --- Système de Poids & Encombrement ---
+
+export type HexeEncumbranceTier = 'light' | 'heavy' | 'overburdened';
+
+export interface HexeEncumbranceState {
+  totalWeight: number;
+  maxWeight: number;
+  ratio: number;
+  tier: HexeEncumbranceTier;
+  agiPenalty: number;
+  isOverencumbered: boolean;
+}
+
+/**
+ * Formule de base proposée dans le document de conception :
+ * Poids maximal = 10 + (STR effective × 5)
+ * (STR 1 = 15 unités, STR 4 = 30 unités, STR 6 = 40 unités).
+ */
+export function getBaseCarryCapacity(effectiveStrLevel: number): number {
+  return 10 + (Math.max(1, effectiveStrLevel) * 5);
+}
+

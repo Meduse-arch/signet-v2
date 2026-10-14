@@ -6,8 +6,9 @@ import { ALL_STATS, STAT_LABELS } from '../types';
 import { parseDiceFormula, formatDiceFormula } from '../hexeDiceEngine';
 import { instantiateSkill, addSkillToCatalog } from '../hexeSkillStore';
 import {
-  Shield, Sparkles, Zap, Layers, Plus, Search, X, Trash2
+  Shield, Zap, Layers, Plus, Search, X, Trash2
 } from 'lucide-react';
+import { HexeImagePicker, HexeItemImage } from './HexeImagePicker';
 
 interface SkillPickerModalProps {
   catalogSkills: HexeSkill[];
@@ -27,6 +28,7 @@ export function SkillPickerModal({
   // Formulaire de création personnalisée
   const [customName, setCustomName] = useState('');
   const [customDesc, setCustomDesc] = useState('');
+  const [customImageUrl, setCustomImageUrl] = useState<string | undefined>(undefined);
   const [customType, setCustomType] = useState<HexeActivationType>('active');
   const [customCostMp, setCustomCostMp] = useState(0);
   const [customCostStm, setCustomCostStm] = useState(0);
@@ -81,6 +83,7 @@ export function SkillPickerModal({
     const newSkillData: Omit<HexeSkill, 'id'> = {
       name: customName.trim(),
       description: customDesc.trim() || undefined,
+      imageUrl: customImageUrl,
       activationType: customType,
       costs: Object.keys(costs).length > 0 ? costs : undefined,
       dice: parsedDice || undefined,
@@ -215,6 +218,13 @@ export function SkillPickerModal({
               />
             </div>
 
+            <HexeImagePicker
+              value={customImageUrl}
+              onChange={setCustomImageUrl}
+              fallbackType={customType}
+              label="Illustration du Don ou Sort"
+            />
+
             {/* Coûts et Dés */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
@@ -267,6 +277,7 @@ export function SkillPickerModal({
                       <span className="text-slate-200">
                         {eff.type === 'statLevel' && `Stat : +${eff.value} niveau en ${STAT_LABELS[eff.stat]}`}
                         {eff.type === 'resourceChange' && `${eff.operation.toUpperCase()} ${eff.resource.toUpperCase()} (${eff.target === 'maximum' ? 'Max' : 'Actuel'}) : ${eff.dice ? formatDiceFormula(eff.dice) : eff.value}`}
+                        {eff.type === 'carryCapacity' && `Port : ${eff.value > 0 ? `+${eff.value}` : eff.value} ${eff.modifierType === 'percent' ? '%' : 'kg'}`}
                         {eff.type === 'custom' && eff.description}
                       </span>
                       <button
@@ -453,10 +464,17 @@ export function SkillPickerModal({
                     key={skill.id}
                     className="bg-[#050508] border border-white/10 hover:border-white/20 rounded-xl p-3 flex items-start justify-between gap-3 transition-colors group"
                   >
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-white truncate">{skill.name}</span>
-                        {getTypeBadge(skill.activationType)}
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      <HexeItemImage
+                        src={skill.imageUrl}
+                        alt={skill.name}
+                        fallbackType={skill.activationType}
+                        className="w-8 h-8 rounded-lg shrink-0 mt-0.5"
+                      />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-white truncate">{skill.name}</span>
+                          {getTypeBadge(skill.activationType)}
 
                         {/* Coûts éventuels */}
                         {skill.costs?.mp && (
@@ -491,12 +509,14 @@ export function SkillPickerModal({
                               {eff.type === 'statLevel' && `+${eff.value} ${STAT_LABELS[eff.stat]}`}
                               {eff.type === 'rollModifier' && `+${eff.value} aux jets`}
                               {eff.type === 'resourceChange' && `${eff.operation.toUpperCase()} ${eff.resource.toUpperCase()}`}
+                              {eff.type === 'carryCapacity' && `Port ${eff.value > 0 ? `+${eff.value}` : eff.value}${eff.modifierType === 'percent' ? '%' : 'kg'}`}
                               {eff.type === 'custom' && eff.description}
                             </span>
                           ))}
                         </div>
                       )}
                     </div>
+                  </div>
 
                     <button
                       type="button"

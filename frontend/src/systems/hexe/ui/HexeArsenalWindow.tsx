@@ -20,6 +20,7 @@ import { HexePentacleBadge, ALL_RANKS, RANK_DESCRIPTIONS } from './HexePentacleB
 import { parseDiceFormula, formatDiceFormula } from '../hexeDiceEngine';
 import { getEquipmentSkills } from '../hexeSkillStore';
 import { SkillImportModal } from './SkillImportModal';
+import { HexeImagePicker, HexeItemImage, HexeItemDetailBanner } from './HexeImagePicker';
 
 interface HexeArsenalWindowProps {
   api?: SignetAPI;
@@ -57,6 +58,8 @@ const SLOT_FILTER_OPTIONS: {
 interface FormState {
   name: string;
   slot: HexeEquipmentSlot;
+  weight?: number | '';
+  imageUrl?: string;
   statBonuses: Partial<Record<HexeStatKey, number>>;
   properties: string[];
   abilities: HexeAbility[];
@@ -70,6 +73,8 @@ interface FormState {
 const EMPTY_FORM: FormState = {
   name: '',
   slot: 'weapon',
+  weight: '',
+  imageUrl: undefined,
   statBonuses: {},
   properties: [],
   abilities: [],
@@ -115,6 +120,8 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
     setForm({
       name: template.name,
       slot: template.slot,
+      weight: template.weight !== undefined ? template.weight : '',
+      imageUrl: template.imageUrl,
       statBonuses: { ...(template.statBonuses || {}) },
       properties: [...(template.properties || [])],
       abilities: [...(template.abilities || [])],
@@ -131,6 +138,8 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
     addTemplate({
       name: `${template.name} (Copie)`,
       slot: template.slot,
+      weight: template.weight,
+      imageUrl: template.imageUrl,
       statBonuses: { ...(template.statBonuses || {}) },
       properties: [...(template.properties || [])],
       abilities: (template.abilities || []).map(a => ({ ...a, id: `ab-${Date.now()}-${Math.random().toString(36).slice(2, 5)}` })),
@@ -178,6 +187,8 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                 templateId,
                 name: updatedTemplate.name,
                 slot: updatedTemplate.slot,
+                weight: updatedTemplate.weight,
+                imageUrl: updatedTemplate.imageUrl,
                 rank: updatedTemplate.rank,
                 nature: updatedTemplate.nature,
                 symbol: updatedTemplate.symbol,
@@ -236,12 +247,15 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
       filled: nature === 'possessed',
       hasCircle: rank === 'S'
     };
+    const cleanWeight = form.weight !== '' && form.weight !== undefined ? Number(form.weight) : undefined;
 
     if (editingId) {
       const updatedTemplate: HexeEquipmentTemplate = {
         id: editingId,
         name: form.name.trim(),
         slot: form.slot,
+        weight: cleanWeight,
+        imageUrl: form.imageUrl,
         rank,
         nature,
         symbol,
@@ -258,6 +272,8 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
       addTemplate({
         name: form.name.trim(),
         slot: form.slot,
+        weight: cleanWeight,
+        imageUrl: form.imageUrl,
         rank,
         nature,
         symbol,
@@ -344,15 +360,6 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
     return matchName || matchDesc || matchProps || matchAb;
   });
 
-  const getSlotIcon = (slot: HexeEquipmentSlot) => {
-    switch (slot) {
-      case 'weapon': return <Swords className="w-4 h-4 text-rose-400" />;
-      case 'armor': return <Shield className="w-4 h-4 text-amber-400" />;
-      case 'accessory': return <Sparkles className="w-4 h-4 text-cyan-400" />;
-      case 'consumable': return <FlaskConical className="w-4 h-4 text-emerald-400" />;
-      case 'other': return <Package className="w-4 h-4 text-sky-400" />;
-    }
-  };
 
   return (
     <div className="w-full h-full flex flex-col bg-[#050508] text-white overflow-hidden border border-white/10 shadow-2xl font-sans">
@@ -433,6 +440,37 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                   <option value="consumable">Consommable (Potion, élixir, parchemin...)</option>
                   <option value="other">Autre (Relique, outil, objet de quête...)</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Poids & Illustration de l'équipement */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  Poids unitaire (kg / charge)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="ex: 1.5 (défaut 0)"
+                  value={form.weight}
+                  onChange={e => setForm(prev => ({ ...prev, weight: e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0) }))}
+                  className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                />
+                <span className="text-[10px] text-slate-500 mt-1 block">
+                  Comptabilisé dans la charge maximale du personnage.
+                </span>
+              </div>
+
+              <div className="sm:col-span-2">
+                <HexeImagePicker
+                  value={form.imageUrl}
+                  onChange={val => setForm(p => ({ ...p, imageUrl: val }))}
+                  api={api}
+                  fallbackSlot={form.slot}
+                  label="Illustration de l'équipement"
+                />
               </div>
             </div>
 
@@ -761,6 +799,7 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                                 {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                                 {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                                 {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()}`}
+                                {eff.type === 'carryCapacity' && `Port ${eff.value > 0 ? `+${eff.value}` : eff.value}${eff.modifierType === 'percent' ? '%' : 'kg'}`}
                                 {eff.type === 'custom' && eff.description}
                               </span>
                             ))}
@@ -900,15 +939,24 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                     <div className="p-3 flex items-center justify-between gap-3">
                       {/* Titre & Slot */}
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center shrink-0">
-                          {getSlotIcon(item.slot)}
-                        </div>
+                        <HexeItemImage
+                          src={item.imageUrl}
+                          alt={item.name}
+                          fallbackSlot={item.slot}
+                          className="w-9 h-9 rounded-lg shrink-0"
+                          api={api}
+                        />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="text-sm font-bold text-white truncate">{item.name}</h4>
                             <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-slate-400 rounded px-1.5 py-0.5 leading-none">
                               {SLOT_LABELS[item.slot]}
                             </span>
+                            {item.weight !== undefined && (
+                              <span className="text-[10px] font-bold text-slate-300 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 leading-none">
+                                ⚖️ {item.weight} kg
+                              </span>
+                            )}
                             <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded px-1.5 py-0.5">
                               <HexePentacleBadge
                                 rank={item.rank || 'C'}
@@ -993,6 +1041,16 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
                     {/* Zone de détails dépliée */}
                     {isExpanded && hasDetails && (
                       <div className="px-3 pb-3 pt-1 border-t border-white/5 bg-black/30 space-y-2">
+                        {item.imageUrl ? (
+                          <HexeItemDetailBanner
+                            src={item.imageUrl}
+                            alt={item.name}
+                            fallbackSlot={item.slot}
+                            className="w-full h-40 sm:h-48 rounded-xl mb-2"
+                            api={api}
+                          />
+                        ) : null}
+
                         <div className="flex items-center gap-3 p-2.5 rounded-lg bg-rose-950/20 border border-rose-900/30">
                           <HexePentacleBadge
                             rank={item.rank || 'C'}

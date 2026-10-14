@@ -6,6 +6,7 @@ import { formatDiceFormula } from '../hexeDiceEngine';
 import {
   Search, Shield, Zap, Flame, Check, X, Sparkles, BookOpen
 } from 'lucide-react';
+import { HexeItemImage } from './HexeImagePicker';
 
 interface SkillImportModalProps {
   alreadyLinkedIds?: string[];
@@ -197,10 +198,17 @@ export function SkillImportModal({
                   </div>
 
                   {/* Contenu de la capacité */}
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold text-white truncate">{skill.name}</span>
-                      {getActivationBadge(skill.activationType)}
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <HexeItemImage
+                      src={skill.imageUrl}
+                      alt={skill.name}
+                      fallbackType={skill.activationType}
+                      className="w-8 h-8 rounded-lg shrink-0 mt-0.5"
+                    />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-white truncate">{skill.name}</span>
+                        {getActivationBadge(skill.activationType)}
 
                       {isAlreadyLinked && (
                         <span className="text-[9px] font-bold text-slate-400 bg-white/5 border border-white/10 rounded px-1.5 py-0.2">
@@ -254,6 +262,7 @@ export function SkillImportModal({
                             {eff.type === 'statLevel' && `+${eff.value} niv. ${STAT_LABELS[eff.stat]}`}
                             {eff.type === 'rollModifier' && `+${eff.value} aux jets`}
                             {eff.type === 'resourceChange' && `${eff.operation.toUpperCase()} ${eff.resource.toUpperCase()}`}
+                            {eff.type === 'carryCapacity' && `Port ${eff.value > 0 ? `+${eff.value}` : eff.value}${eff.modifierType === 'percent' ? '%' : 'kg'}`}
                             {eff.type === 'custom' && eff.description}
                           </span>
                         ))}
@@ -261,6 +270,7 @@ export function SkillImportModal({
                     )}
                   </div>
                 </div>
+              </div>
               );
             })
           )}
