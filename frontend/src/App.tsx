@@ -75,11 +75,20 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleJoinGame = (roomId: string, host: boolean, systemId?: string) => {
+  const [sessionMetadata, setSessionMetadata] = useState<{
+    name?: string;
+    isPublic?: boolean;
+    tags?: string;
+    desc?: string;
+    maxPlayers?: number | null;
+  } | null>(null);
+
+  const handleJoinGame = (roomId: string, host: boolean, systemId?: string, metadata?: any) => {
     sessionStorage.setItem('signet_room_id', roomId);
     setSessionRoomId(roomId);
     setIsHost(host);
     setSessionSystemId(systemId || null);
+    setSessionMetadata(metadata || null);
     setAppState('game');
     setShowSplash(true);
   };
@@ -117,6 +126,7 @@ export default function App() {
             onSignalUrlChange={setSignalUrl} 
             isLanMode={isLanMode}
             onLanModeChange={setIsLanMode}
+            signalUrl={signalUrl}
           />
         </div>
       )}
@@ -129,6 +139,7 @@ export default function App() {
             isHost={isHost}
             username={username || 'Aventurier'}
             systemId={sessionSystemId}
+            sessionMetadata={sessionMetadata}
             onLeave={() => setAppState('hub')}
           />
         </div>

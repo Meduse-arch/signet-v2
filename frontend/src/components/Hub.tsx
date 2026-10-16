@@ -16,14 +16,15 @@ import { Carousel } from './ui/Carousel';
 type HubView = 'main' | 'notes' | 'public' | 'mods' | 'settings' | 'create-session';
 
 interface HubProps {
-  onJoinGame: (roomId: string, isHost: boolean, systemId?: string) => void;
+  onJoinGame: (roomId: string, isHost: boolean, systemId?: string, metadata?: any) => void;
   onLogout: () => void;
   onSignalUrlChange: (url: string) => void;
   isLanMode: boolean;
   onLanModeChange: (isLan: boolean) => void;
+  signalUrl?: string;
 }
 
-export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanModeChange }: HubProps) {
+export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanModeChange, signalUrl }: HubProps) {
   const [roomCode, setRoomCode] = useState('');
   const [roleLevel, setRoleLevel] = useState<number>(0);
   const [username, setUsername] = useState<string>('');
@@ -116,6 +117,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
         system: data.system,
         isPublic: data.isPublic,
         tags: data.tags,
+        desc: data.desc,
         maxPlayers: data.maxPlayers,
         isHost: true
       };
@@ -127,8 +129,14 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
       });
 
       setCurrentView('main');
-      // On connecte immédiatement le MJ à sa nouvelle session (isHost = true)
-      onJoinGame(newRoom, true, data.system);
+      // On connecte immédiatement le MJ à sa nouvelle session (isHost = true) avec métadonnées
+      onJoinGame(newRoom, true, data.system, {
+        name: data.name,
+        isPublic: data.isPublic,
+        tags: data.tags,
+        desc: data.desc,
+        maxPlayers: data.maxPlayers
+      });
     } catch (err: any) {
       alert("Erreur lors de la création : " + err.message);
     }
@@ -339,7 +347,13 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                 subtitle={`Dernière session : ${camp.date}`}
                 badge={`CODE : ${camp.id}`}
                 imageUrl="/fantasy_vtt_bg.jpg"
-                onClick={() => onJoinGame(camp.id, camp.isHost !== false, camp.system)}
+                onClick={() => onJoinGame(camp.id, camp.isHost !== false, camp.system, {
+                  name: camp.name,
+                  isPublic: camp.isPublic,
+                  tags: camp.tags,
+                  desc: camp.desc,
+                  maxPlayers: camp.maxPlayers,
+                })}
               />
             ))}
             
@@ -370,7 +384,28 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
             </div>
             <div className="flex-1 w-full h-full min-h-0">
               {currentView === 'notes' && <NotesView />}
-              {currentView === 'public' && <PublicSessionsView />}
+              {currentView === 'public' && (
+                <PublicSessionsView 
+                  signalUrl={signalUrl}
+                  onJoinSession={(pubRoomId, pubSystem) => {
+                    const existing = campaigns.find(c => c.id === pubRoomId);
+                    if (!existing) {
+                      const newCamp = {
+                        id: pubRoomId,
+                        name: `Session ${pubRoomId}`,
+                        date: "À l'instant",
+                        hue: `${Math.floor(Math.random() * 360)}deg`,
+                        system: pubSystem || 'default',
+                        isHost: false
+                      };
+                      const updated = [newCamp, ...campaigns];
+                      setCampaigns(updated);
+                      saveCampaignsNow(updated);
+                    }
+                    onJoinGame(pubRoomId, false, pubSystem);
+                  }}
+                />
+              )}
               {currentView === 'mods' && <ModsView />}
               {currentView === 'settings' && <SettingsView />}
               {currentView === 'create-session' && <CreateSessionView onConfirm={handleConfirmCreate} />}

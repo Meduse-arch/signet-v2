@@ -2,6 +2,7 @@ mod lan_server;
 mod dice;
 pub mod library;
 pub mod database;
+pub mod notes;
 
 use tauri::Manager;
 use tauri::http::Response;
@@ -89,7 +90,13 @@ pub fn run() {
         database::get_players,
         database::save_module_data,
         database::get_module_data,
-        database::delete_module_data
+        database::delete_module_data,
+        notes::get_notes_tree,
+        notes::read_note_content,
+        notes::save_note_content,
+        notes::create_note_folder,
+        notes::delete_note_item,
+        notes::rename_note_item
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

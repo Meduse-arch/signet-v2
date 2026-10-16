@@ -6,6 +6,7 @@ import { Button } from './ui/Button';
 import { Play } from 'lucide-react';
 import { LobbyHeader } from './game/LobbyHeader';
 import { PlayerCarousel } from './game/PlayerCarousel';
+import { publicRoomsService } from '../core/services/publicRoomsService';
 
 interface GameSessionProps {
   roomId: string;
@@ -13,10 +14,17 @@ interface GameSessionProps {
   isHost: boolean;
   username: string;
   systemId: string | null;
+  sessionMetadata?: {
+    name?: string;
+    isPublic?: boolean;
+    tags?: string;
+    desc?: string;
+    maxPlayers?: number | null;
+  } | null;
   onLeave: () => void;
 }
 
-export function GameSession({ roomId, signalUrl, isHost, username, systemId, onLeave }: GameSessionProps) {
+export function GameSession({ roomId, signalUrl, isHost, username, systemId, sessionMetadata, onLeave }: GameSessionProps) {
   const {
     connectionState,
     messages,
@@ -91,6 +99,39 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, onL
       return () => clearTimeout(timer);
     }
   }, [roomId, isHost, isOnline, hostGame, lockRoom, connectionState]);
+
+  // Publication et heartbeat pour le salon public
+  useEffect(() => {
+    if (!isHost || !sessionMetadata?.isPublic || !isOnline) {
+      if (isHost && sessionMetadata?.isPublic) {
+        publicRoomsService.unpublishPublicRoom(signalUrl, roomId).catch(() => {});
+      }
+      return;
+    }
+
+    const publish = () => {
+      publicRoomsService.publishPublicRoom(signalUrl, {
+        roomId,
+        name: sessionMetadata.name || roomId,
+        system: systemId || 'Générique',
+        tags: sessionMetadata.tags,
+        desc: sessionMetadata.desc,
+        players: players.length,
+        maxPlayers: sessionMetadata.maxPlayers !== undefined ? sessionMetadata.maxPlayers : null,
+        isRoomOpen,
+      }).catch(err => {
+        console.warn('[GameSession] Échec annonce salon public:', err);
+      });
+    };
+
+    publish();
+    const interval = setInterval(publish, 20000);
+
+    return () => {
+      clearInterval(interval);
+      publicRoomsService.unpublishPublicRoom(signalUrl, roomId).catch(() => {});
+    };
+  }, [isHost, sessionMetadata, isOnline, signalUrl, roomId, systemId, players.length, isRoomOpen]);
 
   // Broadcast LOBBY_STATE quand le MJ ouvre/ferme la salle
   useEffect(() => {

@@ -23,6 +23,20 @@ function pruneExpiredRooms() {
   }
 }
 
+// Stockage des salons publics en mémoire
+const publicRooms = {};
+const PUBLIC_ROOM_TTL_MS = 60 * 1000; // 60 secondes sans heartbeat = salon expiré
+
+function pruneExpiredPublicRooms() {
+  const now = Date.now();
+  for (const id of Object.keys(publicRooms)) {
+    if (now - publicRooms[id].updatedAt > PUBLIC_ROOM_TTL_MS) {
+      console.log(`[Lobby] Salon public expiré (timeout) : "${id}"`);
+      delete publicRooms[id];
+    }
+  }
+}
+
 const server = http.createServer((req, res) => {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -38,7 +52,68 @@ const server = http.createServer((req, res) => {
   const baseURL = `http://${req.headers.host || 'localhost'}`;
   const parsed = new URL(req.url, baseURL);
 
-  // On n'accepte que /api/signal
+  // Route /api/public-rooms (Salons publics)
+  if (parsed.pathname === '/api/public-rooms') {
+    pruneExpiredPublicRooms();
+
+    // GET — lister les salons publics
+    if (req.method === 'GET') {
+      const list = Object.values(publicRooms);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(list));
+    }
+
+    // DELETE — fermer un salon public
+    if (req.method === 'DELETE') {
+      const roomId = parsed.searchParams.get('roomId');
+      if (roomId && publicRooms[roomId]) {
+        delete publicRooms[roomId];
+        console.log(`[Lobby] Salon public supprimé : "${roomId}"`);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true }));
+    }
+
+    // POST — publier ou renouveler (heartbeat) un salon public
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', (chunk) => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (!data.roomId) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: 'roomId requis' }));
+          }
+
+          publicRooms[data.roomId] = {
+            roomId: data.roomId,
+            name: data.name || data.roomId,
+            system: data.system || 'Générique',
+            tags: data.tags || '',
+            desc: data.desc || '',
+            players: typeof data.players === 'number' ? data.players : 1,
+            maxPlayers: data.maxPlayers !== undefined ? data.maxPlayers : null,
+            isRoomOpen: !!data.isRoomOpen,
+            updatedAt: Date.now()
+          };
+          console.log(`[Lobby] Salon public mis à jour : "${data.roomId}" (${data.name || ''})`);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ ok: true }));
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'JSON invalide' }));
+        }
+      });
+      return;
+    }
+
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Méthode non autorisée' }));
+  }
+
+  // On n'accepte sinon que /api/signal
   if (parsed.pathname !== '/api/signal') {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ error: 'Route introuvable' }));
