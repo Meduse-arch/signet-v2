@@ -8,38 +8,67 @@ export function TitleBar() {
   const [isTauri, setIsTauri] = useState(true);
   
   useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    let removeKeyListener: (() => void) | undefined;
+    let restoreMaximize = false;
+
     const setup = async () => {
       try {
         const win = getCurrentWindow();
         setIsMaximized(await win.isMaximized());
         setIsFullscreen(await win.isFullscreen());
-        
-        const unlisten = await win.onResized(async () => {
+
+        const off = await win.onResized(async () => {
           setIsMaximized(await win.isMaximized());
           setIsFullscreen(await win.isFullscreen());
         });
-        
+        if (disposed) { off(); return; }
+        unlisten = off;
+
+        const toggleFullscreen = async () => {
+          const next = !(await win.isFullscreen());
+          if (next) {
+            // Fenêtre sans décoration (Windows/WebView2) : entrer en plein écran depuis l'état
+            // maximisé laisse la webview à la taille de la zone de travail, d'où une bande noire
+            // de la hauteur de la barre des tâches en bas. On démaximise d'abord.
+            if (await win.isMaximized()) {
+              restoreMaximize = true;
+              await win.unmaximize();
+            }
+            await win.setFullscreen(true);
+          } else {
+            await win.setFullscreen(false);
+            if (restoreMaximize) {
+              restoreMaximize = false;
+              await win.maximize();
+            }
+          }
+          setIsFullscreen(next);
+        };
+
         // Gérer le plein écran avec F11
-        const handleKeyDown = async (e: KeyboardEvent) => {
+        const handleKeyDown = (e: KeyboardEvent) => {
           if (e.key === 'F11') {
             e.preventDefault();
-            const currentFull = await win.isFullscreen();
-            await win.setFullscreen(!currentFull);
-            setIsFullscreen(!currentFull);
+            toggleFullscreen().catch(err => console.warn('[TitleBar] Plein écran :', err));
           }
         };
         window.addEventListener('keydown', handleKeyDown);
-
-        return () => { 
-          unlisten();
-          window.removeEventListener('keydown', handleKeyDown);
-        };
+        removeKeyListener = () => window.removeEventListener('keydown', handleKeyDown);
+        if (disposed) removeKeyListener();
       } catch (e) {
         // Pas dans Tauri (navigateur)
         setIsTauri(false);
       }
     };
     setup();
+
+    return () => {
+      disposed = true;
+      unlisten?.();
+      removeKeyListener?.();
+    };
   }, []);
 
   const handleMinimize = async () => {
