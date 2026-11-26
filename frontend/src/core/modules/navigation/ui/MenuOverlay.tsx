@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, LogOut, Search, Pin, PinOff, Puzzle, Terminal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, LogOut, Search, Pin } from 'lucide-react';
 import { coreEventBus } from '../../../../core/services/EventBus';
 import type { RegisteredAction } from '../../../../core/services/ModManager';
 
@@ -17,6 +17,14 @@ export function MenuOverlay({ isOpen, onClose, onReturnToHub, actions, pinnedIds
   const [searchQuery, setSearchQuery] = useState('');
   const CATEGORY_LIMIT = 4;
 
+  // Échap ferme le menu
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   // Partir de `actions` (registre réel) pour éviter de compter des IDs périmés en localStorage
   const systemPinnedCount = actions.filter(a =>
     a.modId.startsWith('system-') && pinnedIds.includes(a.actionId)
@@ -28,7 +36,7 @@ export function MenuOverlay({ isOpen, onClose, onReturnToHub, actions, pinnedIds
   if (!isOpen) return null;
 
   // Filtrage par recherche
-  const filteredActions = actions.filter(action => 
+  const filteredActions = actions.filter(action =>
     action.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -36,121 +44,128 @@ export function MenuOverlay({ isOpen, onClose, onReturnToHub, actions, pinnedIds
   const systemActions = filteredActions.filter(a => a.modId.startsWith('system-'));
   const coreActions = filteredActions.filter(a => !a.modId.startsWith('system-'));
 
-  const renderActionGrid = (actionList: typeof actions, title: string, icon: React.ReactNode) => (
-    <div className="w-full flex flex-col gap-6">
-      <div className="flex items-center gap-3 text-white/50 border-b border-white/5 pb-2">
-        {icon}
-        <h2 className="text-xl font-bold">{title}</h2>
+  const renderSection = (actionList: RegisteredAction[], title: string, pinnedCount: number) => (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between px-1">
+        <h2 className="text-sm font-medium text-zinc-400">{title}</h2>
+        <span className="num text-xs text-zinc-600">{pinnedCount} / {CATEGORY_LIMIT} dans la barre</span>
       </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 w-full max-w-7xl">
-        {actionList.map((action) => {
-          const isPinned = pinnedIds.includes(action.actionId);
-          const isActive = activeIds.includes(action.actionId);
-          const isSystem = action.modId.startsWith('system-');
-          const categoryCount = isSystem ? systemPinnedCount : classicPinnedCount;
-          const isCategoryFull = !isPinned && categoryCount >= CATEGORY_LIMIT;
-          
-          return (
-            <div key={action.actionId} className="relative group">
-              <button 
-                onClick={() => !isCategoryFull && onTogglePin(action.actionId)}
-                disabled={isCategoryFull}
-                className={`absolute -top-3 -right-3 p-2 rounded-full z-10 transition-[color,background-color,border-color,opacity,transform] duration-300 ${
-                  isCategoryFull
-                    ? 'bg-zinc-800/50 text-zinc-600 opacity-50 scale-90 cursor-not-allowed'
-                    : isPinned 
-                      ? 'bg-rose-600 text-white opacity-100 scale-100' 
-                      : 'bg-zinc-800 text-zinc-400 opacity-0 scale-75 group-hover:opacity-100 hover:bg-zinc-700 hover:text-white'
-                }`}
-                title={isCategoryFull 
-                  ? `Limite atteinte (max ${CATEGORY_LIMIT} par catégorie)` 
-                  : isPinned ? 'Désépingler de la barre' : 'Épingler à la barre'
-                }
-              >
-                {isCategoryFull ? <span className="text-xs font-bold">✕</span> : isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-              </button>
 
-              <button 
-                onClick={() => {
-                  coreEventBus.emit(action.onClickEvent, action.actionId);
-                  onClose(); 
-                }}
-                className={`w-full flex flex-col items-center justify-center gap-6 p-8 rounded-2xl transition-[color,background-color,border-color,opacity,transform] group ${
-                  isActive 
-                    ? 'bg-white/15 border border-white/30 hover:bg-white/20' 
-                    : 'bg-white/5 border border-white/10 hover:bg-white/10'
+      {actionList.length === 0 ? (
+        <p className="px-1 text-sm text-zinc-600">Aucun résultat</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {actionList.map(action => {
+            const isPinned = pinnedIds.includes(action.actionId);
+            const isActive = activeIds.includes(action.actionId);
+            const isCategoryFull = !isPinned && pinnedCount >= CATEGORY_LIMIT;
+
+            return (
+              <div
+                key={action.actionId}
+                className={`group flex items-center rounded-xl border transition-colors ${
+                  isActive ? 'border-white/15 bg-white/[.06]' : 'border-hairline bg-white/[.02] hover:border-white/15 hover:bg-white/[.04]'
                 }`}
               >
-                <div className={`w-12 h-12 transition-colors [&>svg]:w-full [&>svg]:h-full ${
-                  isActive ? 'text-white' : 'text-zinc-400 group-hover:text-white'
-                }`}>
-                  {action.icon}
-                </div>
-                <span className={`text-lg font-bold text-center ${
-                  isActive ? 'text-white' : 'text-white/60 group-hover:text-white'
-                }`}>
-                  {action.label}
-                </span>
-              </button>
-            </div>
-          );
-        })}
-      </div>
-      {actionList.length === 0 && (
-        <div className="text-zinc-500 font-medium py-4">
-          Aucun résultat.
+                <button
+                  onClick={() => {
+                    coreEventBus.emit(action.onClickEvent, action.actionId);
+                    onClose();
+                  }}
+                  className="flex-1 min-w-0 flex items-center gap-3 h-14 pl-4 text-left"
+                >
+                  <span className={`w-5 h-5 shrink-0 [&>svg]:w-full [&>svg]:h-full [&>svg]:!text-current [&>svg]:stroke-[1.5] transition-colors ${
+                    isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-200'
+                  }`}>
+                    {action.icon}
+                  </span>
+                  <span className={`text-sm truncate ${isActive ? 'text-white font-medium' : 'text-zinc-300 group-hover:text-white'}`}>
+                    {action.label}
+                  </span>
+                  {isActive && <span className="ml-auto mr-1 text-xs text-rose-300 shrink-0">Ouvert</span>}
+                </button>
+
+                <button
+                  onClick={() => !isCategoryFull && onTogglePin(action.actionId)}
+                  disabled={isCategoryFull}
+                  aria-pressed={isPinned}
+                  aria-label={isPinned ? `Retirer ${action.label} de la barre` : `Épingler ${action.label} à la barre`}
+                  title={isCategoryFull
+                    ? `Barre pleine (${CATEGORY_LIMIT} par catégorie)`
+                    : isPinned ? 'Retirer de la barre' : 'Épingler à la barre'}
+                  className={`mr-2 w-8 h-8 shrink-0 grid place-items-center rounded-lg transition-[color,background-color,opacity] ${
+                    isPinned
+                      ? 'text-rose-400 hover:bg-rose-500/10'
+                      : isCategoryFull
+                        ? 'text-zinc-700 opacity-0 group-hover:opacity-100 cursor-not-allowed'
+                        : 'text-zinc-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Pin className={`w-4 h-4 ${isPinned ? 'fill-current' : ''}`} />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
-    </div>
+    </section>
   );
 
   return (
-    <div className="absolute inset-0 z-[100] flex items-center justify-center animate-fade-in pointer-events-auto">
-      {/* Background with heavy blur */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-2xl" onClick={onClose} />
+    <div className="absolute inset-0 z-[100] flex items-center justify-center p-6 animate-fade-in pointer-events-auto">
+      {/* Fond : la table reste devinée derrière */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose} />
 
-      {/* Main Grimoire Content */}
-      <div className="relative w-full h-full p-12 lg:p-24 flex flex-col">
-        {/* Top bar: Logo + Search */}
-        <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16 shrink-0">
-          <div className="flex items-center gap-4">
-            <img src="/logo.svg" alt="Signet" className="w-16 h-16 opacity-90" />
-            <h1 className="text-5xl font-black text-white ">Signet</h1>
-          </div>
-          
-          <div className="w-full md:w-[400px] relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-            <input 
-               type="text" 
-               placeholder="Rechercher une application ou un réglage" 
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-               className="w-full bg-white/5 border border-white/10 rounded-full py-4 pl-12 pr-6 text-white placeholder-white/30 focus:outline-none focus:border-rose-500/50 focus:bg-white/10 transition-[color,background-color,border-color,opacity,transform] text-sm font-medium "
+      {/* Panneau du menu */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu principal"
+        className="relative w-full max-w-4xl max-h-full flex flex-col rounded-2xl bg-surface/90 backdrop-blur-xl border border-hairline shadow-2xl"
+      >
+        {/* En-tête : marque + recherche */}
+        <div className="flex items-center gap-4 px-6 h-16 border-b border-hairline shrink-0">
+          <img src="/logo.svg" alt="" className="w-6 h-6 opacity-90 shrink-0" />
+          <span className="text-base font-bold text-white shrink-0">Signet</span>
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              autoFocus
+              placeholder="Rechercher une fenêtre ou un outil"
+              aria-label="Rechercher"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-10 pl-9 pr-3 rounded-lg bg-black/40 border border-hairline text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 transition-colors"
             />
           </div>
-        </div>
-
-        {/* Applications Grid */}
-        <div className="flex-1 w-full flex flex-col gap-12 overflow-y-auto pb-12 pr-4 custom-scrollbar">
-          
-          {/* Section Systèmes de Jeu */}
-          {(systemActions.length > 0 || searchQuery) && renderActionGrid(systemActions, "Systèmes de jeu", <Puzzle className="w-6 h-6" />)}
-          
-          {/* Section Core / Utilitaires */}
-          {(coreActions.length > 0 || searchQuery) && renderActionGrid(coreActions, "Utilitaires et Core", <Terminal className="w-6 h-6" />)}
-
-        </div>
-
-        {/* Footer Actions */}
-        <div className="w-full flex justify-end items-center gap-6 mt-12">
-          <button onClick={onClose} className="px-8 py-4 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-base flex items-center gap-3 transition-colors ">
+          <button
+            onClick={onClose}
+            aria-label="Fermer le menu"
+            title="Fermer (Échap)"
+            className="w-9 h-9 grid place-items-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+          >
             <X className="w-5 h-5" />
-            Retourner au jeu
           </button>
-          
-          <button onClick={onReturnToHub} className="px-8 py-4 rounded-full bg-rose-600/20 hover:bg-rose-600/40 border border-rose-500/30 text-rose-200 hover:text-white font-bold text-base flex items-center gap-3 transition-[color,background-color,border-color,opacity,transform]">
-            <LogOut className="w-5 h-5" />
+        </div>
+
+        {/* Contenu : sections */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6 flex flex-col gap-8">
+          {(systemActions.length > 0 || searchQuery) && renderSection(systemActions, 'Systèmes de jeu', systemPinnedCount)}
+          {(coreActions.length > 0 || searchQuery) && renderSection(coreActions, 'Outils de la table', classicPinnedCount)}
+        </div>
+
+        {/* Pied : retour au jeu, sortie */}
+        <div className="flex items-center justify-between gap-4 px-6 h-16 border-t border-hairline shrink-0">
+          <span className="hidden sm:flex items-center gap-2 text-xs text-zinc-500">
+            <kbd className="font-mono text-[11px] text-zinc-400 border border-white/10 border-b-2 rounded-md px-1.5 py-0.5">Échap</kbd>
+            pour revenir à la table
+          </span>
+          <button
+            onClick={onReturnToHub}
+            className="ml-auto h-10 px-4 rounded-lg text-sm text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center gap-2 whitespace-nowrap transition-colors"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
             Quitter la session
           </button>
         </div>

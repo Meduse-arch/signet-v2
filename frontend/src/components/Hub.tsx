@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { supabase } from '../core/supabase';
 // import { t } from '../core/locales/fr'; // plus utilisé ici
-import { Play, Plus, LogOut, BookOpen, Globe, Puzzle, Settings, ArrowLeft, ChevronDown, X } from 'lucide-react';
+import { Play, Plus, LogOut, BookOpen, Globe, Puzzle, Settings, ArrowLeft, ChevronDown, ScrollText } from 'lucide-react';
 import { Button } from './ui/Button';
 const NotesView = lazy(() => import('./hub-views/NotesView').then(m => ({ default: m.NotesView })));
 import { PublicSessionsView } from './hub-views/PublicSessionsView';
@@ -48,7 +48,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
   const [collapsedCards, setCollapsedCards] = useState<Partial<Record<HubView, boolean>>>({});
   const toggleCard = (id: HubView) => setCollapsedCards(prev => ({ ...prev, [id]: !prev[id] }));
   // Bandeau « mise à jour » (masqué une fois fermé, jusqu'à la prochaine version)
-  const [isUpdateSeen, setIsUpdateSeen] = useState(() => localStorage.getItem(HUB_UPDATE_SEEN_KEY) === HUB_UPDATE.version);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(() => localStorage.getItem(HUB_UPDATE_SEEN_KEY) !== HUB_UPDATE.version);
   // Dernière note modifiée (lecture seule, pour l'aperçu du Carnet)
   const [lastNote, setLastNote] = useState<{ name: string; updatedAt?: number; excerpt: string } | null>(null);
   useEffect(() => {
@@ -70,9 +70,9 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
     return () => { cancelled = true; clearTimeout(timer); };
   }, [currentView]);
 
-  const dismissUpdate = () => {
-    localStorage.setItem(HUB_UPDATE_SEEN_KEY, HUB_UPDATE.version);
-    setIsUpdateSeen(true);
+  const toggleUpdate = () => {
+    if (isUpdateOpen) localStorage.setItem(HUB_UPDATE_SEEN_KEY, HUB_UPDATE.version);
+    setIsUpdateOpen(!isUpdateOpen);
   };
 
   // Chargement des campagnes (Tauri ou localStorage)
@@ -394,32 +394,35 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                 </div>
                 </div>
 
-                {/* Centre dégagé : nouveautés de la version, masquables */}
-                {!isUpdateSeen && (
-                  <div className="self-start w-full max-w-md rounded-2xl bg-[#090a10]/75 backdrop-blur-xl border border-white/[.08] p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-2 text-xs text-zinc-500">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" aria-hidden="true" />
-                        <span>Nouveautés</span>
-                        <span className="num text-zinc-400">v{HUB_UPDATE.version}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={dismissUpdate}
-                        aria-label="Masquer les nouveautés"
-                        title="Masquer"
-                        className="-mt-1.5 -mr-1.5 w-7 h-7 grid place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <ul className="mt-3 space-y-2">
+                {/* Centre dégagé : nouveautés de la version, carte repliable (même famille que le panneau droit) */}
+                <div className="self-stretch w-full max-w-2xl rounded-2xl bg-[#090a10]/75 backdrop-blur-xl border border-white/[.08] hover:border-white/20 transition-colors">
+                  <button
+                    type="button"
+                    onClick={toggleUpdate}
+                    aria-expanded={isUpdateOpen}
+                    className="group w-full flex items-center gap-3 p-5 text-left"
+                  >
+                    <ScrollText className="w-5 h-5 shrink-0 text-zinc-500 group-hover:text-rose-400 transition-colors" />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-base font-bold text-white">Nouveautés</span>
+                      <span className="block text-xs text-zinc-500">Version <span className="num">{HUB_UPDATE.version}</span></span>
+                    </span>
+                    {!isUpdateOpen && <span className="num text-xs text-zinc-500 whitespace-nowrap">{HUB_UPDATE.notes.length} changements</span>}
+                    <span className="w-8 h-8 shrink-0 grid place-items-center rounded-lg text-zinc-500 group-hover:text-white group-hover:bg-white/10 transition-colors">
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isUpdateOpen ? '' : '-rotate-90'}`} />
+                    </span>
+                  </button>
+                  {isUpdateOpen && (
+                    <ul className="px-5 pb-4 divide-y divide-white/[.06]">
                       {HUB_UPDATE.notes.map(note => (
-                        <li key={note} className="text-sm leading-relaxed text-zinc-300">{note}</li>
+                        <li key={note} className="flex items-center gap-3 h-10 text-sm text-zinc-300">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{note}</span>
+                        </li>
                       ))}
                     </ul>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Panneau droit : 3 cartes pleine hauteur, chacune repliable séparément */}
