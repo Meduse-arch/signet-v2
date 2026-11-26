@@ -8,8 +8,16 @@ interface TaskbarProps {
   activeIds: string[];
 }
 
+type WindowLayout = 'free' | 'combat';
+
+const LAYOUTS: { id: WindowLayout; label: string }[] = [
+  { id: 'free', label: 'Libre' },
+  { id: 'combat', label: 'Combat' },
+];
+
 export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [layout, setLayout] = useState<WindowLayout>('free');
 
   // Repli de secours : le pointeur peut quitter la fenêtre (ou la fenêtre perdre le focus)
   // sans qu'un événement de sortie n'arrive sur la barre.
@@ -23,6 +31,11 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
     };
   }, []);
 
+  const applyLayout = (next: WindowLayout) => {
+    setLayout(next);
+    coreEventBus.emit('WINDOW_LAYOUT_CHANGE', next);
+  };
+
   // Séparation système (gauche) / classique (droite) pour le positionnement
   // L'ORDRE dans chaque groupe respecte l'ordre d'épinglage (pas un ordre prédéfini)
   const leftActions = pinnedActions.filter(a => a.modId.startsWith('system-'));
@@ -35,22 +48,20 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
         key={action.actionId}
         onClick={() => coreEventBus.emit(action.onClickEvent, action.actionId)}
         draggable={false}
-        className={`relative group/btn p-2 flex flex-col items-center justify-center transition-all duration-300 ${
-          isActive
-            ? 'text-rose-300 -translate-y-1'
-            : 'text-white/45 hover:text-white/90 hover:-translate-y-1'
+        aria-label={action.label}
+        aria-pressed={isActive}
+        className={`relative group/btn w-9 h-9 shrink-0 flex items-center justify-center rounded-lg transition-colors ${
+          isActive ? 'text-rose-300' : 'text-zinc-500 hover:text-white hover:bg-white/5'
         }`}
         title={action.label}
       >
-        <div className="w-5 h-5 [&>svg]:w-full [&>svg]:h-full drop-shadow-md transition-transform duration-300 group-hover/btn:scale-110">
+        <div className="w-[18px] h-[18px] [&>svg]:w-full [&>svg]:h-full [&>svg]:stroke-[1.5] [&>svg]:text-current">
           {action.icon}
         </div>
-        {/* Ligne cramoisie sous l'icône — même style que sous le logo */}
-        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-[2px] rounded-full bg-rose-600 transition-all duration-300 ${
-          isActive ? 'w-5 opacity-80' : 'w-0 opacity-0'
-        }`} />
-        {/* Tooltip */}
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#050508]/95 text-white/90 text-[10px] uppercase tracking-[0.2em] font-bold py-1 px-3 rounded-sm opacity-0 group-hover/btn:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap border border-white/5 backdrop-blur-xl shadow-xl">
+        {/* Soulignement cramoisi de l'élément actif */}
+        <div className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[2px] w-4 rounded-full bg-rose-600 transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-0'}`} />
+        {/* Infobulle */}
+        <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-surface text-zinc-200 text-xs py-1 px-2.5 rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap border border-hairline">
           {action.label}
         </div>
       </button>
@@ -71,19 +82,17 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
         onPointerLeave={() => setIsExpanded(false)}
         onPointerCancel={() => setIsExpanded(false)}
       >
-        {/* Fond glassmorphism — apparaît au hover */}
+        {/* Fond verre dépoli — apparaît au survol */}
         <div
-          className={`absolute inset-x-[-24px] inset-y-[-10px] rounded-2xl pointer-events-none transition-all duration-500 ${
-            isExpanded
-              ? 'opacity-100 bg-black/50 backdrop-blur-xl border border-white/8 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]'
-              : 'opacity-0 backdrop-blur-none'
+          className={`absolute inset-x-[-20px] inset-y-[-6px] rounded-2xl pointer-events-none transition-opacity duration-300 ${
+            isExpanded ? 'opacity-100 bg-surface/80 backdrop-blur-xl border border-hairline' : 'opacity-0'
           }`}
         />
 
         <div className="relative flex items-center gap-1">
-          {/* Items épinglés gauche (1-4, ordre d'épinglage) */}
+          {/* Items épinglés gauche (ordre d'épinglage) */}
           <div
-            className="flex items-center gap-1 overflow-hidden transition-all duration-400 ease-out"
+            className="flex items-center gap-1 overflow-hidden transition-[max-width,opacity,margin] duration-300 ease-out"
             style={{
               maxWidth: isExpanded ? `${leftActions.length * 44}px` : '0px',
               opacity: isExpanded ? 1 : 0,
@@ -92,41 +101,37 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
           >
             {leftActions.map(renderAction)}
             {leftActions.length > 0 && rightActions.length > 0 && (
-              <div className="w-px h-4 bg-white/15 mx-1 shrink-0" />
+              <div className="w-px h-4 bg-white/10 mx-1 shrink-0" />
             )}
           </div>
 
-          {/* Logo Signet — toujours visible, centré, discret */}
+          {/* Logo Signet — toujours visible, discret */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onOpenMenu();
             }}
             draggable={false}
-            className="relative group/logo p-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:-translate-y-1 shrink-0"
-            title="Menu Principal (Grimoire)"
+            className="relative group/logo p-2 flex items-center justify-center cursor-pointer shrink-0"
+            title="Menu principal"
+            aria-label="Menu principal"
           >
             <img
               src="/logo.svg"
-              alt="Signet"
+              alt=""
               draggable={false}
-              className={`transition-all duration-400 ${
-                isExpanded
-                  ? 'w-7 h-7 opacity-95 drop-shadow-[0_0_14px_rgba(225,29,72,0.6)] group-hover/logo:drop-shadow-[0_0_22px_rgba(225,29,72,0.9)]'
-                  : 'w-6 h-6 opacity-45 group-hover/logo:opacity-70 drop-shadow-[0_0_6px_rgba(225,29,72,0.2)]'
+              className={`transition-[width,height,opacity] duration-300 ${
+                isExpanded ? 'w-7 h-7 opacity-95' : 'w-6 h-6 opacity-45 group-hover/logo:opacity-70'
               }`}
             />
-            {/* Ligne rouge sous le logo */}
-            <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 h-[2px] bg-rose-600 rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(225,29,72,0.8)] ${
-              isExpanded
-                ? 'w-6 opacity-60 group-hover/logo:opacity-100 group-hover/logo:w-8'
-                : 'w-1 opacity-0 group-hover/logo:opacity-30 group-hover/logo:w-3'
+            <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-[2px] bg-rose-600 rounded-full transition-[width,opacity] duration-300 ${
+              isExpanded ? 'w-5 opacity-70 group-hover/logo:opacity-100' : 'w-1 opacity-0'
             }`} />
           </button>
 
-          {/* Items épinglés droite (5-8, ordre d'épinglage) */}
+          {/* Items épinglés droite (ordre d'épinglage) */}
           <div
-            className="flex items-center gap-1 overflow-hidden transition-all duration-400 ease-out"
+            className="flex items-center gap-1 overflow-hidden transition-[max-width,opacity,margin] duration-300 ease-out"
             style={{
               maxWidth: isExpanded ? `${rightActions.length * 44}px` : '0px',
               opacity: isExpanded ? 1 : 0,
@@ -134,6 +139,32 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
             }}
           >
             {rightActions.map(renderAction)}
+          </div>
+
+          {/* Agencement des fenêtres : Libre / Combat */}
+          <div
+            className="overflow-hidden transition-[max-width,opacity,margin] duration-300 ease-out"
+            style={{
+              maxWidth: isExpanded ? '160px' : '0px',
+              opacity: isExpanded ? 1 : 0,
+              marginLeft: isExpanded ? '8px' : '0px',
+            }}
+          >
+            <div role="group" aria-label="Agencement des fenêtres" className="flex p-0.5 rounded-[10px] bg-black/40 border border-hairline">
+              {LAYOUTS.map(l => (
+                <button
+                  key={l.id}
+                  onClick={() => applyLayout(l.id)}
+                  aria-pressed={layout === l.id}
+                  title="Mémorise vos fenêtres ouvertes et leurs positions pour cette disposition"
+                  className={`h-7 px-3 rounded-lg text-xs whitespace-nowrap transition-colors ${
+                    layout === l.id ? 'bg-white/[.09] text-white shadow-[inset_0_-2px_0_#e11d48]' : 'text-zinc-500 hover:text-white'
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

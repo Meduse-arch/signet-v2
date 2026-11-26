@@ -4,6 +4,8 @@ import type { RegisteredWindow, WindowPosition } from '../../core/services/ModMa
 import { coreEventBus } from '../../core/services/EventBus';
 import { DraggableWindow } from './DraggableWindow';
 import { onDockInRequest } from '../../core/services/popoutChannel';
+import { layoutStore, windowPositions } from '../../core/services/windowLayouts';
+import type { WindowLayoutId, LayoutSnapshot } from '../../core/services/windowLayouts';
 
 export function DockManager() {
   const [windows, setWindows] = useState<RegisteredWindow[]>([]);
@@ -12,6 +14,7 @@ export function DockManager() {
   const [dockStates, setDockStates] = useState<Record<string, WindowPosition>>({});
 
   const openWindowsRef = useRef<string[]>([]);
+  const layoutRef = useRef<WindowLayoutId>('free');
 
   useEffect(() => {
     openWindowsRef.current = openWindows;
@@ -70,6 +73,45 @@ export function DockManager() {
     const stopDockIn = onDockInRequest(handleOpen);
 
     coreEventBus.on('SYSTEM_UI_UPDATED', handleUpdate);
+    // Bascule de disposition : mémorise les fenêtres ouvertes (et leurs positions) de la disposition quittée,
+    // ferme celles qui ne sont pas dans la cible, ouvre les autres et les replace.
+    const handleLayout = (next: WindowLayoutId) => {
+      const current = layoutRef.current;
+      if (next === current) return;
+
+      const openNow = openWindowsRef.current;
+      const leaving: LayoutSnapshot = { open: [...openNow], pos: {} };
+      for (const id of openNow) {
+        const p = windowPositions.get(id);
+        if (p) leaving.pos[id] = p;
+      }
+      layoutStore.save(current, leaving);
+
+      const registeredIds = ModManager.getWindows().map(w => w.windowId);
+      // Disposition jamais configurée : on part de l'agencement actuel, le joueur l'adapte ensuite
+      const target = layoutStore.get(next) ?? leaving;
+      const targetOpen = target.open.filter(id => registeredIds.includes(id));
+
+      for (const id of openNow.filter(id => !targetOpen.includes(id))) {
+        coreEventBus.emit('SYSTEM_UI_ACTION_STATE_CHANGED', { actionId: id, isActive: false });
+      }
+      for (const id of targetOpen.filter(id => !openNow.includes(id))) {
+        coreEventBus.emit('SYSTEM_UI_ACTION_STATE_CHANGED', { actionId: id, isActive: true });
+      }
+      setOpenWindows(targetOpen);
+      setZOrder(prev => [...prev.filter(id => !targetOpen.includes(id)), ...targetOpen]);
+      layoutRef.current = next;
+
+      // Après le rendu : une fenêtre qui vient de s'ouvrir se recentre d'abord, on la place ensuite
+      setTimeout(() => {
+        for (const id of targetOpen) {
+          const p = target.pos[id];
+          if (p) coreEventBus.emit('WINDOW_SET_POSITION', { windowId: id, ...p });
+        }
+      }, 50);
+    };
+
+    coreEventBus.on('WINDOW_LAYOUT_CHANGE', handleLayout);
     coreEventBus.on('WINDOW_TOGGLE', handleToggle);
     coreEventBus.on('WINDOW_OPEN', handleOpen);
     coreEventBus.on('WINDOW_CLOSE', handleClose);
@@ -79,6 +121,7 @@ export function DockManager() {
     return () => {
       stopDockIn();
       coreEventBus.off('SYSTEM_UI_UPDATED', handleUpdate);
+      coreEventBus.off('WINDOW_LAYOUT_CHANGE', handleLayout);
       coreEventBus.off('WINDOW_TOGGLE', handleToggle);
       coreEventBus.off('WINDOW_OPEN', handleOpen);
       coreEventBus.off('WINDOW_CLOSE', handleClose);
@@ -105,6 +148,7 @@ export function DockManager() {
             key={`${win.modId}:${win.windowId}`}
             windowId={win.windowId}
             title={win.title}
+            subtitle={win.modId.startsWith('system-') ? win.modId.slice(7).charAt(0).toUpperCase() + win.modId.slice(8) : undefined}
             icon={win.icon}
             defaultPosition={win.defaultPosition}
             defaultWidth={win.defaultWidth}

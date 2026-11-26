@@ -4,10 +4,13 @@ import { X, GripHorizontal, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, M
 import { coreEventBus } from '../../core/services/EventBus';
 import { PopoutButton } from './PopoutButton';
 import type { WindowPosition } from '../../core/services/ModManager';
+import { windowPositions } from '../../core/services/windowLayouts';
 
 interface DraggableWindowProps {
   windowId: string;
   title: string;
+  /** Sous-titre discret (ex. système de jeu) */
+  subtitle?: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
   defaultPosition?: WindowPosition;
@@ -26,6 +29,7 @@ interface DraggableWindowProps {
 export function DraggableWindow({ 
   windowId, 
   title, 
+  subtitle,
   icon, 
   children, 
   defaultPosition = 'floating',
@@ -74,6 +78,21 @@ export function DraggableWindow({
       setPos({ x: Math.max(8, w / 2 - effW / 2), y: Math.max(16, h / 2 - effH / 2) });
     }
   }, [isOpen, dockState]);
+
+  // Mémorise la position flottante (pour les dispositions Libre / Combat)
+  useEffect(() => {
+    windowPositions.set(windowId, pos);
+  }, [windowId, pos]);
+
+  // Applique une position demandée par une disposition (placement direct, sans animer left/top)
+  useEffect(() => {
+    const handleSetPosition = (payload: { windowId: string; x: number; y: number }) => {
+      if (payload.windowId !== windowId || dockState !== 'floating') return;
+      setPos({ x: payload.x, y: payload.y });
+    };
+    coreEventBus.on('WINDOW_SET_POSITION', handleSetPosition);
+    return () => coreEventBus.off('WINDOW_SET_POSITION', handleSetPosition);
+  }, [dockState, windowId]);
 
   // Informer le gestionnaire global de la zone occupée
   useEffect(() => {
@@ -282,7 +301,7 @@ export function DraggableWindow({
   if (transparent) {
     containerStyles += " pointer-events-none";
   } else {
-    containerStyles += " bg-[#050508]/95 backdrop-blur-xl border border-white/10 shadow-2xl pointer-events-auto";
+    containerStyles += " bg-void/95 backdrop-blur-xl border border-hairline shadow-2xl pointer-events-auto";
   }
 
   let inlineStyles: React.CSSProperties = { zIndex, display: isOpen ? 'flex' : 'none' };
@@ -321,8 +340,8 @@ export function DraggableWindow({
     if (!containerRef.current) return null;
     return createPortal(
       <div className="flex flex-col h-full w-full">
-        <div className="bg-[#090a10] border-b border-white/10 p-3 flex justify-between items-center shrink-0">
-          <h3 className="text-zinc-300 text-sm font-bold tracking-widest uppercase">{title} (Pop-out)</h3>
+        <div className="bg-surface border-b border-hairline h-10 px-3.5 flex items-center shrink-0">
+          <h3 className="text-zinc-200 text-[13px] font-medium">{title}{subtitle && <span className="ml-2 text-xs font-normal text-zinc-500">{subtitle}</span>}</h3>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar relative">
           {children}
@@ -369,27 +388,30 @@ export function DraggableWindow({
         {/* Header Drag Area */}
         {/* Header : toujours visible si flottant replié, pour permettre le dé-repliement */}
         {!hideHeader && (!isCollapsed || dockState === 'floating') && (
-          <div 
-            className={`pointer-events-auto bg-[#090a10] border-b border-white/10 p-3 flex justify-between items-center shrink-0 ${dockState === 'fullscreen' ? '' : 'cursor-grab active:cursor-grabbing'}`}
+          <div
+            className={`pointer-events-auto bg-surface border-b border-hairline h-10 pl-3.5 pr-2 flex justify-between items-center shrink-0 ${dockState === 'fullscreen' ? '' : 'cursor-grab active:cursor-grabbing'}`}
             onPointerDown={dockState === 'fullscreen' ? undefined : handlePointerDown}
           >
-            <div className="flex items-center gap-2 pointer-events-none select-none">
+            <div className="flex items-center gap-2.5 min-w-0 pointer-events-none select-none">
               {icon ? (
-                <div className="w-4 h-4 text-zinc-400">
+                <div className="w-4 h-4 shrink-0 text-zinc-500 [&>svg]:w-full [&>svg]:h-full">
                   {icon}
                 </div>
               ) : (
-                <GripHorizontal className="w-4 h-4 text-zinc-500" />
+                <GripHorizontal className="w-4 h-4 shrink-0 text-zinc-500" />
               )}
-              <h3 className="text-zinc-300 text-sm font-bold tracking-widest uppercase">{title}</h3>
+              <h3 className="text-zinc-200 text-[13px] font-medium truncate">
+                {title}
+                {subtitle && <span className="ml-2 text-xs font-normal text-zinc-500">{subtitle}</span>}
+              </h3>
             </div>
-            
-            <div className="flex items-center gap-2 pointer-events-auto">
+
+            <div className="flex items-center gap-0.5 pointer-events-auto">
               {/* Boutons d'état (Plein écran / Flottant) */}
               {dockState !== 'fullscreen' && (
                  <button 
                    onClick={(e) => { e.stopPropagation(); setDockState('fullscreen'); }}
-                   className="text-white/60 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                   className="w-7 h-7 grid place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[.06] transition-colors no-drag cursor-pointer relative z-[100]"
                    title="Plein Écran"
                    aria-label="Passer en plein écran"
                  >
@@ -400,7 +422,7 @@ export function DraggableWindow({
               {dockState === 'fullscreen' && (
                  <button 
                    onClick={(e) => { e.stopPropagation(); setDockState('floating'); }}
-                   className="text-white/60 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                   className="w-7 h-7 grid place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[.06] transition-colors no-drag cursor-pointer relative z-[100]"
                    title="Réduire en fenêtre"
                    aria-label="Réduire en fenêtre"
                  >
@@ -419,7 +441,7 @@ export function DraggableWindow({
               {dockState !== 'fullscreen' && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}
-                  className="text-white/60 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                  className="w-7 h-7 grid place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[.06] transition-colors no-drag cursor-pointer relative z-[100]"
                   title={isCollapsed ? 'Déplier la fenêtre' : 'Replier la fenêtre'}
                   aria-label={isCollapsed ? 'Déplier la fenêtre' : 'Replier la fenêtre'}
                   aria-expanded={!isCollapsed}
@@ -433,11 +455,11 @@ export function DraggableWindow({
 
               <button 
                 onClick={(e) => { e.stopPropagation(); handleClose(); }} 
-                className="text-white/60 hover:text-rose-400 transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                className="w-7 h-7 grid place-items-center rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors no-drag cursor-pointer relative z-[100]"
                 title="Fermer"
                 aria-label="Fermer la fenêtre"
               >
-                <X className="w-5 h-5 pointer-events-none" />
+                <X className="w-4 h-4 pointer-events-none" />
               </button>
             </div>
           </div>

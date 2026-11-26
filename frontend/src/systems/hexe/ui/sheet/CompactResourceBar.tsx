@@ -1,62 +1,46 @@
+import { Minus, Plus } from 'lucide-react';
 
 interface CompactResourceBarProps {
-  icon: React.ReactNode;
   label: string;
   current: number;
   max: number;
   color: string;
-  trackColor: string;
   onDecrement: () => void;
   onIncrement: () => void;
 }
 
-export function CompactResourceBar({ icon, label, current, max, color, trackColor, onDecrement, onIncrement }: CompactResourceBarProps) {
-  const pct = Math.min(100, Math.max(0, (current / max) * 100));
+/** Ligne de ressource : étiquette | jauge fine | valeur (chiffres alignés) | − +. */
+export function CompactResourceBar({ label, current, max, color, onDecrement, onIncrement }: CompactResourceBarProps) {
+  const pct = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
   return (
-    <div className="bg-[#090a10] border border-white/10 rounded-xl p-2 sm:p-2.5 flex flex-col justify-between gap-1.5 shadow-sm min-w-0">
-      <div className="flex items-center justify-between gap-1">
-        <div className="flex items-center gap-1.5 min-w-0" style={{ color }}>
-          {icon}
-          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider truncate">{label}</span>
-        </div>
-        <div className="text-xs font-black text-white shrink-0">
-          {current}<span className="text-[10px] font-medium text-slate-400">/{max}</span>
-        </div>
+    <div className="flex items-center gap-3 h-11 px-4 min-w-0">
+      <span className="w-16 shrink-0 text-[13px] text-zinc-400 truncate">{label}</span>
+      <div className="flex-1 h-1 rounded-full bg-white/[.07] overflow-hidden" role="progressbar" aria-label={label} aria-valuenow={current} aria-valuemin={0} aria-valuemax={max}>
+        <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-
-      {/* Barre de progression */}
-      <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ backgroundColor: trackColor }}>
-        <div
-          className="h-full rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(225,29,72,0.4)]"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-
-      {/* Contrôles - / + */}
-      <div className="flex items-center justify-between pt-0.5">
-        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-          {Math.round(pct)}%
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={onDecrement}
-            className="w-6 h-5 rounded bg-white/5 hover:bg-white/15 border border-white/10 flex items-center justify-center font-bold text-xs text-slate-300 hover:text-white transition-colors"
-            title="Diminuer"
-          >
-            -
-          </button>
-          <button
-            onClick={onIncrement}
-            className="w-6 h-5 rounded bg-white/5 hover:bg-white/15 border border-white/10 flex items-center justify-center font-bold text-xs text-slate-300 hover:text-white transition-colors"
-            title="Augmenter"
-          >
-            +
-          </button>
-        </div>
-      </div>
+      <span className="w-14 shrink-0 text-right num text-[13px] text-white">
+        {current}<span className="text-zinc-600"> / {max}</span>
+      </span>
+      <span className="flex shrink-0">
+        <button
+          type="button"
+          onClick={onDecrement}
+          className="w-6 h-6 grid place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[.06] transition-colors"
+          title="Diminuer"
+          aria-label={`Diminuer ${label}`}
+        >
+          <Minus className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={onIncrement}
+          className="w-6 h-6 grid place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[.06] transition-colors"
+          title="Augmenter"
+          aria-label={`Augmenter ${label}`}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </span>
     </div>
   );
 }
-
-// ─── Modal d'Édition d'Équipement ─────────────────────────────────────────────
-
