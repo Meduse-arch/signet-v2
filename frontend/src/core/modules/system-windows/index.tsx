@@ -26,13 +26,13 @@ export const CoreSystemWindowsModule: SignetModule = {
       <FullscreenWindowWrapper windowId="system-notes">
         <NotesView />
       </FullscreenWindowWrapper>
-    ), { defaultPosition: 'fullscreen' });
+    ), { defaultPosition: 'fullscreen', companionTab: 'more' });
 
     api.ui.registerWindow('system-settings', 'Paramètres', (
       <FullscreenWindowWrapper windowId="system-settings">
         <SettingsView />
       </FullscreenWindowWrapper>
-    ), { defaultPosition: 'fullscreen' });
+    ), { defaultPosition: 'fullscreen', companionTab: 'more' });
 
     // On enregistre les actions dans le Menu Principal
     api.ui.registerAction('system-notes', 'Notes Globales', <BookOpen className="w-5 h-5" />, 'WINDOW_TOGGLE');

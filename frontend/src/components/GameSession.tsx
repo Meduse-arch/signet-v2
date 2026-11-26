@@ -7,6 +7,7 @@ import { Play } from 'lucide-react';
 import { LobbyHeader } from './game/LobbyHeader';
 import { PlayerCarousel } from './game/PlayerCarousel';
 import { publicRoomsService } from '../core/services/publicRoomsService';
+import { useCompanionMode } from '../core/hooks/useCompanionMode';
 
 interface GameSessionProps {
   roomId: string;
@@ -35,6 +36,7 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
     sendBinary,
     disconnect,
   } = useVTTNetwork(signalUrl);
+  const isCompanion = useCompanionMode();
 
   const sendMessage = useCallback((msg: any) => {
     console.log('[GameSession] Message sortant:', msg);
@@ -288,6 +290,9 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
         sendBinary={sendBinary}
         systemId={systemId}
         onReturn={handleReturnToLobby}
+        isCompanion={isCompanion}
+        sessionName={sessionMetadata?.name || roomId}
+        onQuit={handleQuit}
       />
     );
   }

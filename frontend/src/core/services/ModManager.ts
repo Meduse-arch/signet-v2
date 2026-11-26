@@ -25,6 +25,12 @@ export interface UIOverlay {
 
 export type WindowPosition = 'left' | 'right' | 'top' | 'bottom' | 'floating' | 'fullscreen';
 
+/**
+ * Rôle d'une fenêtre dans le Mode Compagnon mobile (CompanionShell).
+ * 'more' = onglet « Plus » (journal, notes…). Absent = fenêtre desktop uniquement.
+ */
+export type CompanionTab = 'sheet' | 'dice' | 'chat' | 'more';
+
 export interface RegisteredWindow {
   modId: string;
   windowId: string;
@@ -38,6 +44,7 @@ export interface RegisteredWindow {
   hideHeader?: boolean;
   startSlim?: boolean;
   collapseMode?: 'slim' | 'hide';
+  companionTab?: CompanionTab;
 }
 
 export interface RegisteredAction {

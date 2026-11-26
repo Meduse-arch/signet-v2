@@ -15,7 +15,7 @@ export const CoreChatModule: SignetModule = {
   init: (api: SignetAPI) => {
     console.log('[ChatModule] Initializing...');
 
-    api.ui.registerWindow('toggle-chat', 'Chat Universel', <ChatUI />, { defaultPosition: 'right', startSlim: true });
+    api.ui.registerWindow('toggle-chat', 'Chat Universel', <ChatUI />, { defaultPosition: 'right', startSlim: true, companionTab: 'chat' });
 
     // 1b. On enregistre notre action dans le Menu Principal / Barre des tâches
     api.ui.registerAction(

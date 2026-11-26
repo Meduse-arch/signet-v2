@@ -14,6 +14,7 @@ import { SystemFlowerModule } from '../systems/flower';
 import { SystemHexeModule } from '../systems/hexe';
 import { coreEventBus } from '../core/services/EventBus';
 import { VTTCanvas, type TokenData } from './game/VTTCanvas';
+import { CompanionShell } from './companion/CompanionShell';
 
 interface GameBoardProps {
   isHost: boolean;
@@ -23,6 +24,10 @@ interface GameBoardProps {
   sendBinary: (data: Uint8Array) => void;
   systemId?: string | null;
   onReturn: () => void;
+  /** Mode Compagnon : fiche + dés + chat à la place de la table (modules et réseau restent actifs) */
+  isCompanion?: boolean;
+  sessionName?: string;
+  onQuit?: () => void;
 }
 
 const GRID_SIZE = 50;
@@ -33,7 +38,7 @@ import { FileTransferService } from '../core/services/FileTransferService';
 // Détection simple si on est dans l'app Tauri ou dans un simple navigateur (Chrome)
 const isTauri = () => '__TAURI_INTERNALS__' in window;
 
-export function GameBoard({ isHost, username, messages, sendMessage, sendBinary, systemId, onReturn }: GameBoardProps) {
+export function GameBoard({ isHost, username, messages, sendMessage, sendBinary, systemId, onReturn, isCompanion = false, sessionName, onQuit }: GameBoardProps) {
   const [tokens, setTokens] = useState<TokenData[]>([]);
 
   // État des outils VTT
@@ -489,6 +494,18 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
       payload: { tokenId }
     });
   };
+
+  // Le ModManager, le réseau et les tokens restent gérés ci-dessus : seul le rendu change.
+  if (isCompanion) {
+    return (
+      <CompanionShell
+        sessionName={sessionName ?? 'Session'}
+        username={username}
+        onBack={onReturn}
+        onQuit={onQuit ?? onReturn}
+      />
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-zinc-950 relative overflow-hidden">

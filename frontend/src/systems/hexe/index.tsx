@@ -52,7 +52,8 @@ export const SystemHexeModule = {
       {
         icon: <Skull className="w-5 h-5 text-red-500" />,
         defaultWidth: 480,
-        defaultHeight: 640
+        defaultHeight: 640,
+        companionTab: 'sheet'
       }
     );
 
@@ -64,7 +65,8 @@ export const SystemHexeModule = {
       {
         icon: <Shield className="w-5 h-5 text-rose-500" />,
         defaultWidth: 520,
-        defaultHeight: 640
+        defaultHeight: 640,
+        companionTab: 'sheet'
       }
     );
 
@@ -76,7 +78,8 @@ export const SystemHexeModule = {
       {
         icon: <BookOpen className="w-5 h-5 text-rose-500" />,
         defaultWidth: 540,
-        defaultHeight: 660
+        defaultHeight: 660,
+        companionTab: 'sheet'
       }
     );
 

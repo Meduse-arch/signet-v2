@@ -38,3 +38,4 @@ secrets.json
 keys.json
 
 .playwright-mcp/
+.claude/launch.json

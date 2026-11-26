@@ -1,6 +1,19 @@
 import React from 'react';
 import { coreEventBus, EventBus } from './EventBus';
-import type { WindowPosition } from './ModManager';
+import type { WindowPosition, CompanionTab } from './ModManager';
+
+export interface WindowOptions {
+  defaultPosition?: WindowPosition;
+  defaultWidth?: number;
+  defaultHeight?: number;
+  icon?: React.ReactNode;
+  transparent?: boolean;
+  hideHeader?: boolean;
+  startSlim?: boolean;
+  collapseMode?: 'slim' | 'hide';
+  /** Rôle dans le Mode Compagnon mobile (voir CompanionShell) */
+  companionTab?: CompanionTab;
+}
 import type { LogEntry } from '../modules/activity-log/types';
 
 /**
@@ -12,7 +25,7 @@ export class SignetAPI {
   public readonly events: EventBus;
   public readonly ui: {
     registerOverlay: (overlayId: string, component: React.ReactNode) => void;
-    registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, defaultWidth?: number, defaultHeight?: number, icon?: React.ReactNode, transparent?: boolean, hideHeader?: boolean, startSlim?: boolean, collapseMode?: 'slim' | 'hide' }) => void;
+    registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: WindowOptions) => void;
     registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => void;
     setActionState: (actionId: string, isActive: boolean) => void;
   };
@@ -77,7 +90,7 @@ export class SignetAPI {
           component
         });
       },
-      registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: { defaultPosition?: WindowPosition, defaultWidth?: number, defaultHeight?: number, icon?: React.ReactNode, transparent?: boolean, hideHeader?: boolean, startSlim?: boolean, collapseMode?: 'slim' | 'hide' }) => {
+      registerWindow: (windowId: string, title: string, component: React.ReactNode, options?: WindowOptions) => {
         this.events.emit('SYSTEM_UI_REGISTER_WINDOW', {
           modId: this.modId,
           windowId,
@@ -90,7 +103,8 @@ export class SignetAPI {
           transparent: options?.transparent,
           hideHeader: options?.hideHeader,
           startSlim: options?.startSlim,
-          collapseMode: options?.collapseMode
+          collapseMode: options?.collapseMode,
+          companionTab: options?.companionTab
         });
       },
       registerAction: (actionId: string, label: string, icon: React.ReactNode, onClickEvent: string) => {

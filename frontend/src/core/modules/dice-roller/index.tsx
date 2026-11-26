@@ -25,7 +25,8 @@ export const CoreDiceModule = {
       'Dé Classique',
       <DiceWindow api={api} />,
       {
-        icon: <Dices className="w-5 h-5 text-rose-400" />
+        icon: <Dices className="w-5 h-5 text-rose-400" />,
+        companionTab: 'dice'
       }
     );
 

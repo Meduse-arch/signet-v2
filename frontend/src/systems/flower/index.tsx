@@ -41,7 +41,8 @@ export const SystemFlowerModule = {
       'Personnages',
       <FlowerAppWindow api={api} />,
       {
-        icon: <Users className="w-5 h-5 text-pink-400" />
+        icon: <Users className="w-5 h-5 text-pink-400" />,
+        companionTab: 'sheet'
       }
     );
 
@@ -51,7 +52,8 @@ export const SystemFlowerModule = {
       'Compendium',
       <FlowerCompendiumWindow api={api} />,
       {
-        icon: <Library className="w-5 h-5 text-fuchsia-400" />
+        icon: <Library className="w-5 h-5 text-fuchsia-400" />,
+        companionTab: 'sheet'
       }
     );
 
