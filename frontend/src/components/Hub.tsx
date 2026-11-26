@@ -256,7 +256,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value)}
                   placeholder="CODE (EX: A4B9F2)"
-                  className="w-full sm:w-56 flex-1 sm:flex-none bg-black/40 backdrop-blur-md border border-white/20 rounded-sm px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/30"
+                  className="w-full sm:w-56 flex-1 sm:flex-none bg-black/40 backdrop-blur-md border border-white/20 rounded-sm px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white transition-colors uppercase placeholder-white/50"
                 />
                 <Button
                   type="submit"
@@ -284,43 +284,43 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
           {/* Section Droite : Carré Magique de 4 Cartes (Caché sur sm, visible dès md) */}
           <div className="hidden md:grid grid-cols-2 gap-4 w-full md:w-[360px] xl:w-[380px] shrink-0 animate-fade-in" style={{ animationDelay: '0.2s' }}>
             
-            <div onClick={() => setCurrentView('notes')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Ouvrir le Carnet de Notes">
+            <button type="button" onClick={() => setCurrentView('notes')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-[transform,background-color,border-color,box-shadow] hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Ouvrir le Carnet de Notes">
               <BookOpen className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Carnet de Notes</span>
-            </div>
+            </button>
 
-            <div onClick={() => setCurrentView('public')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Voir les sessions publiques">
+            <button type="button" onClick={() => setCurrentView('public')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-[transform,background-color,border-color,box-shadow] hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Voir les sessions publiques">
               <Globe className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Sessions Publiques</span>
-            </div>
+            </button>
 
-            <div onClick={() => setCurrentView('mods')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Gérer les Mods">
+            <button type="button" onClick={() => setCurrentView('mods')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-[transform,background-color,border-color,box-shadow] hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Gérer les Mods">
               <Puzzle className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Mods / Systèmes</span>
-            </div>
+            </button>
 
-            <div onClick={() => setCurrentView('settings')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Ouvrir les paramètres">
+            <button type="button" onClick={() => setCurrentView('settings')} className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-[transform,background-color,border-color,box-shadow] hover:scale-105 hover:-translate-y-1 hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] group" title="Ouvrir les paramètres">
               <Settings className="w-8 h-8 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors text-center">Paramètres & Actu</span>
-            </div>
+            </button>
 
           </div>
 
           {/* Mobile/SM : Navigation en carousel horizontal (< md) */}
           <div className="flex md:hidden gap-3 w-full overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <button onClick={() => setCurrentView('notes')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-rose-500/50 group min-w-[90px]">
+            <button onClick={() => setCurrentView('notes')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:border-rose-500/50 group min-w-[90px]">
               <BookOpen className="w-6 h-6 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-xs font-bold text-white/70 group-hover:text-white transition-colors text-center">Notes</span>
             </button>
-            <button onClick={() => setCurrentView('public')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-rose-500/50 group min-w-[90px]">
+            <button onClick={() => setCurrentView('public')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:border-rose-500/50 group min-w-[90px]">
               <Globe className="w-6 h-6 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-xs font-bold text-white/70 group-hover:text-white transition-colors text-center">Sessions</span>
             </button>
-            <button onClick={() => setCurrentView('mods')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-rose-500/50 group min-w-[90px]">
+            <button onClick={() => setCurrentView('mods')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:border-rose-500/50 group min-w-[90px]">
               <Puzzle className="w-6 h-6 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-xs font-bold text-white/70 group-hover:text-white transition-colors text-center">Mods</span>
             </button>
-            <button onClick={() => setCurrentView('settings')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-rose-500/50 group min-w-[90px]">
+            <button onClick={() => setCurrentView('settings')} className="shrink-0 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-zinc-800 rounded-sm p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:border-rose-500/50 group min-w-[90px]">
               <Settings className="w-6 h-6 text-white/50 group-hover:text-rose-400 transition-colors" />
               <span className="text-xs font-bold text-white/70 group-hover:text-white transition-colors text-center">Params</span>
             </button>

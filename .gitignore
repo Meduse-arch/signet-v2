@@ -36,3 +36,5 @@ backend/gen/schemas/
 *.key
 secrets.json
 keys.json
+
+.playwright-mcp/

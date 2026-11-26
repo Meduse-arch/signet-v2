@@ -53,11 +53,37 @@
   }
 }
 
+html {
+  color-scheme: dark;
+}
+
 #root, html, body {
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   padding: 0;
   background: #050508;
+}
+
+/* Focus clavier visible, cohérent avec l'accent rose de la charte */
+:focus-visible {
+  outline: 2px solid #f43f5e; /* rose-500 */
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Respect de prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* =============================================

@@ -68,7 +68,10 @@ export function DraggableWindow({
     if (isOpen && dockState === 'floating') {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      setPos({ x: w / 2 - size.w / 2, y: h / 2 - size.h / 2 });
+      // Largeur/hauteur réellement rendues (cf. maxWidth/maxHeight plus bas)
+      const effW = Math.min(size.w, w - 16);
+      const effH = Math.min(size.h, h - 32);
+      setPos({ x: Math.max(8, w / 2 - effW / 2), y: Math.max(16, h / 2 - effH / 2) });
     }
   }, [isOpen, dockState]);
 
@@ -82,8 +85,10 @@ export function DraggableWindow({
     const handleResize = () => {
       if (dockState === 'floating') {
         setPos(prev => {
-          const maxX = Math.max(0, window.innerWidth - size.w);
-          const maxY = Math.max(0, window.innerHeight - size.h);
+          const effW = Math.min(size.w, window.innerWidth - 16);
+          const effH = Math.min(size.h, window.innerHeight - 32);
+          const maxX = Math.max(0, window.innerWidth - effW);
+          const maxY = Math.max(0, window.innerHeight - effH);
           return {
             x: Math.min(Math.max(0, prev.x), maxX),
             y: Math.min(Math.max(0, prev.y), maxY)
@@ -268,7 +273,7 @@ export function DraggableWindow({
     coreEventBus.emit('WINDOW_CLOSE', windowId);
   };
 
-  let containerStyles = "fixed flex flex-col transition-all duration-300 ease-in-out";
+  let containerStyles = "fixed flex flex-col transition-transform duration-300 ease-in-out";
   if (transparent) {
     containerStyles += " pointer-events-none";
   } else {
@@ -291,7 +296,8 @@ export function DraggableWindow({
       height: isCollapsed ? 'auto' : (transparent ? 'auto' : size.h),
       maxWidth: 'calc(100vw - 1rem)',
       maxHeight: isCollapsed ? 'none' : 'calc(100vh - 2rem)',
-      transition: (isDragging || isResizing) ? 'none' : 'all 0.3s ease-out'
+      // Jamais left/top/width/height : seuls opacity/transform sont animés
+      transition: (isDragging || isResizing) ? 'none' : 'opacity 0.3s ease-out, transform 0.3s ease-out'
     };
   } else if (dockState === 'right') {
     containerStyles += transparent ? " right-0 top-0 h-full" : " right-0 top-0 h-full border-l";
@@ -325,7 +331,7 @@ export function DraggableWindow({
     <>
       {snapPreview && (
         <div 
-          className={`fixed transition-all bg-rose-500/10 border-rose-500/50 backdrop-blur-sm z-[40]
+          className={`fixed transition-opacity bg-rose-500/10 border-rose-500/50 backdrop-blur-sm z-[40]
             ${snapPreview === 'right' ? 'right-0 top-0 h-full w-[350px] border-l-2' : ''}
             ${snapPreview === 'left' ? 'left-0 top-0 h-full w-[350px] border-r-2' : ''}
             ${snapPreview === 'fullscreen' ? 'inset-0 w-full h-full border-2' : ''}
@@ -378,8 +384,9 @@ export function DraggableWindow({
               {dockState !== 'fullscreen' && (
                  <button 
                    onClick={(e) => { e.stopPropagation(); setDockState('fullscreen'); }}
-                   className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                   className="text-white/60 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
                    title="Plein Écran"
+                   aria-label="Passer en plein écran"
                  >
                    <Maximize2 className="w-4 h-4 pointer-events-none" />
                  </button>
@@ -388,8 +395,9 @@ export function DraggableWindow({
               {dockState === 'fullscreen' && (
                  <button 
                    onClick={(e) => { e.stopPropagation(); setDockState('floating'); }}
-                   className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                   className="text-white/60 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
                    title="Réduire en fenêtre"
+                   aria-label="Réduire en fenêtre"
                  >
                    <Minimize2 className="w-4 h-4 pointer-events-none" />
                  </button>
@@ -406,8 +414,10 @@ export function DraggableWindow({
               {dockState !== 'fullscreen' && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}
-                  className="text-white/30 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                  className="text-white/60 hover:text-white transition-colors p-1 no-drag cursor-pointer relative z-[100]"
                   title={isCollapsed ? 'Déplier la fenêtre' : 'Replier la fenêtre'}
+                  aria-label={isCollapsed ? 'Déplier la fenêtre' : 'Replier la fenêtre'}
+                  aria-expanded={!isCollapsed}
                 >
                   {isCollapsed
                     ? <ChevronDown className="w-4 h-4 pointer-events-none" />
@@ -418,7 +428,9 @@ export function DraggableWindow({
 
               <button 
                 onClick={(e) => { e.stopPropagation(); handleClose(); }} 
-                className="text-white/30 hover:text-rose-400 transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                className="text-white/60 hover:text-rose-400 transition-colors p-1 no-drag cursor-pointer relative z-[100]"
+                title="Fermer"
+                aria-label="Fermer la fenêtre"
               >
                 <X className="w-5 h-5 pointer-events-none" />
               </button>

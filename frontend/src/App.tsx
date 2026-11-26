@@ -99,7 +99,7 @@ export default function App() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-dvh bg-zinc-950 flex items-center justify-center">
         <TitleBar />
         <div className="text-rose-500 animate-pulse font-bold">{t('app_loading')}</div>
       </div>
@@ -107,7 +107,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#050508] text-zinc-200 selection:bg-rose-500/30 font-sans flex flex-col">
+    <div className="h-dvh w-screen overflow-hidden bg-[#050508] text-zinc-200 selection:bg-rose-500/30 font-sans flex flex-col">
       <TitleBar />
       
       {/* Transitions simples gérées par React (montage/démontage avec animations Tailwind) */}
@@ -146,7 +146,7 @@ export default function App() {
       )}
 
       {appState === 'popout' && sessionRoomId && popoutModuleId && (
-        <div className="animate-fade-in h-screen flex flex-col">
+        <div className="animate-fade-in h-dvh flex flex-col">
           <PopoutSession 
             roomId={sessionRoomId}
             moduleId={popoutModuleId}

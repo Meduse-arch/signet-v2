@@ -38,7 +38,8 @@ Pour éviter que les mots ne "sortent" de leurs boutons sur les petits écrans o
 - Placeholder : `placeholder-slate-600` ou `placeholder-white/30`.
 
 ## 3. Effets et Animations
-- **Transitions** : Toujours utiliser la classe `transition-all` ou `transition-colors` sur les éléments interactifs.
+- **Transitions** : `transition-all` est **interdit** (anime des propriétés de layout, coûteux et imprévisible). Utiliser des transitions ciblées sur les éléments interactifs : `transition-colors`, `transition-transform`, `transition-opacity`, ou une liste explicite (`transition-[transform,box-shadow]`). Ne jamais animer `left`/`top`/`width`/`height`. Respecter `prefers-reduced-motion` (géré globalement dans `index.css`).
+- **Focus clavier** : un `:focus-visible` global (outline `rose-500`) est défini dans `index.css`. Ne pas le supprimer avec `outline-none` sans équivalent visible.
 - **Survol des Cartes** : `hover:scale-[1.02]`.
 - **Fond de page animé** : Les images d'arrière-plan doivent souvent avoir un mix-blend (ex: `mix-blend-luminosity`) ou être assombries par un dégradé (`bg-gradient-to-t from-black`) pour garantir la lisibilité absolue des textes par-dessus.
 
