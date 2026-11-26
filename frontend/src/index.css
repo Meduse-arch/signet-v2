@@ -3,6 +3,13 @@
 
 @theme {
   --font-sans: "Outfit", sans-serif;
+
+  /* Surfaces et bordures (cf. CHARTE_GRAPHIQUE.md §1) → bg-void, bg-surface, bg-surface-raised, border-hairline */
+  --color-void: #050508;
+  --color-surface: #090a10;
+  --color-surface-raised: #0c0d14;
+  --color-hairline: rgb(255 255 255 / 0.08);
+
   --animate-shimmer: shimmer 1.5s infinite;
   --animate-fade-in: fadeIn 0.5s ease-out forwards;
   --animate-slide-in-right: slideInRight 0.4s ease-out forwards;
@@ -68,6 +75,11 @@ html, body, #root {
   margin: 0;
   padding: 0;
   background: #050508;
+}
+
+/* Chiffres alignés (PV, jets, totaux) : à utiliser sur tout nombre affiché en colonne */
+@utility num {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Focus clavier visible, cohérent avec l'accent rose de la charte */

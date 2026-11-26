@@ -1,6 +1,7 @@
-import { Globe, Smartphone } from 'lucide-react';
+import { Globe, Smartphone, Wifi } from 'lucide-react';
 import { t } from '../../core/locales/fr';
 import { useCompanionPreference, type CompanionPreference } from '../../core/hooks/useCompanionMode';
+import { NetworkToggle } from '../NetworkToggle';
 
 const COMPANION_OPTIONS: { value: CompanionPreference; label: string }[] = [
   { value: 'auto', label: 'Automatique' },
@@ -8,66 +9,92 @@ const COMPANION_OPTIONS: { value: CompanionPreference; label: string }[] = [
   { value: 'off', label: 'Désactivé' },
 ];
 
-export function SettingsView() {
+interface SettingsViewProps {
+  /** Réseau : fournis par le Hub uniquement (absents quand les Paramètres s'ouvrent en jeu) */
+  isLanMode?: boolean;
+  onLanModeChange?: (isLan: boolean) => void;
+  onSignalUrlChange?: (url: string) => void;
+}
+
+function Section({ icon, title, desc, children }: { icon: React.ReactNode; title: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl bg-[#090a10]/75 backdrop-blur-xl border border-white/[.08] p-6">
+      <div className="flex items-start gap-4 mb-5">
+        <span className="mt-0.5 text-rose-400">{icon}</span>
+        <div>
+          <h3 className="text-lg font-bold text-white">{title}</h3>
+          {desc && <p className="mt-0.5 text-sm text-zinc-500">{desc}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function SettingsView({ isLanMode, onLanModeChange, onSignalUrlChange }: SettingsViewProps = {}) {
   const [companionPref, setCompanionPref] = useCompanionPreference();
+  const showNetwork = isLanMode !== undefined && onLanModeChange !== undefined && onSignalUrlChange !== undefined;
 
   return (
     <div className="w-full h-full flex flex-col animate-fade-in px-4 lg:px-8 mt-4">
-      <div className="mb-10">
-        <h2 className="text-4xl font-black text-white mb-2 drop-shadow-xl">{t('modal_settings_title')}</h2>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto pr-2">
-        <div className="max-w-2xl">
-          {/* Paramètre de Langue demandé par l'utilisateur */}
-          <div className="bg-white/5 border border-zinc-800 rounded-lg p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Globe className="w-6 h-6 text-rose-400" />
-              <h3 className="text-xl text-white font-bold">{t('modal_settings_language')}</h3>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-              <label className="flex-1 flex items-center gap-4 p-4 bg-black/40 border-2 border-rose-500/50 rounded-md cursor-pointer transition-colors hover:bg-rose-500/5 shadow-[0_0_15px_rgba(225,29,72,0.1)]">
-                <input type="radio" name="lang" value="fr" defaultChecked className="accent-rose-500 w-5 h-5" />
-                <span className="text-white font-bold text-lg">{t('modal_settings_lang_fr')} 🇫🇷</span>
-              </label>
-              <label className="flex-1 flex items-center gap-4 p-4 bg-black/20 border-2 border-white/5 rounded-md cursor-not-allowed opacity-50">
-                <input type="radio" name="lang" value="en" disabled className="accent-zinc-500 w-5 h-5" />
-                <span className="text-white font-bold text-lg">English 🇬🇧 (Bientôt)</span>
-              </label>
-            </div>
-          </div>
+      <h2 className="text-4xl font-black text-white mb-8 drop-shadow-xl">{t('modal_settings_title')}</h2>
 
-          {/* Mode Compagnon mobile (fiches + dés + chat) */}
-          <div className="bg-white/5 border border-zinc-800 rounded-lg p-8 mt-6">
-            <div className="flex items-center gap-3 mb-2">
-              <Smartphone className="w-6 h-6 text-rose-400" aria-hidden="true" />
-              <h3 className="text-xl text-white font-bold">Mode Compagnon</h3>
+      <div className="flex-1 overflow-y-auto pr-2 pb-8">
+        <div className="max-w-3xl flex flex-col gap-5">
+
+          {showNetwork && (
+            <Section icon={<Wifi className="w-5 h-5" aria-hidden="true" />} title="Réseau" desc="Comment vous vous connectez aux tables">
+              <NetworkToggle isLanMode={isLanMode} onLanModeChange={onLanModeChange} onSignalUrlChange={onSignalUrlChange} />
+            </Section>
+          )}
+
+          <Section icon={<Globe className="w-5 h-5" aria-hidden="true" />} title={t('modal_settings_language')}>
+            <div role="radiogroup" aria-label={t('modal_settings_language')} className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                role="radio"
+                aria-checked="true"
+                className="h-11 px-5 rounded-lg border border-rose-500/50 bg-rose-500/5 text-sm font-bold text-white"
+              >
+                {t('modal_settings_lang_fr')}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked="false"
+                disabled
+                className="h-11 px-5 rounded-lg border border-white/[.06] bg-black/20 text-sm text-zinc-500 cursor-not-allowed"
+              >
+                English <span className="text-zinc-600">· bientôt</span>
+              </button>
             </div>
-            <p className="text-sm text-zinc-300 mb-6">
-              Interface simplifiée (fiche, dés, chat) sans la table de jeu. Automatique sur écran tactile étroit.
-            </p>
-            <div role="radiogroup" aria-label="Mode Compagnon" className="flex flex-col sm:flex-row gap-3">
-              {COMPANION_OPTIONS.map(opt => (
-                <label
-                  key={opt.value}
-                  className={`flex-1 flex items-center gap-3 p-4 min-h-[44px] rounded-md border-2 cursor-pointer transition-colors ${
-                    companionPref === opt.value ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/5 bg-black/20 hover:bg-white/5'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="companion-mode"
-                    value={opt.value}
-                    checked={companionPref === opt.value}
-                    onChange={() => setCompanionPref(opt.value)}
-                    className="accent-rose-500 w-5 h-5"
-                  />
-                  <span className="text-white font-bold">{opt.label}</span>
-                </label>
-              ))}
+          </Section>
+
+          <Section
+            icon={<Smartphone className="w-5 h-5" aria-hidden="true" />}
+            title="Mode Compagnon"
+            desc="Interface simplifiée (fiche, dés, chat) sans la table de jeu. Automatique sur écran tactile étroit."
+          >
+            <div role="radiogroup" aria-label="Mode Compagnon" className="flex flex-wrap gap-3">
+              {COMPANION_OPTIONS.map(opt => {
+                const selected = companionPref === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setCompanionPref(opt.value)}
+                    className={`h-11 px-5 rounded-lg border text-sm whitespace-nowrap transition-colors ${
+                      selected ? 'border-rose-500/50 bg-rose-500/5 text-white font-bold' : 'border-white/[.08] bg-black/20 text-zinc-400 hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </Section>
         </div>
       </div>
     </div>

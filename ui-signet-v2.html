@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signet VTT — maquette UI v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] }, colors: {
+  ink: { 950: '#050508', 900: '#090a10', 850: '#0c0d14', 800: '#11121a' }
+} } } }
+</script>
+<style>
+  html,body{height:100%;margin:0;background:#050508;color:#fff;font-family:Outfit,sans-serif;-webkit-font-smoothing:antialiased}
+  .ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .ic-lg{width:20px;height:20px}
+  .num{font-variant-numeric:tabular-nums}
+  ::selection{background:rgba(244,63,94,.3)}
+  :focus-visible{outline:2px solid #f43f5e;outline-offset:2px}
+  *{scrollbar-width:thin;scrollbar-color:rgba(225,29,72,.3) transparent}
+  .hairline{border:1px solid rgba(255,255,255,.08)}
+  /* Quadrillage de table : décor statique, très discret */
+  .gridbg{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:48px 48px}
+  .thumb{position:relative;height:132px;background-color:hsl(var(--h) 16% 8%);
+    background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px}
+  .thumb i{position:absolute;width:14px;height:14px;border-radius:9999px;background:hsl(var(--h) 55% 62%);box-shadow:0 0 0 2px #0c0d14}
+  .thumb b{position:absolute;border:1px solid hsl(var(--h) 20% 28%);background:hsl(var(--h) 16% 11%);border-radius:4px}
+  .art{background-size:cover;background-position:center}
+  .art-castle{background-image:url('frontend/public/fantasy_vtt_bg.jpg');background-position:30% 40%;background-size:260%;filter:saturate(.7)}
+  .art-keep{background-image:url('frontend/public/fantasy_vtt_bg.jpg');background-position:85% 75%;background-size:320%;filter:saturate(.6) hue-rotate(-12deg)}
+  .art-board{background-color:hsl(var(--h) 14% 9%);background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px);background-size:34px 34px}
+  .art-board b{position:absolute;border:1px solid hsl(var(--h) 25% 40%);background:hsl(var(--h) 18% 15%);border-radius:4px}
+  .art-board i{position:absolute;width:20px;height:20px;border-radius:9999px;background:hsl(var(--h) 65% 62%);box-shadow:0 0 0 2px #0a0b11}
+    .seg{display:flex;padding:2px;border-radius:10px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);margin-left:8px;flex:none}
+  .seg button{height:28px;padding:0 12px;border-radius:8px;font-size:12px;color:#71717a;transition:color .15s,background-color .15s}
+  .seg button:hover{color:#fff}.seg button.on{background:rgba(255,255,255,.09);color:#fff;box-shadow:inset 0 -2px 0 #e11d48}
+  /* Fenêtres */
+  .win{position:absolute;display:flex;flex-direction:column;background:#07080d;border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;box-shadow:0 24px 48px -12px rgba(0,0,0,.6);transition:border-color .15s}
+  .win.anim{transition:left .35s ease-out,top .35s ease-out,border-color .15s}
+  .win.focus{border-color:rgba(255,255,255,.14)}
+  .win .tb{height:40px;display:flex;align-items:center;gap:8px;padding:0 8px 0 14px;background:#090a10;border-bottom:1px solid rgba(255,255,255,.07);cursor:grab;user-select:none;flex:none}
+  .win .tb:active{cursor:grabbing}
+  .win .tt{font-size:13px;font-weight:500;color:#a1a1aa;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .win.focus .tt{color:#f4f4f5}
+  .win .tt small{font-weight:400;color:#71717a;margin-left:8px;font-size:12px}
+  .wb{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;color:#71717a;transition:color .15s,background-color .15s}
+  .wb:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .wb.close:hover{color:#fb7185;background:rgba(244,63,94,.1)}
+  .win.collapsed .body{display:none}
+  .win.hidden{display:none}
+  /* Barre des tâches rétractable */
+  .dock{position:absolute;left:0;right:0;bottom:0;height:88px;display:flex;justify-content:center;align-items:flex-end;pointer-events:none;z-index:900}
+  .dock-in{position:relative;pointer-events:auto;display:flex;align-items:center;padding:28px 0 16px}
+  .dock-bg{position:absolute;inset:8px -20px 8px;border-radius:16px;background:rgba(9,10,16,.72);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);opacity:0;transition:opacity .25s}
+  .dock-in:hover .dock-bg{opacity:1}
+  .dock-row{position:relative;display:flex;align-items:center}
+  .dock-grp{display:flex;align-items:center;gap:4px;overflow:hidden;max-width:0;opacity:0;transition:max-width .3s ease-out,opacity .25s,margin .3s}
+  .dock-in:hover .dock-grp{max-width:420px;opacity:1}
+  .dock-in:hover .dock-grp.l{margin-right:8px}.dock-in:hover .dock-grp.r{margin-left:8px}
+  .di{position:relative;width:36px;height:36px;display:grid;place-items:center;border-radius:10px;color:#71717a;transition:color .15s,background-color .15s}
+  .di:hover{color:#fff;background:rgba(255,255,255,.05)}
+  .di.on{color:#fda4af}
+  .di.on::after{content:"";position:absolute;left:50%;bottom:2px;width:16px;height:2px;margin-left:-8px;border-radius:2px;background:#e11d48}
+  .di .tip{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#090a10;border:1px solid rgba(255,255,255,.08);color:#e4e4e7;font-size:12px;padding:4px 10px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .15s}
+  .di:hover .tip{opacity:1}
+  .logo-btn{opacity:.5;transition:opacity .2s}
+  .dock-in:hover .logo-btn{opacity:1}
+  .key{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#a1a1aa;border:1px solid rgba(255,255,255,.12);border-bottom-width:2px;border-radius:6px;padding:1px 6px}
+  .view{display:none}.view.active{display:flex}
+  @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation:none!important}}
+</style>
+</head>
+<body class="font-sans">
+
+<!-- Icônes (lucide, trait 1.5) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-max" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
+  <symbol id="i-pop" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1"/><circle cx="15.5" cy="15.5" r="1"/><circle cx="15.5" cy="8.5" r="1"/><circle cx="8.5" cy="15.5" r="1"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-pack" viewBox="0 0 24 24"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="m4 4 7.07 17 2.51-7.39L21 11.07z"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><path d="m5 9-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/></symbol>
+  <symbol id="i-logo" viewBox="0 0 32 32"><path d="M16 2 28 9v14l-12 7L4 23V9z" fill="none"/><path d="M16 9v14M10 12.5l12 7M22 12.5l-12 7" /></symbol>
+</svg>
+
+<div class="h-full flex flex-col">
+
+  <!-- Sélecteur de vue de la maquette -->
+  <div class="h-12 shrink-0 flex items-center justify-between px-5 border-b border-white/[.07] bg-ink-900 z-[2000] relative">
+    <span class="text-[13px] text-zinc-500">Signet VTT <span class="text-zinc-700 mx-1">/</span> maquette UI v2</span>
+    <div class="flex gap-1 p-1 rounded-[10px] bg-black/40 border border-white/[.07]" role="tablist">
+      <button data-view="hub" role="tab" class="vbtn px-4 h-7 rounded-md text-[13px] font-medium transition-colors">Hub</button>
+      <button data-view="game" role="tab" class="vbtn px-4 h-7 rounded-md text-[13px] font-medium transition-colors">Écran de jeu</button>
+    </div>
+    <span class="text-[12px] text-zinc-600 hidden md:block">Survole le bas de l'écran de jeu pour déplier la barre</span>
+  </div>
+
+  <div class="flex-1 min-h-0 relative">
+
+    <!-- ===================== HUB ===================== -->
+    <section id="view-hub" class="view absolute inset-0 flex-col overflow-y-auto bg-ink-950">
+      <div class="fixed-bg absolute inset-0 pointer-events-none">
+        <div class="absolute inset-0 bg-cover bg-center opacity-70" style="background-image:url('frontend/public/fantasy_vtt_bg.jpg')"></div>
+        <div class="absolute inset-0" style="background:linear-gradient(to top,#050508 4%,rgba(5,5,8,.72) 45%,rgba(5,5,8,.35) 100%)"></div>
+        <div class="absolute inset-0" style="background:linear-gradient(to right,#050508 0%,rgba(5,5,8,.8) 35%,transparent 75%)"></div>
+      </div>
+
+      <header class="relative z-10 shrink-0 flex items-center justify-between h-20 px-8 lg:px-14">
+        <div class="flex items-center gap-3">
+          <svg class="ic ic-lg text-rose-500" style="width:28px;height:28px"><use href="#i-logo"/></svg>
+          <span class="text-[19px] font-bold tracking-tight">Signet</span>
+        </div>
+        <div class="flex items-center gap-5">
+          <div class="flex p-0.5 rounded-lg bg-black/40 border border-white/[.07] text-[12px]" role="group" aria-label="Mode réseau">
+            <button class="px-3 h-7 rounded-md bg-white/[.07] text-zinc-100">Internet</button>
+            <button class="px-3 h-7 rounded-md text-zinc-500 hover:text-zinc-200 transition-colors">Réseau local</button>
+          </div>
+          <div class="hidden sm:block text-right leading-tight">
+            <div class="text-[14px] font-medium">Louis</div>
+            <div class="text-[12px] text-rose-400">Maître du jeu</div>
+          </div>
+          <button class="w-9 h-9 grid place-items-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[.07] transition-colors" aria-label="Paramètres" title="Paramètres"><svg class="ic ic-lg"><use href="#i-gear"/></svg></button>
+          <button class="h-9 px-3 rounded-lg text-[13px] text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center gap-2 whitespace-nowrap transition-colors" title="Fermer l'application"><svg class="ic"><use href="#i-out"/></svg>Quitter</button>
+        </div>
+      </header>
+
+      <main class="relative z-10 flex-1 w-full min-h-[calc(100vh-5rem)] px-8 lg:px-14 pb-10 flex flex-col justify-between gap-14">
+
+        <!-- Héro + menu -->
+        <div class="grid xl:grid-cols-[1fr_380px] gap-12 xl:gap-20 items-end pt-6 xl:pt-10">
+          <div class="max-w-[640px]">
+            <h1 class="text-[44px] md:text-[64px] leading-[1.04] font-extrabold tracking-tight drop-shadow-lg">L'aventure vous attend</h1>
+            <p class="mt-5 text-[17px] leading-relaxed text-zinc-400 max-w-[520px]">Entrez le code d'invitation de votre Maître du jeu, ou reprenez une campagne existante.</p>
+
+            <div class="mt-9 flex flex-col sm:flex-row gap-3">
+              <form class="flex gap-2" onsubmit="return false">
+                <label class="sr-only" for="code">Code de session</label>
+                <input id="code" type="text" placeholder="Code, ex. A4B9F2" class="h-11 w-full sm:w-56 px-4 rounded-lg bg-white/[.04] border border-white/[.12] text-[14px] font-mono tracking-wider uppercase placeholder:normal-case placeholder:tracking-normal placeholder:font-sans placeholder:text-zinc-500 focus:border-white/40 outline-none transition-colors">
+                <button class="h-11 px-5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[14px] font-bold whitespace-nowrap flex items-center gap-2 transition-colors"><svg class="ic" style="fill:currentColor"><use href="#i-play"/></svg>Rejoindre</button>
+              </form>
+              <button class="h-11 px-5 rounded-lg border border-white/[.12] text-[14px] text-zinc-200 flex items-center gap-2 hover:bg-white/[.05] transition-colors"><svg class="ic"><use href="#i-plus"/></svg>Créer une session</button>
+            </div>
+          </div>
+
+          <!-- Menu : liste plutôt que 4 grosses tuiles identiques -->
+          <nav class="rounded-2xl bg-ink-900/80 backdrop-blur-xl border border-white/[.08] p-2" aria-label="Menu principal">
+            <a href="#" class="group flex items-center gap-4 h-16 px-4 rounded-xl hover:bg-white/[.05] transition-colors">
+              <svg class="ic ic-lg text-zinc-500 group-hover:text-rose-400 transition-colors"><use href="#i-book"/></svg>
+              <div class="flex-1"><div class="text-[14px] font-medium">Carnet de notes</div><div class="text-[12px] text-zinc-500">Notes du MJ, sur ce disque</div></div>
+            </a>
+            <a href="#" class="group flex items-center gap-4 h-16 px-4 rounded-xl hover:bg-white/[.05] transition-colors">
+              <svg class="ic ic-lg text-zinc-500 group-hover:text-rose-400 transition-colors"><use href="#i-globe"/></svg>
+              <div class="flex-1"><div class="text-[14px] font-medium">Sessions publiques</div><div class="text-[12px] text-zinc-500">Tables ouvertes aux nouveaux joueurs</div></div>
+              <span class="num text-[12px] text-zinc-500">12</span>
+            </a>
+            <a href="#" class="group flex items-center gap-4 h-16 px-4 rounded-xl hover:bg-white/[.05] transition-colors">
+              <svg class="ic ic-lg text-zinc-500 group-hover:text-rose-400 transition-colors"><use href="#i-grid"/></svg>
+              <div class="flex-1"><div class="text-[14px] font-medium">Mods et systèmes</div><div class="text-[12px] text-zinc-500">Hexe, Flower, modules du Core</div></div>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Campagnes -->
+        <section aria-labelledby="camp-h">
+          <div class="flex items-baseline justify-between mb-5">
+            <h2 id="camp-h" class="text-[22px] font-bold tracking-tight">Reprendre une campagne</h2>
+            <span class="text-[13px] text-zinc-500 num">4 campagnes</span>
+          </div>
+          <div class="flex gap-5 overflow-x-auto pb-3 -mx-1 px-1">
+
+            <article tabindex="0" class="group relative w-[340px] h-[250px] shrink-0 rounded-xl overflow-hidden border border-white/[.1] hover:border-white/30 cursor-pointer transition-colors">
+              <div class="art art-castle absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"></div>
+              <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(5,5,8,.95) 0%,rgba(5,5,8,.7) 38%,transparent 70%)"></div>
+              <div class="absolute top-3 right-3"><span class="text-[11px] text-rose-200 border border-rose-400/40 bg-black/30 rounded-md px-1.5 py-0.5">MJ</span></div>
+              <div class="absolute inset-x-0 bottom-0 p-4">
+                <h3 class="text-[17px] font-bold leading-snug drop-shadow">Les Cendres de Vaelor</h3>
+                <p class="mt-0.5 text-[13px] text-zinc-400">Hexe · dernière session hier</p>
+                <p class="mt-2 font-mono text-[11px] text-zinc-500">SIGNET-A4B9F2</p>
+              </div>
+            </article>
+            <article tabindex="0" class="group relative w-[340px] h-[250px] shrink-0 rounded-xl overflow-hidden border border-white/[.1] hover:border-white/30 cursor-pointer transition-colors">
+              <div class="art art-board absolute inset-0" style="--h:215"><b style="left:30px;top:26px;width:150px;height:84px"></b><b style="left:200px;top:60px;width:100px;height:80px"></b><i style="left:70px;top:56px"></i><i style="left:120px;top:92px;filter:hue-rotate(190deg)"></i><i style="left:236px;top:90px;filter:hue-rotate(60deg)"></i><i style="left:150px;top:44px;filter:hue-rotate(300deg)"></i></div>
+              <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(5,5,8,.95) 0%,rgba(5,5,8,.7) 38%,transparent 70%)"></div>
+              <div class="absolute top-3 right-3"><span class="text-[11px] text-zinc-300 border border-white/20 bg-black/30 rounded-md px-1.5 py-0.5">Joueur</span></div>
+              <div class="absolute inset-x-0 bottom-0 p-4">
+                <h3 class="text-[17px] font-bold leading-snug drop-shadow">Marées de Sel</h3>
+                <p class="mt-0.5 text-[13px] text-zinc-400">Flower · il y a 3 jours</p>
+                <p class="mt-2 font-mono text-[11px] text-zinc-500">SIGNET-K72QXN</p>
+              </div>
+            </article>
+            <article tabindex="0" class="group relative w-[340px] h-[250px] shrink-0 rounded-xl overflow-hidden border border-white/[.1] hover:border-white/30 cursor-pointer transition-colors">
+              <div class="art art-keep absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"></div>
+              <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(5,5,8,.95) 0%,rgba(5,5,8,.7) 38%,transparent 70%)"></div>
+              <div class="absolute top-3 right-3"><span class="text-[11px] text-rose-200 border border-rose-400/40 bg-black/30 rounded-md px-1.5 py-0.5">MJ</span></div>
+              <div class="absolute inset-x-0 bottom-0 p-4">
+                <h3 class="text-[17px] font-bold leading-snug drop-shadow">Le Marais des Trois Lunes</h3>
+                <p class="mt-0.5 text-[13px] text-zinc-400">Hexe · il y a 2 semaines</p>
+                <p class="mt-2 font-mono text-[11px] text-zinc-500">SIGNET-9TD3LC</p>
+              </div>
+            </article>
+            <article tabindex="0" class="group relative w-[340px] h-[250px] shrink-0 rounded-xl overflow-hidden border border-white/[.1] hover:border-white/30 cursor-pointer transition-colors">
+              <div class="art art-board absolute inset-0" style="--h:38"><b style="left:210px;top:24px;width:96px;height:100px"></b><b style="left:40px;top:70px;width:130px;height:56px"></b><i style="left:236px;top:60px"></i><i style="left:90px;top:88px;filter:hue-rotate(180deg)"></i><i style="left:130px;top:100px;filter:hue-rotate(270deg)"></i></div>
+              <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(5,5,8,.95) 0%,rgba(5,5,8,.7) 38%,transparent 70%)"></div>
+              <div class="absolute top-3 right-3"><span class="text-[11px] text-zinc-300 border border-white/20 bg-black/30 rounded-md px-1.5 py-0.5">Joueur</span></div>
+              <div class="absolute inset-x-0 bottom-0 p-4">
+                <h3 class="text-[17px] font-bold leading-snug drop-shadow">La Chope Borgne</h3>
+                <p class="mt-0.5 text-[13px] text-zinc-400">Flower · il y a 1 mois</p>
+                <p class="mt-2 font-mono text-[11px] text-zinc-500">SIGNET-QW81ZP</p>
+              </div>
+            </article>
+
+            <button class="w-[340px] shrink-0 rounded-xl border border-dashed border-white/[.14] text-zinc-500 hover:text-zinc-200 hover:border-white/30 hover:bg-white/[.03] flex flex-col items-center justify-center gap-2 h-[250px] transition-colors">
+              <svg class="ic ic-lg"><use href="#i-plus"/></svg><span class="text-[14px]">Créer une session</span>
+            </button>
+          </div>
+        </section>
+      </main>
+    </section>
+
+    <!-- ===================== JEU ===================== -->
+    <section id="view-game" class="view absolute inset-0 overflow-hidden bg-ink-950" style="display:none">
+
+      <!-- Table (canvas Konva) -->
+      <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1600 900" aria-hidden="true">
+        <defs>
+          <pattern id="g" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="#fff" stroke-opacity=".045"/></pattern>
+        </defs>
+        <rect width="1600" height="900" fill="#0a0b11"/>
+        <rect width="1600" height="900" fill="url(#g)"/>
+        <g fill="#0f1018" stroke="#fff" stroke-opacity=".12" stroke-width="2">
+          <rect x="260" y="150" width="520" height="340" rx="6"/><rect x="780" y="270" width="380" height="220" rx="6"/><rect x="460" y="490" width="300" height="250" rx="6"/>
+        </g>
+        <g stroke="#fff" stroke-opacity=".2" stroke-width="2" stroke-dasharray="6 6"><path d="M780 330v100M600 490h90"/></g>
+        <!-- règle -->
+        <g><path d="M520 330L760 400" stroke="#fb7185" stroke-width="2"/><circle cx="520" cy="330" r="4" fill="#fb7185"/><circle cx="760" cy="400" r="4" fill="#fb7185"/></g>
+      </svg>
+
+      <!-- Tokens (étiquette sous le pion, sélection = anneau cramoisi) -->
+      <div class="absolute left-[520px] top-[330px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" style="left:calc(32.5% + 0px);top:36.7%">
+        <div class="w-11 h-11 rounded-full bg-ink-800 border border-rose-400 ring-2 ring-rose-500/40 grid place-items-center text-[13px] font-medium">EV</div>
+        <div class="mt-1.5 text-[12px] text-zinc-200 text-center">Elyra</div>
+      </div>
+      <div class="absolute pointer-events-none" style="left:47.5%;top:44.4%;transform:translate(-50%,-50%)">
+        <div class="w-11 h-11 rounded-full bg-ink-800 border border-white/25 grid place-items-center text-[13px] font-medium">BR</div>
+        <div class="mt-1.5 text-[12px] text-zinc-400 text-center">Brann</div>
+      </div>
+      <div class="absolute pointer-events-none" style="left:41%;top:61%;transform:translate(-50%,-50%)">
+        <div class="w-11 h-11 rounded-full bg-ink-800 border border-white/25 grid place-items-center text-[13px] font-medium">SO</div>
+        <div class="mt-1.5 text-[12px] text-zinc-400 text-center">Sorrel</div>
+      </div>
+      <div class="absolute pointer-events-none" style="left:60%;top:42%;transform:translate(-50%,-50%)">
+        <div class="w-11 h-11 rounded-full bg-[#2a0d14] border border-rose-900 grid place-items-center text-[13px] font-medium text-rose-200">GB</div>
+        <div class="mt-1.5 text-[12px] text-zinc-500 text-center">Goule</div>
+      </div>
+      <div class="absolute pointer-events-none px-2 py-0.5 rounded-md bg-ink-900 border border-white/10 text-[12px] num text-rose-300" style="left:40%;top:41.5%">7,5 m</div>
+
+      <!-- État de session -->
+      <div class="absolute top-4 left-4 flex items-center gap-3 h-9 pl-3 pr-4 rounded-lg bg-ink-900/80 backdrop-blur-xl border border-white/[.08] z-[50]">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span class="text-[13px] font-medium">Les Cendres de Vaelor</span>
+        <span class="font-mono text-[12px] text-zinc-500">SIGNET-A4B9F2</span>
+        <span class="text-[12px] text-zinc-500 num">4 en ligne</span>
+        <button data-goto="hub" class="-mr-2 ml-1 h-7 px-2 rounded-md text-[12px] text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center gap-1.5 whitespace-nowrap transition-colors"><svg class="ic" style="width:14px;height:14px"><use href="#i-out"/></svg>Quitter la table</button>
+      </div>
+
+      <!-- Outils -->
+      <div class="absolute left-4 top-16 flex flex-col gap-1 p-1 rounded-xl bg-ink-900/80 backdrop-blur-xl border border-white/[.08] z-[50]" role="toolbar" aria-label="Outils de la table">
+        <button class="wb !w-9 !h-9" title="Déplacer la vue"><svg class="ic"><use href="#i-move"/></svg></button>
+        <button class="wb !w-9 !h-9 !text-rose-300 bg-rose-500/10" title="Sélectionner"><svg class="ic"><use href="#i-cursor"/></svg></button>
+        <button class="wb !w-9 !h-9" title="Règle"><svg class="ic"><use href="#i-ruler"/></svg></button>
+        <div class="h-px mx-2 my-0.5 bg-white/10"></div>
+        <button class="wb !w-9 !h-9" title="Grille"><svg class="ic"><use href="#i-hash"/></svg></button>
+      </div>
+
+      <!-- Fenêtre ancrée à droite : Chat -->
+      <div class="win" data-win="chat" style="right:0;top:0;bottom:0;width:340px;border-radius:0;border-width:0 0 0 1px;z-index:40">
+        <div class="tb" style="cursor:default">
+          <svg class="ic text-zinc-500"><use href="#i-chat"/></svg>
+          <span class="tt">Chat</span>
+          <button class="wb" title="Replier"><svg class="ic"><use href="#i-up"/></svg></button>
+          <button class="wb close" data-close title="Fermer"><svg class="ic"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="body flex-1 min-h-0 flex flex-col">
+          <div id="chatlog" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 text-[13px]">
+            <div><div class="flex items-baseline gap-2"><span class="font-medium text-zinc-200">Brann</span><span class="text-[11px] text-zinc-600 num">21:02</span></div><p class="mt-0.5 text-zinc-400 leading-relaxed">Je ferme la porte derrière nous ?</p></div>
+            <div><div class="flex items-baseline gap-2"><span class="font-medium text-rose-300">Louis · MJ</span><span class="text-[11px] text-zinc-600 num">21:03</span></div><p class="mt-0.5 text-zinc-400 leading-relaxed">Un grincement répond depuis l'escalier. Elyra, un jet de Perception.</p></div>
+            <!-- Jet de dés -->
+            <div class="rounded-xl border border-white/[.08] bg-white/[.025] p-3">
+              <div class="flex items-center justify-between text-[12px] text-zinc-500"><span>Elyra · Perception</span><span class="num">21:03</span></div>
+              <div class="mt-2 flex items-end justify-between">
+                <div class="num text-zinc-400 text-[13px]">2d10 <span class="text-zinc-600">[</span>9, 5<span class="text-zinc-600">]</span> + 3</div>
+                <div class="num text-[28px] leading-none font-medium text-white">17</div>
+              </div>
+              <div class="mt-2 text-[12px] text-emerald-400">Réussite · seuil 14</div>
+            </div>
+            <div><div class="flex items-baseline gap-2"><span class="font-medium text-zinc-200">Sorrel</span><span class="text-[11px] text-zinc-600 num">21:04</span></div><p class="mt-0.5 text-zinc-400 leading-relaxed">Elle entend quelque chose, je prépare l'arc.</p></div>
+          </div>
+          <div class="p-3 border-t border-white/[.07]">
+            <div class="flex items-center gap-2 h-10 pl-3 pr-1 rounded-lg bg-white/[.04] border border-white/[.08] focus-within:border-white/30 transition-colors">
+              <input class="flex-1 bg-transparent outline-none text-[13px] placeholder:text-zinc-600" placeholder="Message" aria-label="Message">
+              <button class="wb" title="Envoyer"><svg class="ic"><use href="#i-send"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fenêtre flottante : Fiche Hexe — un seul en-tête -->
+      <div class="win focus" data-win="sheet" style="left:140px;top:96px;width:440px;height:640px;z-index:60">
+        <div class="tb">
+          <svg class="ic text-zinc-500"><use href="#i-user"/></svg>
+          <span class="tt">Fiche de personnage<small>Hexe</small></span>
+          <button class="wb" title="Plein écran"><svg class="ic"><use href="#i-max"/></svg></button>
+          <button class="wb" title="Détacher"><svg class="ic"><use href="#i-pop"/></svg></button>
+          <button class="wb" data-collapse title="Replier"><svg class="ic"><use href="#i-up"/></svg></button>
+          <button class="wb close" data-close title="Fermer"><svg class="ic"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="body flex-1 min-h-0 flex flex-col">
+          <div class="flex-1 min-h-0 overflow-y-auto">
+
+            <!-- Identité -->
+            <div class="flex items-center gap-4 px-5 pt-5 pb-4">
+              <label class="relative w-14 h-14 rounded-xl bg-ink-800 border border-white/10 grid place-items-center text-zinc-500 hover:text-zinc-200 hover:border-white/25 cursor-pointer transition-colors shrink-0" title="Changer l'avatar">
+                <svg class="ic ic-lg"><use href="#i-user"/></svg><input type="file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+              </label>
+              <div class="min-w-0 flex-1">
+                <input value="Elyra Vance" aria-label="Nom du personnage" class="w-full bg-transparent text-[20px] font-bold tracking-tight outline-none border-b border-transparent hover:border-white/10 focus:border-rose-500 transition-colors">
+                <div class="mt-1 flex items-center gap-2 text-[13px] text-zinc-500">Joué par
+                  <select aria-label="Lié à" class="bg-transparent text-zinc-300 outline-none hover:text-white cursor-pointer"><option>Lou</option><option>Aucun (PNJ)</option></select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ressources -->
+            <div class="mx-5 rounded-xl border border-white/[.07] bg-white/[.02] divide-y divide-white/[.06]">
+              <div class="flex items-center gap-3 h-11 px-4">
+                <span class="w-14 text-[13px] text-zinc-400">PV</span>
+                <div class="flex-1 h-1 rounded-full bg-white/[.07]"><div class="h-full rounded-full bg-rose-500" style="width:85%"></div></div>
+                <span class="w-14 text-right num text-[13px]">34<span class="text-zinc-600"> / 40</span></span>
+                <span class="flex"><button class="wb !w-6 !h-6" aria-label="Diminuer"><svg class="ic" style="width:14px;height:14px"><use href="#i-minus"/></svg></button><button class="wb !w-6 !h-6" aria-label="Augmenter"><svg class="ic" style="width:14px;height:14px"><use href="#i-plus"/></svg></button></span>
+              </div>
+              <div class="flex items-center gap-3 h-11 px-4">
+                <span class="w-14 text-[13px] text-zinc-400">PM</span>
+                <div class="flex-1 h-1 rounded-full bg-white/[.07]"><div class="h-full rounded-full bg-sky-400/80" style="width:60%"></div></div>
+                <span class="w-14 text-right num text-[13px]">12<span class="text-zinc-600"> / 20</span></span>
+                <span class="flex"><button class="wb !w-6 !h-6" aria-label="Diminuer"><svg class="ic" style="width:14px;height:14px"><use href="#i-minus"/></svg></button><button class="wb !w-6 !h-6" aria-label="Augmenter"><svg class="ic" style="width:14px;height:14px"><use href="#i-plus"/></svg></button></span>
+              </div>
+              <div class="flex items-center gap-3 h-11 px-4">
+                <span class="w-14 text-[13px] text-zinc-400">Endurance</span>
+                <div class="flex-1 h-1 rounded-full bg-white/[.07]"><div class="h-full rounded-full bg-emerald-400/80" style="width:90%"></div></div>
+                <span class="w-14 text-right num text-[13px]">27<span class="text-zinc-600"> / 30</span></span>
+                <span class="flex"><button class="wb !w-6 !h-6" aria-label="Diminuer"><svg class="ic" style="width:14px;height:14px"><use href="#i-minus"/></svg></button><button class="wb !w-6 !h-6" aria-label="Augmenter"><svg class="ic" style="width:14px;height:14px"><use href="#i-plus"/></svg></button></span>
+              </div>
+              <div class="flex items-center gap-3 h-11 px-4">
+                <span class="w-14 text-[13px] text-zinc-400">Chance</span>
+                <div class="flex-1 h-1 rounded-full bg-white/[.07]"><div class="h-full rounded-full bg-amber-400/80" style="width:50%"></div></div>
+                <span class="w-14 text-right num text-[13px]">3<span class="text-zinc-600"> / 6</span></span>
+                <span class="flex"><button class="wb !w-6 !h-6" aria-label="Diminuer"><svg class="ic" style="width:14px;height:14px"><use href="#i-minus"/></svg></button><button class="wb !w-6 !h-6" aria-label="Augmenter"><svg class="ic" style="width:14px;height:14px"><use href="#i-plus"/></svg></button></span>
+              </div>
+            </div>
+
+            <!-- Onglets -->
+            <div class="mt-5 px-5 flex gap-6 border-b border-white/[.07]" role="tablist">
+              <button role="tab" data-tab="attr" class="tabbtn relative h-10 text-[14px] flex items-center gap-2 transition-colors"><svg class="ic"><use href="#i-user"/></svg>Attributs</button>
+              <button role="tab" data-tab="inv" class="tabbtn relative h-10 text-[14px] flex items-center gap-2 transition-colors"><svg class="ic"><use href="#i-pack"/></svg>Inventaire</button>
+              <button role="tab" data-tab="skills" class="tabbtn relative h-10 text-[14px] flex items-center gap-2 transition-colors"><svg class="ic"><use href="#i-book"/></svg>Compétences</button>
+            </div>
+
+            <div class="p-5">
+              <div data-panel="attr">
+                <div class="grid grid-cols-3 gap-2">
+                  <button data-attr class="group text-left rounded-xl border border-white/[.07] hover:border-white/20 hover:bg-white/[.03] p-3 transition-colors"><div class="text-[12px] text-zinc-500">Force</div><div class="mt-1 flex items-baseline gap-2"><span class="num text-[24px] font-medium leading-none">12</span><span class="num text-[12px] text-zinc-500">+1</span></div></button>
+                  <button data-attr class="group text-left rounded-xl border border-white/[.07] hover:border-white/20 hover:bg-white/[.03] p-3 transition-colors"><div class="text-[12px] text-zinc-500">Agilité</div><div class="mt-1 flex items-baseline gap-2"><span class="num text-[24px] font-medium leading-none">16</span><span class="num text-[12px] text-emerald-400">+3</span></div></button>
+                  <button data-attr class="group text-left rounded-xl border border-white/[.07] hover:border-white/20 hover:bg-white/[.03] p-3 transition-colors"><div class="text-[12px] text-zinc-500">Intellect</div><div class="mt-1 flex items-baseline gap-2"><span class="num text-[24px] font-medium leading-none">14</span><span class="num text-[12px] text-zinc-500">+2</span></div></button>
+                  <button data-attr class="group text-left rounded-xl border border-white/[.07] hover:border-white/20 hover:bg-white/[.03] p-3 transition-colors"><div class="text-[12px] text-zinc-500">Perception</div><div class="mt-1 flex items-baseline gap-2"><span class="num text-[24px] font-medium leading-none">15</span><span class="num text-[12px] text-emerald-400">+3</span></div></button>
+                  <button data-attr class="group text-left rounded-xl border border-white/[.07] hover:border-white/20 hover:bg-white/[.03] p-3 transition-colors"><div class="text-[12px] text-zinc-500">Volonté</div><div class="mt-1 flex items-baseline gap-2"><span class="num text-[24px] font-medium leading-none">11</span><span class="num text-[12px] text-zinc-500">+0</span></div></button>
+                  <button data-attr class="group text-left rounded-xl border border-white/[.07] hover:border-white/20 hover:bg-white/[.03] p-3 transition-colors"><div class="text-[12px] text-zinc-500">Charisme</div><div class="mt-1 flex items-baseline gap-2"><span class="num text-[24px] font-medium leading-none">9</span><span class="num text-[12px] text-rose-400">−1</span></div></button>
+                </div>
+                <p class="mt-4 text-[12px] text-zinc-600">Cliquer sur un attribut lance le jet dans le chat</p>
+              </div>
+
+              <div data-panel="inv" hidden>
+                <ul class="divide-y divide-white/[.06] text-[14px]">
+                  <li class="flex items-center h-11"><span class="flex-1">Arc court</span><span class="num text-zinc-500 text-[13px]">1,2 kg</span></li>
+                  <li class="flex items-center h-11"><span class="flex-1">Carquois</span><span class="num text-zinc-500 text-[13px] w-16 text-right">× 18</span></li>
+                  <li class="flex items-center h-11"><span class="flex-1">Potion de soin</span><span class="num text-zinc-500 text-[13px] w-16 text-right">× 2</span></li>
+                  <li class="flex items-center h-11"><span class="flex-1">Cape de voyage</span><span class="num text-zinc-500 text-[13px]">0,8 kg</span></li>
+                </ul>
+              </div>
+
+              <div data-panel="skills" hidden>
+                <ul class="divide-y divide-white/[.06] text-[14px]">
+                  <li class="flex items-center h-11"><span class="flex-1">Tir de précision</span><span class="flex gap-1"><i class="w-5 h-1 rounded-full bg-rose-500"></i><i class="w-5 h-1 rounded-full bg-rose-500"></i><i class="w-5 h-1 rounded-full bg-rose-500"></i><i class="w-5 h-1 rounded-full bg-white/10"></i></span></li>
+                  <li class="flex items-center h-11"><span class="flex-1">Discrétion</span><span class="flex gap-1"><i class="w-5 h-1 rounded-full bg-rose-500"></i><i class="w-5 h-1 rounded-full bg-rose-500"></i><i class="w-5 h-1 rounded-full bg-white/10"></i><i class="w-5 h-1 rounded-full bg-white/10"></i></span></li>
+                  <li class="flex items-center h-11"><span class="flex-1">Pistage</span><span class="flex gap-1"><i class="w-5 h-1 rounded-full bg-rose-500"></i><i class="w-5 h-1 rounded-full bg-white/10"></i><i class="w-5 h-1 rounded-full bg-white/10"></i><i class="w-5 h-1 rounded-full bg-white/10"></i></span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fenêtre flottante : Dés -->
+      <div class="win" data-win="dice" style="left:640px;top:400px;width:280px;z-index:50">
+        <div class="tb">
+          <svg class="ic text-zinc-500"><use href="#i-dice"/></svg>
+          <span class="tt">Lanceur de dés</span>
+          <button class="wb" data-collapse title="Replier"><svg class="ic"><use href="#i-up"/></svg></button>
+          <button class="wb close" data-close title="Fermer"><svg class="ic"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="body p-4">
+          <div class="grid grid-cols-4 gap-2">
+            <button data-die="d4" class="die h-10 rounded-lg border border-white/[.08] text-[13px] text-zinc-300 hover:border-white/25 hover:bg-white/[.04] transition-colors">d4</button>
+            <button data-die="d6" class="die h-10 rounded-lg border border-white/[.08] text-[13px] text-zinc-300 hover:border-white/25 hover:bg-white/[.04] transition-colors">d6</button>
+            <button data-die="d8" class="die h-10 rounded-lg border border-white/[.08] text-[13px] text-zinc-300 hover:border-white/25 hover:bg-white/[.04] transition-colors">d8</button>
+            <button data-die="d10" class="die h-10 rounded-lg border border-white/[.08] text-[13px] text-zinc-300 hover:border-white/25 hover:bg-white/[.04] transition-colors">d10</button>
+            <button data-die="d12" class="die h-10 rounded-lg border border-white/[.08] text-[13px] text-zinc-300 hover:border-white/25 hover:bg-white/[.04] transition-colors">d12</button>
+            <button data-die="d20" class="die h-10 rounded-lg border border-white/[.08] text-[13px] text-zinc-300 hover:border-white/25 hover:bg-white/[.04] transition-colors">d20</button>
+            <button data-die="d100" class="die h-10 rounded-lg border border-white/[.08] text-[13px] text-zinc-300 hover:border-white/25 hover:bg-white/[.04] transition-colors">d100</button>
+            <button class="h-10 rounded-lg border border-white/[.08] text-[13px] text-zinc-500 hover:border-white/25 transition-colors">Plus</button>
+          </div>
+          <button id="roll-btn" class="mt-3 w-full h-10 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[14px] font-bold whitespace-nowrap transition-colors flex items-center justify-center gap-2">Lancer <span class="key !text-rose-100 !border-rose-300/40">Entrée</span></button>
+        </div>
+      </div>
+
+      <!-- Barre des tâches rétractable -->
+      <div class="dock">
+        <div class="dock-in">
+          <div class="dock-bg"></div>
+          <div class="dock-row">
+            <div class="dock-grp l">
+              <button class="di on" data-toggle="sheet" aria-label="Fiche de personnage"><svg class="ic ic-lg"><use href="#i-user"/></svg><span class="tip">Fiche de personnage</span></button>
+              <button class="di" aria-label="Carte"><svg class="ic ic-lg"><use href="#i-map"/></svg><span class="tip">Cartes</span></button>
+              <button class="di" aria-label="Journal"><svg class="ic ic-lg"><use href="#i-log"/></svg><span class="tip">Journal d'activité</span></button>
+            </div>
+            <button class="logo-btn p-2" aria-label="Menu principal"><svg class="ic text-rose-500" style="width:26px;height:26px"><use href="#i-logo"/></svg></button>
+            <div class="dock-grp r">
+              <button class="di on" data-toggle="dice" aria-label="Dés"><svg class="ic ic-lg"><use href="#i-dice"/></svg><span class="tip">Lanceur de dés</span></button>
+              <button class="di on" data-toggle="chat" aria-label="Chat"><svg class="ic ic-lg"><use href="#i-chat"/></svg><span class="tip">Chat</span></button>
+              <div class="seg" role="group" aria-label="Agencement des fenêtres"><button class="on" data-layout="libre">Libre</button><button data-layout="combat">Combat</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // Bascule de vue
+  const views = { hub: document.getElementById('view-hub'), game: document.getElementById('view-game') };
+  function show(name){
+    for (const k in views){ views[k].style.display = k === name ? 'flex' : 'none'; }
+    document.querySelectorAll('.vbtn').forEach(b => {
+      const on = b.dataset.view === name;
+      b.className = 'vbtn px-4 h-7 rounded-md text-[13px] font-medium transition-colors ' + (on ? 'bg-white/[.08] text-white' : 'text-zinc-500 hover:text-zinc-200');
+      b.setAttribute('aria-selected', on);
+    });
+  }
+  document.querySelectorAll('.vbtn').forEach(b => b.onclick = () => show(b.dataset.view));
+  show('hub');
+
+  // Fenêtres : focus, glisser, replier, fermer
+  let z = 100;
+  document.querySelectorAll('.win').forEach(w => {
+    const focus = () => { document.querySelectorAll('.win').forEach(o => o.classList.remove('focus')); w.classList.add('focus'); if (w.style.right !== '0px') w.style.zIndex = ++z; };
+    w.addEventListener('pointerdown', focus);
+    const bar = w.querySelector('.tb');
+    if (w.style.right !== '0px') bar.addEventListener('pointerdown', e => {
+      if (e.target.closest('.wb')) return;
+      const sx = e.clientX - w.offsetLeft, sy = e.clientY - w.offsetTop;
+      const move = ev => { w.style.left = Math.max(0, ev.clientX - sx) + 'px'; w.style.top = Math.max(0, ev.clientY - sy) + 'px'; };
+      const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+      addEventListener('pointermove', move); addEventListener('pointerup', up);
+    });
+    w.querySelectorAll('[data-collapse]').forEach(b => b.onclick = () => { w.classList.toggle('collapsed'); w.style.height = w.classList.contains('collapsed') ? 'auto' : (w.dataset.h || ''); });
+    w.querySelectorAll('[data-close]').forEach(b => b.onclick = () => {
+      w.classList.add('hidden');
+      const t = document.querySelector('[data-toggle="' + w.dataset.win + '"]'); if (t) t.classList.remove('on');
+    });
+  });
+  document.querySelectorAll('[data-toggle]').forEach(t => t.onclick = () => {
+    const w = document.querySelector('[data-win="' + t.dataset.toggle + '"]');
+    w.classList.toggle('hidden'); t.classList.toggle('on', !w.classList.contains('hidden'));
+  });
+
+  const LAYOUTS = { libre: { sheet: [140, 96], dice: [640, 400] }, combat: { sheet: [72, 68], dice: [536, 470] } };
+  document.querySelectorAll('[data-layout]').forEach(b => b.onclick = () => {
+    document.querySelectorAll('[data-layout]').forEach(o => o.classList.toggle('on', o === b));
+    const l = LAYOUTS[b.dataset.layout];
+    for (const id in l) { const w = document.querySelector('[data-win="' + id + '"]'); w.classList.add('anim'); w.style.left = l[id][0] + 'px'; w.style.top = l[id][1] + 'px'; setTimeout(() => w.classList.remove('anim'), 400); }
+  });
+
+
+  // Navigation Quitter la table
+  document.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => show(b.dataset.goto));
+
+  // Jets : cartes de résultat ajoutées au chat
+  const log = document.getElementById('chatlog');
+  const hhmm = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  function addRoll(who, label, sides, mod, threshold) {
+    const d = 1 + Math.floor(Math.random() * sides), total = d + mod;
+    const sign = mod === 0 ? '' : (mod > 0 ? ' + ' + mod : ' − ' + Math.abs(mod));
+    const ok = threshold == null ? '' : (total >= threshold
+      ? '<div class="mt-2 text-[12px] text-emerald-400">Réussite · seuil ' + threshold + '</div>'
+      : '<div class="mt-2 text-[12px] text-rose-400">Échec · seuil ' + threshold + '</div>');
+    const el = document.createElement('div');
+    el.className = 'rounded-xl border border-white/[.08] bg-white/[.025] p-3';
+    el.innerHTML = '<div class="flex items-center justify-between text-[12px] text-zinc-500"><span>' + who + ' · ' + label + '</span><span class="num">' + hhmm() + '</span></div>'
+      + '<div class="mt-2 flex items-end justify-between"><div class="num text-zinc-400 text-[13px]">1d' + sides + ' <span class="text-zinc-600">[</span>' + d + '<span class="text-zinc-600">]</span>' + sign + '</div><div class="num text-[28px] leading-none font-medium text-white">' + total + '</div></div>' + ok;
+    log.appendChild(el); log.scrollTop = log.scrollHeight;
+  }
+  let die = 'd20';
+  const setDie = d => { die = d; document.querySelectorAll('.die').forEach(b => { const on = b.dataset.die === d; b.classList.toggle('!border-rose-500/40', on); b.classList.toggle('!bg-rose-500/10', on); b.classList.toggle('!text-rose-200', on); }); };
+  document.querySelectorAll('.die').forEach(b => b.onclick = () => setDie(b.dataset.die));
+  setDie('d20');
+  document.getElementById('roll-btn').onclick = () => addRoll('Elyra', 'Lancer ' + die, parseInt(die.slice(1)), 0, null);
+  document.querySelectorAll('[data-attr]').forEach(b => b.onclick = () => {
+    const name = b.children[0].textContent, mod = parseInt(b.children[1].children[1].textContent.replace('−', '-'), 10);
+    addRoll('Elyra', name, 20, mod, 14);
+  });
+
+  // Onglets de la fiche
+  function tab(id){
+    document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== id);
+    document.querySelectorAll('.tabbtn').forEach(b => {
+      const on = b.dataset.tab === id;
+      b.className = 'tabbtn relative h-10 text-[14px] flex items-center gap-2 transition-colors ' + (on ? 'text-white' : 'text-zinc-500 hover:text-zinc-200');
+      b.style.boxShadow = on ? 'inset 0 -2px 0 #e11d48' : 'none';
+      b.setAttribute('aria-selected', on);
+    });
+  }
+  document.querySelectorAll('.tabbtn').forEach(b => b.onclick = () => tab(b.dataset.tab));
+  tab('attr');
+</script>
+</body>
+</html>

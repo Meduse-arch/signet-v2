@@ -26,4 +26,18 @@ Bien que le thème soit fantastique, l'interface doit rester extrêmement profes
 ## 4. Comportement de l'Interface
 
 - **Application de Bureau (Desktop-first)** : Signet VTT est pensé comme un véritable logiciel (via Tauri). L'interface doit se comporter comme tel : barre de titre personnalisée intégrée au design, absence de barres de défilement disgracieuses (scrollbars cachées mais fonctionnelles), et transitions fluides.
-- **Écran d'Accueil (Le Hub)** : Il doit ressembler au menu principal d'un grand RPG. Une grande phrase d'accroche ("L'Aventure vous attend."), des appels à l'action clairs, et un carrousel de campagnes qui donne envie de replonger dans l'histoire.
+- **Écran d'Accueil (Le Hub)** : Il doit ressembler au menu principal d'un grand RPG. Une grande phrase d'accroche ("L'aventure vous attend"), des appels à l'action clairs, et un carrousel de campagnes qui donne envie de replonger dans l'histoire. Détail en §5.
+
+## 5. Le Hub en détail (référence : `ui-signet-v3.html`)
+
+- **Pleine hauteur, centre dégagé** : le Hub occupe toute la fenêtre. Le héro (titre, code, bouton) est en haut à gauche, « Reprendre une campagne » est ancré en bas, et le centre reste **ouvert** pour laisser respirer le fond château (ou une future animation d'ambiance). Seul un bandeau d'astuce discret, masquable d'un clic, peut y figurer.
+- **Colonne droite repliable** : les entrées *Carnet de notes*, *Sessions publiques* et *Mods et systèmes* forment une colonne pleine hauteur de cartes en verre dépoli. Chaque carte montre un **aperçu en direct** (dernière note, tables publiques ouvertes, état des systèmes). La colonne peut se replier pour laisser tout le fond visible.
+- **Top bar épurée** : profil (nom + rôle), **Paramètres** (⚙) et **Quitter** (discret, rouge cramoisi au survol). Le choix Internet / Réseau local n'a pas sa place ici : il vit dans les Paramètres.
+- **Aperçu intelligent des campagnes** : chaque carte affiche l'image personnalisée de la campagne si elle en a une ; sinon, par défaut, une **grille tactique** (quadrillage, contours de salles, pions colorés). Un dégradé sombre en bas porte toujours le titre, le système (*Hexe* / *Flower*), le rôle et le code.
+
+## 6. L'écran de jeu en détail
+
+- **Fenêtres à en-tête unique** : une fenêtre (`DraggableWindow`) n'a qu'**un seul** bandeau, celui de la fenêtre (icône, titre, plein écran, détacher, replier, fermer). Le contenu ne répète jamais ce bandeau : pas de « Retour » ni de badge de titre dans les fiches. La fenêtre active se distingue de l'inactive par sa bordure et son titre.
+- **Barre des tâches rétractable** : réduite au logo, elle se déplie au survol du bas de l'écran (icônes épinglées, tooltips, trait cramoisi sous l'élément actif). Elle contient le sélecteur d'agencement **Libre / Combat** : *Combat* range la fiche à gauche et le lanceur de dés en bas au centre, le chat restant ancré à droite ; *Libre* remet les fenêtres en flottant.
+- **Chat** : un jet de dés s'affiche en **carte lisible** (qui, quoi, formule avec détail du tirage, total en grand, réussite ou échec face au seuil), jamais en ligne de texte brute.
+- **Sortie** : la pastille d'état de la table (nom, code, joueurs en ligne) porte le bouton *Quitter la table* qui ramène au Hub.

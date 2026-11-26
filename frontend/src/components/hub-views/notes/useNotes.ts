@@ -18,6 +18,8 @@ export function useNotes() {
   const [previewMode, setPreviewMode] = useState<'split' | 'edit' | 'preview'>('edit');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Dernier texte non encore enregistré (permet de ne rien perdre si on quitte avant la fin du debounce)
+  const pendingSaveRef = useRef<{ path: string; text: string } | null>(null);
 
   // Modales
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -44,8 +46,21 @@ export function useNotes() {
     refreshTree();
   }, [refreshTree]);
 
+  // Enregistre tout de suite la saisie en attente (fermeture de la note, changement de note, démontage)
+  const flushPendingSave = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    const pending = pendingSaveRef.current;
+    if (!pending) return;
+    pendingSaveRef.current = null;
+    notesService.saveNote(pending.path, pending.text).catch(err => console.error('Erreur sauvegarde note', err));
+  }, []);
+
   // Ouvrir une note
   const handleOpenNote = async (note: NoteItem) => {
+    flushPendingSave();
     try {
       const content = await notesService.readNote(note.path);
       setActiveNote(note);
@@ -58,9 +73,7 @@ export function useNotes() {
 
   // Fermer la note active
   const handleCloseNote = () => {
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
+    flushPendingSave();
     setActiveNote(null);
     setNoteContent('');
   };
@@ -72,6 +85,9 @@ export function useNotes() {
     try {
       const text = contentToSave !== undefined ? contentToSave : noteContent;
       await notesService.saveNote(activeNote.path, text);
+      if (pendingSaveRef.current?.path === activeNote.path && pendingSaveRef.current.text === text) {
+        pendingSaveRef.current = null;
+      }
       setLastSaved(Date.now());
       refreshTree();
     } catch (err) {
@@ -84,6 +100,7 @@ export function useNotes() {
   // Sauvegarde automatique avec debounce
   const handleContentChange = (newText: string) => {
     setNoteContent(newText);
+    if (activeNote) pendingSaveRef.current = { path: activeNote.path, text: newText };
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
     }
@@ -92,14 +109,10 @@ export function useNotes() {
     }, 800);
   };
 
-  // Nettoyage timer au démontage
+  // Au démontage (retour à l'accueil, etc.) : on enregistre ce qui n'a pas encore été écrit
   useEffect(() => {
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
-  }, []);
+    return () => flushPendingSave();
+  }, [flushPendingSave]);
 
   // Insertion d'éléments markdown
   const insertMarkdown = (prefix: string, suffix: string = '') => {

@@ -1,4 +1,4 @@
-import { Server, CheckCircle2, Copy, ClipboardPaste, Check } from 'lucide-react';
+import { Globe, Server, LogIn, Copy, ClipboardPaste, Check } from 'lucide-react';
 
 export type DraftMode = 'online' | 'host' | 'join';
 
@@ -12,87 +12,88 @@ interface NetworkConfigMenuProps {
   setDraftTargetIp: (ip: string) => void;
   handlePaste: () => void;
   handleSave: () => void;
+  /** Mode actuellement appliqué (sert à désactiver « Appliquer » quand rien ne change) */
+  currentMode: DraftMode;
+  isSaved: boolean;
 }
 
+const MODES: { id: DraftMode; title: string; desc: string; icon: React.ReactNode }[] = [
+  { id: 'online', title: 'Internet', desc: 'Serveur de signalement en ligne', icon: <Globe className="w-5 h-5 shrink-0" /> },
+  { id: 'host', title: 'Héberger en local', desc: 'Les joueurs se connectent à votre IP', icon: <Server className="w-5 h-5 shrink-0" /> },
+  { id: 'join', title: 'Rejoindre en local', desc: "Se connecter à l'IP d'un hôte", icon: <LogIn className="w-5 h-5 shrink-0" /> },
+];
+
+/** Panneau de configuration réseau, affiché en ligne dans les Paramètres. */
 export function NetworkConfigMenu({
-  draftMode,
-  setDraftMode,
-  localIp,
-  isCopied,
-  handleCopy,
-  draftTargetIp,
-  setDraftTargetIp,
-  handlePaste,
-  handleSave
+  draftMode, setDraftMode, localIp, isCopied, handleCopy, draftTargetIp, setDraftTargetIp, handlePaste, handleSave, currentMode, isSaved,
 }: NetworkConfigMenuProps) {
+  const unchanged = draftMode === currentMode && draftMode !== 'join';
+
   return (
-    <div className="w-[calc(100vw-2rem)] sm:w-80 p-4 rounded-xl bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 shadow-2xl relative flex flex-col gap-4">
-      <div className="flex items-center justify-between text-emerald-400">
-        <div className="flex items-center gap-2">
-          <Server className="w-4 h-4" />
-          <h4 className="text-sm font-bold uppercase tracking-wider">Configuration Réseau</h4>
-        </div>
+    <div className="flex flex-col gap-4">
+      <div role="radiogroup" aria-label="Mode de connexion" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {MODES.map(mode => {
+          const selected = draftMode === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setDraftMode(mode.id)}
+              className={`text-left rounded-xl border p-4 transition-colors ${
+                selected ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/[.08] bg-black/20 hover:border-white/20 hover:bg-white/[.03]'
+              }`}
+            >
+              <span className={`block mb-3 transition-colors ${selected ? 'text-rose-400' : 'text-zinc-500'}`}>{mode.icon}</span>
+              <span className="block text-sm font-bold text-white">{mode.title}</span>
+              <span className="block mt-0.5 text-xs text-zinc-500">{mode.desc}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Switch Mode (Online / Host / Join) */}
-      <div className="flex bg-black/40 rounded-lg p-1 border border-zinc-800">
-        <button 
-          onClick={() => setDraftMode('online')}
-          className={`flex-1 text-xs py-1.5 rounded-md font-bold transition-all ${draftMode === 'online' ? 'bg-emerald-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
-        >
-          ONLINE
-        </button>
-        <button 
-          onClick={() => setDraftMode('host')}
-          className={`flex-1 text-xs py-1.5 rounded-md font-bold transition-all ${draftMode === 'host' ? 'bg-orange-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
-        >
-          HÉBERGER
-        </button>
-        <button 
-          onClick={() => setDraftMode('join')}
-          className={`flex-1 text-xs py-1.5 rounded-md font-bold transition-all ${draftMode === 'join' ? 'bg-rose-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
-        >
-          REJOINDRE
-        </button>
-      </div>
-      
-      {/* Contenu dynamique selon le mode */}
       {draftMode === 'host' && (
-        <div className="animate-fade-in">
-          <p className="text-xs text-zinc-400 mb-1">Votre IP Locale (donnez-la aux joueurs) :</p>
-          <div className="flex items-center justify-between bg-black/50 rounded-lg p-2 border border-zinc-800">
-            <code className="text-sm font-mono text-orange-300">{localIp || 'Recherche...'}</code>
-            <button 
+        <div className="rounded-xl border border-white/[.08] bg-black/20 p-4">
+          <p className="text-xs text-zinc-500 mb-2">Votre IP locale, à donner aux joueurs</p>
+          <div className="flex items-center justify-between gap-3 h-11 pl-4 pr-1.5 rounded-lg bg-black/40 border border-white/10">
+            <code className="text-sm font-mono text-white num">{localIp ?? 'Recherche…'}</code>
+            <button
+              type="button"
               onClick={handleCopy}
-              className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-zinc-400 hover:text-orange-400"
+              disabled={!localIp}
               title="Copier l'IP"
+              aria-label="Copier l'IP"
+              className="w-8 h-8 grid place-items-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-40 transition-colors"
             >
-              {isCopied ? <Check className="w-4 h-4 text-orange-400" /> : <Copy className="w-4 h-4" />}
+              {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
         </div>
       )}
 
       {draftMode === 'join' && (
-        <div className="animate-fade-in">
-          <p className="text-xs text-zinc-400 mb-1">Entrez l'IP Locale de l'hôte :</p>
+        <div className="rounded-xl border border-white/[.08] bg-black/20 p-4">
+          <label htmlFor="lan-target-ip" className="block text-xs text-zinc-500 mb-2">IP locale de l'hôte</label>
           <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Ex: 192.168.1.15"
+            <input
+              id="lan-target-ip"
+              type="text"
+              inputMode="decimal"
+              placeholder="Ex. 192.168.1.15"
               value={draftTargetIp}
               onChange={(e) => {
                 const val = e.target.value;
-                if (/^[0-9.]*$/.test(val)) {
-                  setDraftTargetIp(val);
-                }
+                if (/^[0-9.]*$/.test(val)) setDraftTargetIp(val);
               }}
-              className="w-full bg-black/50 border border-zinc-700 rounded-lg pl-3 pr-10 py-2 text-sm text-rose-300 font-mono focus:outline-none focus:border-rose-500 transition-colors placeholder-zinc-600"
+              className="w-full h-11 pl-4 pr-12 rounded-lg bg-black/40 border border-white/10 text-sm text-white font-mono num placeholder:font-sans placeholder:text-zinc-600 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-colors"
             />
-            <button 
+            <button
+              type="button"
               onClick={handlePaste}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-md transition-colors text-zinc-400 hover:text-rose-400"
               title="Coller l'IP"
+              aria-label="Coller l'IP"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 grid place-items-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
             >
               <ClipboardPaste className="w-4 h-4" />
             </button>
@@ -100,14 +101,17 @@ export function NetworkConfigMenu({
         </div>
       )}
 
-      {/* Bouton de sauvegarde */}
-      <button 
-        onClick={handleSave}
-        className="mt-2 w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg border border-zinc-600 transition-colors flex items-center justify-center gap-2"
-      >
-        <CheckCircle2 className="w-4 h-4" /> Sauvegarder
-      </button>
-
+      <div className="flex items-center justify-end gap-4">
+        {isSaved && <span className="flex items-center gap-1.5 text-sm text-emerald-400"><Check className="w-4 h-4" />Appliqué</span>}
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={unchanged}
+          className="h-11 px-5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold whitespace-nowrap transition-colors disabled:opacity-40 disabled:hover:bg-rose-600 disabled:cursor-not-allowed"
+        >
+          Appliquer
+        </button>
+      </div>
     </div>
   );
 }
