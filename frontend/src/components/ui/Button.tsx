@@ -24,13 +24,13 @@ export function Button({
   ...props 
 }: ButtonProps) {
   
-  const baseClasses = "font-bold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap group select-none flex-shrink-0";
+  const baseClasses = "font-bold transition-colors inline-flex items-center justify-center gap-2 whitespace-nowrap group select-none flex-shrink-0";
   
   const variants: Record<ButtonVariant, string> = {
-    primary: "bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_20px_rgba(225,29,72,0.3)] hover:shadow-[0_0_30px_rgba(225,29,72,0.5)] rounded-sm border border-rose-500/50",
-    glass:   "bg-rose-600/20 hover:bg-rose-600/40 text-rose-100 border border-rose-500/30 hover:border-rose-400 backdrop-blur-md rounded-sm",
-    ghost:   "text-white/80 hover:text-white bg-black/20 hover:bg-white/10 rounded-sm border border-white/10 backdrop-blur-md",
-    white:   "bg-white text-black hover:bg-zinc-200 rounded-sm border border-white/20",
+    primary: "bg-rose-600 hover:bg-rose-500 text-white rounded-lg",
+    glass:   "bg-rose-600/20 hover:bg-rose-600/40 text-rose-100 border border-rose-500/30 hover:border-rose-400 backdrop-blur-md rounded-lg",
+    ghost:   "text-white/80 hover:text-white bg-black/20 hover:bg-white/10 rounded-lg border border-hairline backdrop-blur-md",
+    white:   "bg-white text-black hover:bg-zinc-200 rounded-lg",
   };
 
   const sizes: Record<ButtonSize, string> = {

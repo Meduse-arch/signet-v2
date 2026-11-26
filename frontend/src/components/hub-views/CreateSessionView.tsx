@@ -43,7 +43,7 @@ export function CreateSessionView({ onConfirm }: CreateSessionViewProps) {
 
   return (
     <div className="w-full max-w-2xl animate-slide-up pb-12">
-      <h2 className="text-3xl md:text-4xl font-black mb-8 text-white tracking-tight drop-shadow-md">Nouvelle Session</h2>
+      <h2 className="text-3xl md:text-4xl font-black mb-8 text-white tracking-tight">Nouvelle session</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <Input
           label="Nom de la session"
@@ -60,7 +60,7 @@ export function CreateSessionView({ onConfirm }: CreateSessionViewProps) {
           <select 
             value={sessionSystem} 
             onChange={e => setSessionSystem(e.target.value)}
-            className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-sm px-4 py-3.5 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 shadow-inner appearance-none cursor-pointer"
+            className="w-full bg-surface-raised border border-hairline rounded-lg px-4 h-12 text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 appearance-none cursor-pointer transition-colors"
           >
             {enabledSystems.length === 0 && (
               <option value="" disabled>Aucun système activé...</option>
@@ -86,11 +86,11 @@ export function CreateSessionView({ onConfirm }: CreateSessionViewProps) {
             onChange={e => setSessionDesc(e.target.value)}
             rows={3}
             placeholder="Décrivez brièvement la campagne..."
-            className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-sm px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 shadow-inner resize-none"
+            className="w-full bg-surface-raised border border-hairline rounded-lg px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 resize-none transition-colors"
           ></textarea>
         </div>
 
-        <div className="flex items-center justify-between bg-zinc-900/40 border border-zinc-800/80 p-4 rounded-sm">
+        <div className="flex items-center justify-between bg-surface/75 border border-hairline p-4 rounded-xl">
           <div className="flex flex-col">
             <span className="text-sm font-bold text-white">Nombre de joueurs maximum</span>
             <span className="text-xs text-zinc-400">Limiter le nombre de places disponibles</span>
@@ -99,7 +99,7 @@ export function CreateSessionView({ onConfirm }: CreateSessionViewProps) {
             <button 
               type="button"
               onClick={() => setHasMaxPlayers(!hasMaxPlayers)}
-              className={`w-12 h-6 rounded-full transition-colors relative focus:outline-none border ${hasMaxPlayers ? 'bg-rose-500 border-rose-500' : 'bg-zinc-800 border-zinc-600'}`}
+              className={`w-12 h-6 rounded-full transition-colors relative focus-visible:outline-2 focus-visible:outline-rose-500 border ${hasMaxPlayers ? 'bg-rose-600 border-rose-600' : 'bg-surface-raised border-white/15'}`}
             >
               <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${hasMaxPlayers ? 'translate-x-6' : 'translate-x-0'}`} />
             </button>
@@ -111,7 +111,7 @@ export function CreateSessionView({ onConfirm }: CreateSessionViewProps) {
                 max="99"
                 value={maxPlayers}
                 onChange={(e) => setMaxPlayers(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-16 bg-zinc-900 border border-zinc-700 rounded-sm px-2 py-1 text-center text-white focus:outline-none focus:border-rose-500"
+                className="w-16 bg-surface-raised border border-hairline rounded-lg px-2 h-9 text-center text-white num focus:outline-none focus:border-rose-500 transition-colors"
               />
             )}
           </div>
@@ -121,24 +121,24 @@ export function CreateSessionView({ onConfirm }: CreateSessionViewProps) {
           <button 
             type="button"
             onClick={() => setIsPublic(!isPublic)}
-            className={`w-12 h-6 rounded-full transition-colors relative focus:outline-none border ${isPublic ? 'bg-rose-500 border-rose-500' : 'bg-zinc-800 border-zinc-600'}`}
+            className={`w-12 h-6 rounded-full transition-colors relative focus-visible:outline-2 focus-visible:outline-rose-500 border ${isPublic ? 'bg-rose-600 border-rose-600' : 'bg-surface-raised border-white/15'}`}
           >
             <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isPublic ? 'translate-x-6' : 'translate-x-0'}`} />
           </button>
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-white">Session Publique</span>
-            <span className="text-xs text-zinc-400">Rend la salle visible dans l'onglet Sessions Publiques</span>
+            <span className="text-sm font-bold text-white">Session publique</span>
+            <span className="text-xs text-zinc-400">Rend la salle visible dans Sessions publiques</span>
           </div>
         </div>
         
-        <div className="flex gap-4 pt-6 mt-6 border-t border-white/10">
+        <div className="flex gap-4 pt-6 mt-6 border-t border-hairline">
           <Button 
             type="button" 
             variant="primary"
             disabled={!sessionName.trim()}
             onClick={() => handleSubmit()}
             leftIcon={<Check className="w-5 h-5" />}
-            className="flex-1 py-4 text-lg"
+            className="flex-1 h-12 !py-0 text-base"
           >
             Lancer la partie
           </Button>

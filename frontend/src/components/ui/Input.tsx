@@ -18,7 +18,7 @@ export function Input({
           {label}
         </label>
       )}
-      <div className="flex items-center bg-zinc-900/80 border border-zinc-700/80 rounded-sm px-4 py-3.5 focus-within:border-rose-500 focus-within:ring-1 focus-within:ring-rose-500 transition-all shadow-inner">
+      <div className="flex items-center bg-surface-raised border border-hairline rounded-lg px-4 h-12 focus-within:border-rose-500 focus-within:ring-1 focus-within:ring-rose-500 transition-colors">
         {icon && (
           <div className="text-zinc-500 shrink-0 mr-3 flex items-center">
             {icon}

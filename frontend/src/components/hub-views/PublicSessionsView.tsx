@@ -55,15 +55,15 @@ export function PublicSessionsView({
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl sm:text-4xl font-black text-white drop-shadow-xl">
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
               {t('modal_public_title')}
             </h2>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+            <span className="text-xs px-2.5 py-0.5 rounded-md border border-hairline text-zinc-300 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
               Direct
             </span>
           </div>
-          <p className="text-zinc-400 font-medium text-xs sm:text-sm mt-1 drop-shadow-md">
+          <p className="text-zinc-400 text-sm mt-1">
             {t('modal_public_desc')}
           </p>
         </div>
@@ -88,10 +88,10 @@ export function PublicSessionsView({
         <div className="mb-6">
           <input
             type="text"
-            placeholder="Rechercher par nom de campagne, système ou ambiance..."
+            placeholder="Rechercher par nom, système ou ambiance"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-colors"
+            className="w-full bg-surface-raised border border-hairline rounded-lg px-4 h-11 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 transition-colors"
           />
         </div>
       )}
@@ -101,10 +101,10 @@ export function PublicSessionsView({
         {loading && sessions.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
             <RefreshCw className="w-6 h-6 animate-spin text-rose-500" />
-            <span>Recherche des sessions publiques ouvertes...</span>
+            <span>Recherche des sessions publiques ouvertes…</span>
           </div>
         ) : error && sessions.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-rose-500/20 rounded-2xl bg-black/20">
+          <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-hairline rounded-2xl bg-surface/50">
             <AlertCircle className="w-10 h-10 text-rose-500 mb-2" />
             <p className="text-sm font-semibold text-slate-300">{error}</p>
             <p className="text-xs text-slate-500 mt-1 max-w-sm">
@@ -115,7 +115,7 @@ export function PublicSessionsView({
             </Button>
           </div>
         ) : filteredSessions.length === 0 ? (
-          <div className="h-72 flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 rounded-2xl bg-black/20">
+          <div className="h-72 flex flex-col items-center justify-center text-center p-6 border border-dashed border-hairline rounded-2xl bg-surface/50">
             <Sparkles className="w-10 h-10 text-slate-600 mb-3" />
             <p className="text-base font-bold text-white">
               {search ? 'Aucune session ne correspond à votre recherche' : 'Aucune session publique en direct'}
@@ -135,15 +135,15 @@ export function PublicSessionsView({
               return (
                 <div
                   key={s.roomId}
-                  className="bg-[#090a10]/80 border border-white/5 hover:border-rose-500/40 rounded-xl p-5 flex flex-col justify-between gap-4 transition-all hover:bg-slate-900/60 shadow-lg group relative overflow-hidden"
+                  className="bg-surface/75 backdrop-blur-xl border border-hairline hover:border-white/20 rounded-2xl p-5 flex flex-col justify-between gap-4 transition-colors group relative overflow-hidden"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-white font-extrabold text-lg group-hover:text-rose-400 transition-colors truncate">
+                        <h4 className="text-white font-bold text-lg truncate">
                           {s.name}
                         </h4>
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-black/60 border border-white/10 text-slate-400">
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded-md border border-hairline text-zinc-500">
                           {s.roomId}
                         </span>
                       </div>
@@ -155,22 +155,22 @@ export function PublicSessionsView({
                       )}
 
                       <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-slate-300">
-                        <span className="flex items-center gap-1.5 font-bold text-rose-300 bg-rose-950/40 border border-rose-900/40 px-2 py-0.5 rounded">
+                        <span className="flex items-center gap-1.5 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md">
                           <Swords className="w-3.5 h-3.5" />
                           <span>{s.system}</span>
                         </span>
 
-                        <span className="flex items-center gap-1.5 text-slate-300 font-semibold" title="Joueurs connectés">
+                        <span className="flex items-center gap-1.5 text-zinc-300 num" title="Joueurs connectés">
                           <Users className="w-3.5 h-3.5 text-slate-400" />
                           <span>
-                            {s.maxPlayers ? `${s.players}/${s.maxPlayers} Joueurs` : `${s.players} Joueur${s.players > 1 ? 's' : ''}`}
+                            {s.maxPlayers ? `${s.players}/${s.maxPlayers} joueurs` : `${s.players} joueur${s.players > 1 ? 's' : ''}`}
                           </span>
                         </span>
 
                         {s.isRoomOpen && (
-                          <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                          <span className="text-xs text-emerald-400 flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            Plateau Ouvert
+                            Plateau ouvert
                           </span>
                         )}
                       </div>
@@ -180,7 +180,7 @@ export function PublicSessionsView({
                           {tagsList.map(tag => (
                             <span
                               key={tag}
-                              className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-slate-400"
+                              className="text-[11px] px-2 py-0.5 rounded-md border border-hairline text-zinc-500"
                             >
                               #{tag}
                             </span>
