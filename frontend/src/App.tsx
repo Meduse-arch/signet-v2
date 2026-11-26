@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { supabase } from './core/supabase';
 import { Auth } from './components/Auth';
 import { Hub } from './components/Hub';
 import { GameSession } from './components/GameSession';
 import { PopoutSession } from './components/PopoutSession';
-import { TitleBar } from './components/ui/TitleBar';
 import { SplashTransition } from './components/ui/SplashTransition';
 import { t } from './core/locales/fr';
 
@@ -27,6 +27,18 @@ export default function App() {
   const [isLanMode, setIsLanMode] = useState(false);
 
   // Vérifier la session Supabase au démarrage (une seule fois)
+  // F11 : plein écran natif (Tauri uniquement ; le navigateur gère F11 lui-même)
+  useEffect(() => {
+    if (!('__TAURI_INTERNALS__' in window)) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'F11') return;
+      e.preventDefault();
+      invoke<boolean>('toggle_fullscreen').catch(err => console.warn('[App] Plein écran :', err));
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   useEffect(() => {
     // Check routing first
     const hash = window.location.hash;
@@ -100,7 +112,6 @@ export default function App() {
   if (isInitializing) {
     return (
       <div className="h-full w-full bg-zinc-950 flex items-center justify-center">
-        <TitleBar />
         <div className="text-rose-500 animate-pulse font-bold">{t('app_loading')}</div>
       </div>
     );
@@ -108,8 +119,6 @@ export default function App() {
 
   return (
     <div className="h-full w-full overflow-hidden bg-[#050508] text-zinc-200 selection:bg-rose-500/30 font-sans flex flex-col">
-      <TitleBar />
-      
       {/* Transitions simples gérées par React (montage/démontage avec animations Tailwind) */}
       
       {appState === 'auth' && (

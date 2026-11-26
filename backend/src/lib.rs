@@ -16,23 +16,13 @@ fn get_local_ip() -> Result<String, String> {
     }
 }
 
-/// Bascule le plein écran natif puis redonne le focus Win32 à la webview (sinon WebView2
-/// perd le routage souris sur une fenêtre `decorations: false`). À l'entrée, un recalibrage
-/// différé force la surface cliente WebView2 à s'ajuster (bande noire de la barre des tâches).
-/// Pas d'`unmaximize` : il fait décrocher la souris. Renvoie le nouvel état (true = plein écran).
+/// Bascule le plein écran natif, puis redonne le focus à la webview (WebView2).
+/// Renvoie le nouvel état (true = plein écran).
 #[tauri::command]
 fn toggle_fullscreen(window: tauri::WebviewWindow) -> Result<bool, String> {
     let next = !window.is_fullscreen().map_err(|e| e.to_string())?;
     window.set_fullscreen(next).map_err(|e| e.to_string())?;
     window.set_focus().map_err(|e| e.to_string())?;
-    if next {
-        let win = window.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(50));
-            let _ = win.eval("window.dispatchEvent(new Event('resize'))");
-            let _ = win.set_focus();
-        });
-    }
     Ok(next)
 }
 
