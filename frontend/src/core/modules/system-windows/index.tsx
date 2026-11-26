@@ -7,7 +7,7 @@ import { SettingsView } from '../../../components/hub-views/SettingsView';
 
 function FullscreenWindowWrapper({ children }: { windowId: string, children: React.ReactNode }) {
   return (
-    <div className="flex flex-col h-full w-full bg-[#050508]/50 pointer-events-auto p-4">
+    <div className="flex flex-col h-full w-full bg-void/50 pointer-events-auto p-4">
       {children}
     </div>
   );

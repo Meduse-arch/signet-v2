@@ -103,7 +103,7 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
                     aria-selected={selected}
                     onClick={() => setSheetKey(windowKey(w))}
                     className={`shrink-0 min-h-[44px] px-4 rounded-md text-sm font-semibold whitespace-nowrap transition-colors ${
-                      selected ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30' : 'text-slate-300 border border-white/10 hover:bg-white/5'
+                      selected ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30' : 'text-zinc-300 border border-white/10 hover:bg-white/5'
                     }`}
                   >
                     {w.title}
@@ -129,7 +129,7 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
         <div className="flex flex-col h-full">
           <button
             onClick={() => setMoreKey(null)}
-            className="shrink-0 flex items-center gap-2 min-h-[44px] px-4 text-sm font-semibold text-slate-300 hover:text-white border-b border-white/10 transition-colors"
+            className="shrink-0 flex items-center gap-2 min-h-[44px] px-4 text-sm font-semibold text-zinc-300 hover:text-white border-b border-white/10 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span className="whitespace-nowrap">Plus</span>
@@ -144,7 +144,7 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
           <button
             key={windowKey(w)}
             onClick={() => setMoreKey(windowKey(w))}
-            className="flex items-center gap-3 min-h-[56px] px-4 rounded-lg bg-slate-950/80 border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors"
+            className="flex items-center gap-3 min-h-[56px] px-4 rounded-lg bg-void/80 border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors"
           >
             <span className="w-5 h-5 shrink-0 [&>svg]:w-full [&>svg]:h-full" aria-hidden="true">{windowIcon(w)}</span>
             <span className="flex-1 text-left truncate">{w.title}</span>
@@ -153,7 +153,7 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
         ))}
         <button
           onClick={onBack}
-          className="flex items-center justify-center gap-2 min-h-[56px] px-4 rounded-lg bg-slate-950/80 border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors"
+          className="flex items-center justify-center gap-2 min-h-[56px] px-4 rounded-lg bg-void/80 border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors"
         >
           <ArrowLeft className="w-5 h-5 shrink-0" aria-hidden="true" />
           <span className="whitespace-nowrap">Retour au salon</span>
@@ -171,10 +171,10 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
 
   return (
     <div
-      className="h-full flex flex-col relative bg-[#050508] text-white pointer-events-auto"
+      className="h-full flex flex-col relative bg-void text-white pointer-events-auto"
       style={visibleHeight !== null ? { height: visibleHeight } : undefined}
     >
-      <header className="shrink-0 flex items-center gap-1 pl-1 pr-4 border-b border-white/10 bg-slate-950/80 backdrop-blur-md pt-[env(safe-area-inset-top)]">
+      <header className="shrink-0 flex items-center gap-1 pl-1 pr-4 border-b border-white/10 bg-void/80 backdrop-blur-md pt-[env(safe-area-inset-top)]">
         <button
           onClick={onBack}
           aria-label="Retour au salon"
@@ -205,7 +205,7 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
       <nav
         aria-label="Navigation du mode compagnon"
         hidden={keyboardOpen}
-        className="shrink-0 flex border-t border-white/10 bg-slate-950/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+        className="shrink-0 flex border-t border-white/10 bg-void/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
       >
         {TABS.map(({ id, label, icon: Icon }) => {
           const selected = activeTab === id;
@@ -235,6 +235,6 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="h-full flex items-center justify-center p-6 text-center text-slate-300 text-sm">{text}</div>
+    <div className="h-full flex items-center justify-center p-6 text-center text-zinc-300 text-sm">{text}</div>
   );
 }

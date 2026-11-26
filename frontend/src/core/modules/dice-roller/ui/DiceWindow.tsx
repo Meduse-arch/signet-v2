@@ -74,11 +74,11 @@ export function DiceWindow({ api }: DiceWindowProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#050508] text-white p-4 gap-6 pointer-events-auto overflow-y-auto">
+    <div className="flex flex-col h-full bg-void text-white p-4 gap-6 pointer-events-auto overflow-y-auto">
       
       {/* Dés Classiques */}
       <div>
-        <h3 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2">
           <Dices className="w-4 h-4" /> Classiques
         </h3>
         <div className="grid grid-cols-3 gap-2">
@@ -88,7 +88,7 @@ export function DiceWindow({ api }: DiceWindowProps) {
               onClick={() => rollDice(d)}
               className={`bg-white/5 hover:bg-rose-600/20 active:bg-rose-600/30 border border-white/10 hover:border-rose-500/50 rounded-md py-3 max-md:min-h-14 text-center transition-colors group ${compact ? 'min-h-14' : ''}`}
             >
-              <span className={`font-bold text-zinc-300 group-hover:text-rose-400 ${compact ? 'text-lg' : ''}`}>{d.toUpperCase()}</span>
+              <span className={`font-bold text-zinc-300 group-hover:text-rose-400 ${compact ? 'text-lg' : ''}`}>{d}</span>
             </button>
           ))}
         </div>
@@ -98,7 +98,7 @@ export function DiceWindow({ api }: DiceWindowProps) {
 
       {/* Dé Personnalisé */}
       <div>
-        <h3 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-3">
+        <h3 className="text-sm font-bold text-white/50 mb-3">
           Personnalisé
         </h3>
         <form onSubmit={handleCustomRoll} className="flex gap-2">
@@ -134,18 +134,17 @@ export function DiceWindow({ api }: DiceWindowProps) {
 
       {/* Résultat (Toast local) */}
       {lastResult && (
-        <div role="status" aria-live="polite" className="mt-auto animate-slide-up bg-[#050508]/90 border border-rose-500/30 rounded-xl p-4 text-center shadow-[0_0_30px_rgba(225,29,72,0.15)] relative overflow-hidden backdrop-blur-md">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-600 to-rose-400" />
-          <span className="text-[10px] text-rose-400 font-bold uppercase tracking-widest block mb-2">
+        <div role="status" aria-live="polite" className="mt-auto animate-slide-up bg-surface border border-hairline rounded-xl p-4 text-center relative overflow-hidden backdrop-blur-md">
+          <span className="text-xs text-zinc-400 block mb-2">
             Lancé de {lastResult.dice.join(', ')}
           </span>
-          <span className="text-6xl max-md:text-7xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+          <span className="num text-6xl max-md:text-7xl font-black text-white">
             {lastResult.results.reduce((a, b) => a + b, 0)}
           </span>
           {lastResult.results.length > 1 && (
             <div className="mt-3 flex flex-wrap justify-center gap-1.5 max-h-20 overflow-y-auto custom-scrollbar">
               {lastResult.results.map((r, i) => (
-                <span key={i} className="text-xs font-bold bg-white/5 border border-white/10 px-2 py-1 rounded text-zinc-300">
+                <span key={i} className="num text-xs bg-white/5 border border-hairline px-2 py-1 rounded-md text-zinc-300">
                   {r}
                 </span>
               ))}

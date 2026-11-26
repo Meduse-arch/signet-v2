@@ -497,7 +497,7 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
   }
 
   return (
-    <div className="h-full flex flex-col bg-zinc-950 relative overflow-hidden">
+    <div className="h-full flex flex-col bg-void relative overflow-hidden">
       {/* Moteur 2D (Konva) */}
       <VTTCanvas 
         tokens={tokens} 
@@ -516,8 +516,8 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
       {isMapLoading && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none">
           <div className="flex flex-col items-center">
-            <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(225,29,72,0.5)]"></div>
-            <p className="text-white font-bold tracking-widest animate-pulse drop-shadow-md">TÉLÉCHARGEMENT DE LA CARTE EN COURS...</p>
+            <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-sm text-zinc-300">Téléchargement de la carte…</p>
           </div>
         </div>
       )}

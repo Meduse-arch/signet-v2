@@ -32,15 +32,15 @@ export function DiceAnimationOverlay({ api }: DiceAnimationOverlayProps) {
 
   return (
     <div 
-      className="absolute inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black/50 backdrop-blur-[8px] transition-all duration-500 cursor-pointer"
+      className="absolute inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black/50 backdrop-blur-[8px] transition-[color,background-color,border-color,opacity,transform] duration-500 cursor-pointer"
       onClick={() => setActiveRoll(null)}
     >
       <div className="flex flex-col items-center justify-center animate-slide-up">
-        <span className="text-rose-300 font-semibold uppercase tracking-[0.2em] mb-4 text-xs drop-shadow-[0_0_8px_rgba(225,29,72,0.6)]">
+        <span className="text-rose-300 font-semibold mb-4 text-xs">
           {activeRoll.label}
         </span>
-        <div className="flex items-center justify-center w-28 h-28 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_0_50px_rgba(225,29,72,0.3)] animate-dice-roll text-white font-black">
-          <span className={activeRoll.total >= 1000 ? 'text-4xl drop-shadow-lg' : 'text-5xl drop-shadow-lg'}>
+        <div className="flex items-center justify-center w-28 h-28 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl animate-dice-roll text-white font-black">
+          <span className={activeRoll.total >= 1000 ? 'text-4xl ' : 'text-5xl '}>
             {activeRoll.total}
           </span>
         </div>

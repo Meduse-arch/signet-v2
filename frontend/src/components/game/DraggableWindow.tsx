@@ -135,7 +135,7 @@ export function DraggableWindow({
       };
       copyStyles();
       
-      extWin.document.body.className = "bg-[#050508] text-zinc-200 overflow-hidden";
+      extWin.document.body.className = "bg-void text-zinc-200 overflow-hidden";
       
       const div = extWin.document.createElement('div');
       div.className = "w-full h-full pointer-events-auto flex flex-col";
@@ -372,7 +372,7 @@ export function DraggableWindow({
         {/* Onglet de pliage (Chevron) visible uniquement si docké left/right */}
         {(dockState === 'right' || dockState === 'left') && (
           <div 
-            className={`absolute top-1/2 -translate-y-1/2 w-10 h-16 bg-[#050508]/95 backdrop-blur-xl border-y border-white/10 flex items-center justify-center cursor-pointer text-white/50 hover:text-white transition-colors collapse-tab pointer-events-auto
+            className={`absolute top-1/2 -translate-y-1/2 w-10 h-16 bg-void/95 backdrop-blur-xl border-y border-white/10 flex items-center justify-center cursor-pointer text-white/50 hover:text-white transition-colors collapse-tab pointer-events-auto
               ${dockState === 'right' ? '-left-10 border-l rounded-l-xl shadow-[-10px_0_20px_rgba(0,0,0,0.5)]' : '-right-10 border-r rounded-r-xl shadow-[10px_0_20px_rgba(0,0,0,0.5)]'}
             `}
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -478,7 +478,7 @@ export function DraggableWindow({
         
         {/* Content Area : masqué si fenêtre flottante repliée */}
         {!(isCollapsed && dockState === 'floating') && (
-          <div className={`flex-1 overflow-y-auto custom-scrollbar pointer-events-auto relative ${transparent ? '' : 'bg-[#050508]/50'}`}>
+          <div className={`flex-1 overflow-y-auto custom-scrollbar pointer-events-auto relative ${transparent ? '' : 'bg-void/50'}`}>
             {children}
           </div>
         )}

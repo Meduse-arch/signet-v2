@@ -186,7 +186,7 @@ export function ToolbarUI() {
         setMaps(prev => prev.map((m, i) => i === editingMapIndex ? { ...m, name: newMapName.trim() || m.name, url: newMapUrl } : m));
       } else {
         // Mode ajout
-        setMaps((prev) => [...prev, { name: newMapName.trim() || 'Nouvelle Carte', url: newMapUrl }]);
+        setMaps((prev) => [...prev, { name: newMapName.trim() || 'Nouvelle carte', url: newMapUrl }]);
       }
       setShowAddForm(false);
       setEditingMapIndex(null);
@@ -215,14 +215,14 @@ export function ToolbarUI() {
   };
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-zinc-950 pointer-events-auto">
+    <div ref={containerRef} className="flex flex-col h-full bg-void pointer-events-auto">
       
       {/* Sélecteur d'Onglets : caché en mode slim */}
       {!isSlim && (
-        <div className="flex border-b border-zinc-800 shrink-0">
+        <div className="flex border-b border-hairline shrink-0">
           <button 
             onClick={() => setActiveTab('tools')}
-            className={`flex-1 flex items-center justify-center p-3 transition-colors ${activeTab === 'tools' ? 'text-rose-400 border-b-2 border-rose-500' : 'text-zinc-400 hover:text-white'}`}
+            className={`flex-1 flex items-center justify-center p-3 transition-colors ${activeTab === 'tools' ? 'text-white border-b-2 border-rose-600' : 'text-zinc-400 hover:text-white'}`}
             title="Outils de jeu"
           >
             <Wrench className="w-5 h-5" />
@@ -230,7 +230,7 @@ export function ToolbarUI() {
           {isHost && (
             <button 
               onClick={() => setActiveTab('maps')}
-              className={`flex-1 flex items-center justify-center p-3 transition-colors ${activeTab === 'maps' ? 'text-rose-400 border-b-2 border-rose-500' : 'text-zinc-400 hover:text-white'}`}
+              className={`flex-1 flex items-center justify-center p-3 transition-colors ${activeTab === 'maps' ? 'text-white border-b-2 border-rose-600' : 'text-zinc-400 hover:text-white'}`}
               title="Bibliothèque de Cartes"
             >
               <ImageIcon className="w-5 h-5" />
@@ -242,50 +242,50 @@ export function ToolbarUI() {
       <div className="flex-1 overflow-y-auto p-2">
         {(activeTab === 'tools' || isSlim) ? (
           <div className="flex flex-col gap-2">
-            <button onClick={() => handleToolChange('pan')} title="Déplacer la caméra" className={`p-3 rounded flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${activeTool === 'pan' ? 'bg-rose-950 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+            <button onClick={() => handleToolChange('pan')} title="Déplacer la caméra" className={`p-3 rounded-lg flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${activeTool === 'pan' ? 'bg-rose-500/10 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
               <Hand className="w-5 h-5 shrink-0" />
               {!isSlim && <span className="ml-3 font-medium whitespace-nowrap">Déplacer la caméra</span>}
             </button>
-            <button onClick={() => handleToolChange('select')} title="Sélectionner" className={`p-3 rounded flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${activeTool === 'select' ? 'bg-rose-950 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+            <button onClick={() => handleToolChange('select')} title="Sélectionner" className={`p-3 rounded-lg flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${activeTool === 'select' ? 'bg-rose-500/10 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
               <MousePointer2 className="w-5 h-5 shrink-0" />
               {!isSlim && <span className="ml-3 font-medium whitespace-nowrap">Sélectionner</span>}
             </button>
-            <button onClick={() => handleToolChange('duo')} title="Ambidextre" className={`p-3 rounded flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${activeTool === 'duo' ? 'bg-rose-950 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+            <button onClick={() => handleToolChange('duo')} title="Ambidextre" className={`p-3 rounded-lg flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${activeTool === 'duo' ? 'bg-rose-500/10 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
               <Move className="w-5 h-5 shrink-0" />
               {!isSlim && <span className="ml-3 font-medium whitespace-nowrap">Ambidextre</span>}
             </button>
-            <button onClick={() => handleToolChange('ruler')} title="Règle" className={`p-3 rounded flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${activeTool === 'ruler' ? 'bg-rose-950 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+            <button onClick={() => handleToolChange('ruler')} title="Règle" className={`p-3 rounded-lg flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${activeTool === 'ruler' ? 'bg-rose-500/10 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
               <Ruler className="w-5 h-5 shrink-0" />
               {!isSlim && <span className="ml-3 font-medium whitespace-nowrap">Règle</span>}
             </button>
 
             <hr className="border-white/10 w-full my-2" />
 
-            <button onClick={handleToggleSnap} title="Magnétisme" className={`p-3 rounded flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${snapToGrid ? 'bg-rose-950 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+            <button onClick={handleToggleSnap} title="Magnétisme" className={`p-3 rounded-lg flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${snapToGrid ? 'bg-rose-500/10 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
               <Magnet className="w-5 h-5 shrink-0" />
               {!isSlim && <span className="ml-3 font-medium whitespace-nowrap">Magnétisme</span>}
             </button>
-            <button onClick={handleToggleGrid} title="Afficher Grille" className={`p-3 rounded flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${showGrid ? 'bg-rose-950 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+            <button onClick={handleToggleGrid} title="Afficher la grille" className={`p-3 rounded-lg flex items-center ${isSlim ? 'justify-center' : 'w-full'} transition-colors ${showGrid ? 'bg-rose-500/10 text-rose-300' : 'text-zinc-300 hover:bg-zinc-800'}`}>
               <Grid3x3 className="w-5 h-5 shrink-0" />
-              {!isSlim && <span className="ml-3 font-medium whitespace-nowrap">Afficher Grille</span>}
+              {!isSlim && <span className="ml-3 font-medium whitespace-nowrap">Afficher la grille</span>}
             </button>
           </div>
         ) : (
           <div className="flex flex-col gap-3 min-w-[250px]">
             {/* Formulaire d'ajout de carte */}
             {showAddForm ? (
-              <div className="bg-zinc-900 border border-zinc-700 p-3 rounded-lg flex flex-col gap-3 mb-2">
+              <div className="bg-surface-raised border border-white/10 p-3 rounded-lg flex flex-col gap-3 mb-2">
                 <input 
                   type="text" 
                   placeholder="Nom de la carte (ex: Taverne)" 
                   value={newMapName}
                   onChange={e => setNewMapName(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                  className="w-full bg-void border border-hairline p-2 rounded-lg text-sm text-white"
                 />
                 
-                <div className="flex rounded overflow-hidden border border-zinc-700">
-                  <button onClick={() => setNewMapSource('url')} className={`flex-1 py-1 text-xs font-medium ${newMapSource === 'url' ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'}`}>URL Web</button>
-                  <button onClick={() => setNewMapSource('file')} className={`flex-1 py-1 text-xs font-medium ${newMapSource === 'file' ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'}`}>Fichier Local</button>
+                <div className="flex rounded-lg overflow-hidden border border-white/10">
+                  <button onClick={() => setNewMapSource('url')} className={`flex-1 py-1 text-xs font-medium ${newMapSource === 'url' ? 'bg-zinc-700 text-white' : 'bg-surface-raised text-zinc-400 hover:bg-zinc-800'}`}>URL Web</button>
+                  <button onClick={() => setNewMapSource('file')} className={`flex-1 py-1 text-xs font-medium ${newMapSource === 'file' ? 'bg-zinc-700 text-white' : 'bg-surface-raised text-zinc-400 hover:bg-zinc-800'}`}>Fichier Local</button>
                 </div>
 
                 {newMapSource === 'url' ? (
@@ -295,30 +295,30 @@ export function ToolbarUI() {
                       placeholder="https://..." 
                       value={newMapUrl}
                       onChange={e => setNewMapUrl(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                      className="w-full bg-void border border-hairline p-2 rounded-lg text-sm text-white"
                     />
-                    <button onClick={submitAddForm} className="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium py-2 rounded text-sm transition-colors">
+                    <button onClick={submitAddForm} className="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium py-2 rounded-lg text-sm transition-colors">
                       Valider
                     </button>
                   </>
                 ) : (
                   <div 
-                    className="border-2 border-dashed border-zinc-600 rounded p-4 flex flex-col items-center justify-center cursor-pointer hover:border-rose-400 transition-colors bg-zinc-950"
+                    className="border-2 border-dashed border-white/15 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-rose-400 transition-colors bg-void"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => { if(e.target.files) handleFileUpload(e.target.files[0]) }} />
                     {isUploading ? (
-                      <span className="text-xs text-rose-400 font-medium animate-pulse">Hachage Rust...</span>
+                      <span className="text-xs text-rose-400 font-medium ">Calcul de l'empreinte…</span>
                     ) : (
                       <>
                         <UploadCloud className="w-6 h-6 text-zinc-400 mb-1" />
-                        <span className="text-xs text-zinc-400 font-medium">Glissez ou Cliquez</span>
+                        <span className="text-xs text-zinc-400 font-medium">Glissez ou cliquez</span>
                       </>
                     )}
                   </div>
                 )}
                 
-                <button onClick={() => { setShowAddForm(false); setEditingMapIndex(null); }} className="text-xs text-zinc-500 hover:text-white uppercase font-semibold">Annuler</button>
+                <button onClick={() => { setShowAddForm(false); setEditingMapIndex(null); }} className="text-xs text-zinc-500 hover:text-white font-semibold">Annuler</button>
               </div>
             ) : (
               <button 
@@ -328,17 +328,17 @@ export function ToolbarUI() {
                   setEditingMapIndex(null);
                   setShowAddForm(true);
                 }}
-                className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 flex items-center justify-center gap-2 py-2 rounded transition-colors mb-2"
+                className="w-full bg-surface-raised hover:bg-zinc-800 border border-white/10 text-zinc-300 flex items-center justify-center gap-2 py-2 rounded-lg transition-colors mb-2"
               >
                 <Plus className="w-4 h-4" />
-                <span className="font-medium text-sm">Nouvelle Carte</span>
+                <span className="font-medium text-sm">Nouvelle carte</span>
               </button>
             )}
 
             {/* Ruban des joueurs non assignés (Drag & Drop) */}
             {isHost && players.filter(p => !playerLocations[p]).length > 0 && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-2 flex flex-col gap-2 mb-2 shadow-[0_0_15px_rgba(225,29,72,0.1)]">
-                <div className="flex items-center gap-2 text-rose-400 text-xs font-bold uppercase tracking-wider">
+              <div className="bg-surface-raised border border-hairline rounded-lg p-2 flex flex-col gap-2 mb-2">
+                <div className="flex items-center gap-2 text-rose-400 text-xs font-bold">
                   <Users className="w-3 h-3" />
                   Nouveaux Joueurs
                 </div>
@@ -356,7 +356,7 @@ export function ToolbarUI() {
                           else setSelectedPlayers([p]);
                         }
                       }}
-                      className={`bg-zinc-800 border ${selectedPlayers.includes(p) ? 'border-rose-500 bg-rose-500/20 shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'border-zinc-700 hover:border-rose-400 hover:bg-zinc-700'} text-white text-xs px-2 py-1 rounded cursor-pointer transition-all select-none`}
+                      className={`bg-zinc-800 border ${selectedPlayers.includes(p) ? 'border-rose-500 bg-rose-500/20' : 'border-white/10 hover:border-rose-400 hover:bg-zinc-700'} text-white text-xs px-2 py-1 rounded-lg cursor-pointer transition-[color,background-color,border-color,opacity,transform] select-none`}
                       title="Clic simple pour sélectionner, MAJ+Clic pour sélection multiple"
                     >
                       {p}
@@ -369,7 +369,7 @@ export function ToolbarUI() {
             {/* Liste des cartes */}
             <div className="flex flex-col gap-2">
               {maps.length === 0 && !showAddForm ? (
-                <div className="text-center text-zinc-600 text-xs italic py-4">Aucune carte dans la session.</div>
+                <div className="text-center text-zinc-600 text-xs py-4">Aucune carte dans la session.</div>
               ) : (
                 maps.map((map, i) => (
                   <div key={i} className="flex flex-col gap-1 mb-2">
@@ -396,7 +396,7 @@ export function ToolbarUI() {
                           setSelectedPlayers([]);
                         }
                       }}
-                      className={`relative group h-24 rounded-lg overflow-hidden border ${selectedPlayers.length > 0 ? 'border-rose-500 cursor-crosshair shadow-[0_0_15px_rgba(225,29,72,0.3)]' : 'border-zinc-700 hover:border-rose-500'} transition-all`}
+                      className={`relative group h-24 rounded-lg overflow-hidden border ${selectedPlayers.length > 0 ? 'border-rose-500 cursor-crosshair' : 'border-white/10 hover:border-rose-500'} transition-[color,background-color,border-color,opacity,transform]`}
                     >
                       <img src={map.url} className="w-full h-full object-cover pointer-events-none" alt={map.name} />
 
@@ -415,7 +415,7 @@ export function ToolbarUI() {
                                 else setSelectedPlayers([p]);
                               }
                             }}
-                            className={`bg-zinc-900/90 text-[10px] px-1.5 py-0.5 rounded border ${selectedPlayers.includes(p) ? 'border-rose-500 text-rose-300 shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'border-zinc-500 text-white hover:border-zinc-300'} cursor-pointer select-none transition-all`}
+                            className={`bg-surface-raised/90 text-[10px] px-1.5 py-0.5 rounded-lg border ${selectedPlayers.includes(p) ? 'border-rose-500 text-rose-300' : 'border-zinc-500 text-white hover:border-zinc-300'} cursor-pointer select-none transition-[color,background-color,border-color,opacity,transform]`}
                             title="Clic simple pour sélectionner, MAJ+Clic pour sélection multiple"
                           >
                             {p}
@@ -425,17 +425,17 @@ export function ToolbarUI() {
 
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-between p-2 pointer-events-none">
                         <div className="flex justify-end"></div>
-                        <span className="text-white font-medium text-sm truncate drop-shadow-md mt-auto">{map.name}</span>
+                        <span className="text-white font-medium text-sm truncate mt-auto">{map.name}</span>
                       </div>
 
                       {/* Boutons d'édition (Haut Droite) */}
                       <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                         {!map.hash && (
-                          <button onClick={(e) => { e.stopPropagation(); handleEditMap(i); }} className="bg-zinc-800 hover:bg-zinc-700 text-white p-1.5 rounded" title="Modifier l'URL">
+                          <button onClick={(e) => { e.stopPropagation(); handleEditMap(i); }} className="bg-zinc-800 hover:bg-zinc-700 text-white p-1.5 rounded-lg" title="Modifier l'URL">
                             <Pencil className="w-3 h-3" />
                           </button>
                         )}
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteMap(i); }} className="bg-red-900/80 hover:bg-red-600 text-white p-1.5 rounded" title="Supprimer">
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteMap(i); }} className="bg-red-900/80 hover:bg-red-600 text-white p-1.5 rounded-lg" title="Supprimer">
                           <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
@@ -444,14 +444,14 @@ export function ToolbarUI() {
                       <div className="absolute bottom-0 left-0 right-0 h-10 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 px-2 z-20">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleSoloMap(map.url); }}
-                          className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition-colors"
+                          className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-bold py-1 rounded-lg flex items-center justify-center gap-1 transition-colors"
                           title="Y aller seul"
                         >
                           <Play className="w-3 h-3" /> Go
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleGroupMap(map.url); }}
-                          className="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition-colors shadow-[0_0_10px_rgba(225,29,72,0.5)]"
+                          className="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-1 rounded-lg flex items-center justify-center gap-1 transition-colors"
                           title="Amener tout le monde"
                         >
                           <Eye className="w-3 h-3" /> Tous

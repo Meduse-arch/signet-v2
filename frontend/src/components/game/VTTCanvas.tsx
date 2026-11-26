@@ -451,7 +451,7 @@ export const VTTCanvas: React.FC<VTTCanvasProps> = ({
 
   return (
     <div
-      className="absolute inset-0 bg-[#050508] touch-none outline-none"
+      className="absolute inset-0 bg-void touch-none outline-none"
       tabIndex={0}
       onKeyDown={(e) => {
         if ((e.key === 'Delete' || e.key === 'Backspace') && selectedTokenId && onTokenDelete) {

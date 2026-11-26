@@ -35,7 +35,7 @@ export function SystemWindowsUI() {
   const handleClose = () => setActiveWindow(null);
 
   return (
-    <div className="absolute inset-0 z-[60] bg-[#050508] animate-fade-in pointer-events-auto overflow-y-auto flex flex-col p-6 lg:p-12">
+    <div className="absolute inset-0 z-[60] bg-void animate-fade-in pointer-events-auto overflow-y-auto flex flex-col p-6 lg:p-12">
       <div className="mb-4 shrink-0">
         <button 
           onClick={handleClose} 

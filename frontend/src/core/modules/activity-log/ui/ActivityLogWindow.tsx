@@ -65,20 +65,20 @@ export function ActivityLogWindow({ api }: ActivityLogWindowProps) {
     switch (type) {
       case 'dice': return <Dices className="w-4 h-4 text-rose-400" />;
       case 'item': return <Backpack className="w-4 h-4 text-blue-400" />;
-      case 'skill': return <Zap className="w-4 h-4 text-purple-400" />;
-      case 'system': return <Settings className="w-4 h-4 text-slate-400" />;
+      case 'skill': return <Zap className="w-4 h-4 text-zinc-400" />;
+      case 'system': return <Settings className="w-4 h-4 text-zinc-400" />;
       case 'action': return <AlignLeft className="w-4 h-4 text-emerald-400" />;
     }
   };
 
   return (
-    <div className="flex flex-col h-full w-full pointer-events-auto bg-[#050508] overflow-hidden">
+    <div className="flex flex-col h-full w-full pointer-events-auto bg-void overflow-hidden">
       {/* Filters - Solid Header */}
-      <div className="flex gap-2 p-3 bg-[#090a10] border-b border-white/10 shrink-0">
+      <div className="flex gap-2 p-3 bg-surface border-b border-white/10 shrink-0">
         <select 
           value={typeFilter} 
           onChange={(e) => setTypeFilter(e.target.value as any)}
-          className="bg-black/80 text-xs text-slate-300 rounded px-2 py-1.5 border border-white/10 outline-none focus:border-rose-500/50 transition-colors"
+          className="bg-black/80 text-xs text-zinc-300 rounded-lg px-2 py-1.5 border border-white/10 outline-none focus:border-rose-500/50 transition-colors"
         >
           <option value="all">Tous les types</option>
           <option value="dice">Dés</option>
@@ -96,7 +96,7 @@ export function ActivityLogWindow({ api }: ActivityLogWindowProps) {
                 setAccountFilter(e.target.value);
                 setActorFilter('all'); // Reset l'acteur quand on change de compte
               }}
-              className="bg-black/80 text-xs text-slate-300 rounded px-2 py-1.5 border border-white/10 outline-none focus:border-rose-500/50 transition-colors"
+              className="bg-black/80 text-xs text-zinc-300 rounded-lg px-2 py-1.5 border border-white/10 outline-none focus:border-rose-500/50 transition-colors"
             >
               <option value="all">Tous</option>
               {accounts.map(a => (
@@ -107,7 +107,7 @@ export function ActivityLogWindow({ api }: ActivityLogWindowProps) {
             <select 
               value={actorFilter} 
               onChange={(e) => setActorFilter(e.target.value)}
-              className="bg-black/80 text-xs text-slate-300 rounded px-2 py-1.5 border border-white/10 outline-none focus:border-rose-500/50 transition-colors"
+              className="bg-black/80 text-xs text-zinc-300 rounded-lg px-2 py-1.5 border border-white/10 outline-none focus:border-rose-500/50 transition-colors"
             >
               <option value="all">Tous les acteurs</option>
               {Array.from(actorsMap.entries()).map(([id, name]) => (
@@ -127,16 +127,16 @@ export function ActivityLogWindow({ api }: ActivityLogWindowProps) {
             </div>
             <div className="flex-1 leading-snug pt-0.5">
               <span className="text-rose-300 font-semibold text-sm mr-1">{entry.actor}</span>
-              {isHost && <span className="text-zinc-500 text-xs italic mr-2">({entry.accountName})</span>}
-              <span className="text-slate-400 text-sm">{entry.summary}</span>
-              <div className="text-slate-600 text-[10px] mt-1 opacity-50 group-hover:opacity-100 transition-opacity">
+              {isHost && <span className="text-zinc-500 text-xs mr-2">({entry.accountName})</span>}
+              <span className="text-zinc-400 text-sm">{entry.summary}</span>
+              <div className="text-zinc-600 text-[10px] mt-1 opacity-50 group-hover:opacity-100 transition-opacity">
                 {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
             </div>
           </div>
         ))}
         {filteredEntries.length === 0 && (
-          <div className="text-center text-slate-500 text-sm italic mt-8">
+          <div className="text-center text-zinc-500 text-sm mt-8">
             Le journal est vide.
           </div>
         )}
