@@ -1,4 +1,3 @@
-import React from 'react';
 import { Wrench } from 'lucide-react';
 import { SignetAPI } from '../../services/SignetAPI';
 import type { SignetModule } from '../../services/ModManager';

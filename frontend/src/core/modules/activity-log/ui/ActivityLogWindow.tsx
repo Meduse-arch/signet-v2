@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SignetAPI } from '../../../services/SignetAPI';
 import { LogStore } from '../LogStore';
 import type { LogEntry, LogEntryType } from '../types';

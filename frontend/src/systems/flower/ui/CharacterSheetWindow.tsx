@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SignetAPI } from '../../../core/services/SignetAPI';
 import type { FlowerCharacter } from '../types';
 import { DEFAULT_FLOWER_STATS, getDiceForFlowers, calculateMaxHp, normalizeStatKey } from '../types';
-import { Flower2, Plus, Minus, Skull, Save, ArrowLeft, Upload, Shield, Zap } from 'lucide-react';
+import { Flower2, Plus, Minus, Skull, ArrowLeft, Upload, Shield, Zap } from 'lucide-react';
 import { simulateFlowerRoll } from '../utils/diceUtils';
 import { useRef } from 'react';
 import { Button } from '../../../components/ui/Button';
@@ -191,7 +191,7 @@ export function CharacterSheetWindow({ api, characterId, onBack }: CharacterShee
     if (!characterId) return;
 
     if (isTauri()) {
-      invoke('get_characters').then((records: any[]) => {
+      invoke<{ id: string; data: string }[]>('get_characters').then((records) => {
         const record = records.find(r => r.id === characterId);
         if (record) {
           let parsed = JSON.parse(record.data);

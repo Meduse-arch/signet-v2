@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { coreEventBus } from '../../../../core/services/EventBus';
 import type { RegisteredAction } from '../../../../core/services/ModManager';
 

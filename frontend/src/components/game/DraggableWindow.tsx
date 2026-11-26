@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, GripHorizontal, ArrowRightToLine, ArrowLeftToLine, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
+import { X, GripHorizontal, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 import { coreEventBus } from '../../core/services/EventBus';
 import { PopoutButton } from './PopoutButton';
 import type { WindowPosition } from '../../core/services/ModManager';
@@ -217,7 +217,7 @@ export function DraggableWindow({
       }
     };
 
-    const handlePointerUp = (e: PointerEvent) => {
+    const handlePointerUp = () => {
       if (isResizing) {
         setIsResizing(false);
         return;

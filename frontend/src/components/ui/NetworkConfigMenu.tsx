@@ -1,4 +1,3 @@
-import React from 'react';
 import { Server, CheckCircle2, Copy, ClipboardPaste, Check } from 'lucide-react';
 
 export type DraftMode = 'online' | 'host' | 'join';

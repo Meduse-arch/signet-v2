@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SignetAPI } from '../../../core/services/SignetAPI';
 import { CharacterManagerWindow } from './CharacterManagerWindow';
 import { CharacterSheetWindow } from './CharacterSheetWindow';

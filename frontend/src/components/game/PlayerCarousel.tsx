@@ -1,4 +1,3 @@
-import React from 'react';
 import { Shield, User, Loader2 } from 'lucide-react';
 import { Carousel } from '../ui/Carousel';
 

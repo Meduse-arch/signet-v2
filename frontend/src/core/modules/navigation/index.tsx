@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, Users, BookOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { ModManager, type SignetModule, type RegisteredAction } from '../../services/ModManager';
 import { SignetAPI } from '../../services/SignetAPI';
 import { Taskbar } from './ui/Taskbar';

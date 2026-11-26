@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SignetAPI } from '../../../core/services/SignetAPI';
-import { Book, Plus, Trash2, Library, Swords, Backpack } from 'lucide-react';
+import { Plus, Trash2, Library, Swords, Backpack } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 
 // Dynamically import invoke since we might not be in Tauri
@@ -254,7 +254,10 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
                 <label className="block text-xs uppercase text-zinc-500 mb-1">Type de Compétence</label>
                 <select 
                   value={editForm.skillType || 'active'}
-                  onChange={(e) => setEditForm({ ...editForm, skillType: e.target.value })}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === 'active' || v === 'toggle' || v === 'passive') setEditForm({ ...editForm, skillType: v });
+                  }}
                   className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 text-white"
                 >
                   <option value="active">Active (Classique)</option>
@@ -333,7 +336,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
                     }}><Trash2 className="w-4 h-4 text-rose-400 hover:text-rose-300" /></Button>
                   </div>
                 ))}
-                <Button variant="outline" size="sm" onClick={() => {
+                <Button variant="ghost" size="sm" onClick={() => {
                   const newMods = [...(editForm.modifiers || []), { target: '', value: '1' }];
                   setEditForm({ ...editForm, modifiers: newMods });
                 }} className="w-full justify-center text-xs text-zinc-400 border-white/10 mt-2">
@@ -358,7 +361,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
           </div>
         ) : (
           <div className="space-y-2">
-            <Button className="w-full mb-4 gap-2" variant="outline" onClick={handleAddNew}>
+            <Button className="w-full mb-4 gap-2" variant="ghost" onClick={handleAddNew}>
               <Plus className="w-4 h-4" /> 
               {activeTab === 'skill' ? 'Nouvelle Compétence' : 'Nouvel Objet'}
             </Button>

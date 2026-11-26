@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SignetAPI } from '../../../services/SignetAPI';
 
 interface DiceAnimationOverlayProps {

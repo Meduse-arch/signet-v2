@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { P2PMessage } from '../core/network/schemas';
 import { ModuleOverlays } from './game/ModuleOverlays';
 import { DockManager } from './game/DockManager';
@@ -333,7 +333,14 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
         }
         console.log('[GameBoard] Joueur: Réception du SYNC_STATE', msg.payload);
         const { mapUrl: syncedMapUrl, tokens: syncedTokens } = msg.payload;
-        setTokens(syncedTokens);
+        setTokens(syncedTokens.map((t): TokenData => ({
+          id: t.id, name: t.name, x: t.x, y: t.y, color: t.color,
+          owner: t.owner ?? undefined,
+          scaleX: t.scaleX ?? undefined,
+          scaleY: t.scaleY ?? undefined,
+          rotation: t.rotation ?? undefined,
+          avatarUrl: t.avatarUrl ?? undefined,
+        })));
         if (syncedMapUrl) {
           // Déclencher le téléchargement si nécessaire (même logique que SET_MAP)
           const parts = syncedMapUrl.split('/library/');

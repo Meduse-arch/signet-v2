@@ -1,4 +1,3 @@
-import React from 'react';
 import { MessageSquare } from 'lucide-react';
 import type { SignetModule } from '../../services/ModManager';
 import { SignetAPI } from '../../services/SignetAPI';

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Hand, MousePointer2, Grid3x3, ImageIcon, Magnet, Move, Ruler, Wrench, UploadCloud, Plus, Users, Eye, Play, Pencil, Trash2 } from 'lucide-react';
 import { coreEventBus } from '../../../services/EventBus';
 import { ModManager } from '../../../services/ModManager';
@@ -154,8 +154,6 @@ export function ToolbarUI() {
     }
 
     setIsUploading(true);
-    // On importe SignetAPI dynamiquement pour éviter la dépendance circulaire
-    const apiModule = await import('../../../services/SignetAPI');
     // Simulation: Normalement on aurait l'instance api via le ModManager. 
     // Pour l'upload, on peut recréer l'accès direct au backend
     try {

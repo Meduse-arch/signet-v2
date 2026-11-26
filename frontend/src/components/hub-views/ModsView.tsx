@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Button } from '../ui/Button';
 import { Puzzle, CheckCircle, Users, Layers, ShieldCheck, XCircle } from 'lucide-react';
-import { t } from '../../core/locales/fr';
 import { ModManager, type StoreCategory } from '../../core/services/ModManager';
 
 type StatusFilter = 'all' | 'enabled' | 'disabled';

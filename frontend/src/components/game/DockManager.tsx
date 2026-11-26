@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ModManager } from '../../core/services/ModManager';
 import type { RegisteredWindow, WindowPosition } from '../../core/services/ModManager';
 import { coreEventBus } from '../../core/services/EventBus';
@@ -87,7 +87,7 @@ export function DockManager() {
   // Calculer les zones actuellement occupées par des fenêtres OUVERTES
   const occupiedZones = Object.entries(dockStates)
     .filter(([id, state]) => openWindows.includes(id) && ['left', 'right', 'top', 'bottom'].includes(state))
-    .map(([id, state]) => state);
+    .map(([, state]) => state);
 
   return (
     <div className="absolute inset-0 pointer-events-none z-[55]">

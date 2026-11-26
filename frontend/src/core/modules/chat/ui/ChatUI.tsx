@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronLeft, X } from 'lucide-react';
 import { coreEventBus } from '../../../../core/services/EventBus';
 
 export interface ChatMessage {
@@ -10,7 +9,7 @@ export interface ChatMessage {
 }
 
 export function ChatUI() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed] = useState(false);
 
   // Utiliser une ref pour lire l'état actuel de isCollapsed dans le handler global
   const isCollapsedRef = useRef(isCollapsed);
@@ -48,10 +47,6 @@ export function ChatUI() {
     // C'est le ChatModule (l'autoradio) qui interceptera ça.
     coreEventBus.emit('CHAT_UI_SEND', inputText.trim());
     setInputText('');
-  };
-
-  const handleClose = () => {
-    coreEventBus.emit('WINDOW_CLOSE', 'toggle-chat');
   };
 
   return (

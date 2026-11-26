@@ -1,12 +1,11 @@
 import React from 'react';
-import { Settings, Users, BookOpen } from 'lucide-react';
+import { Settings, BookOpen } from 'lucide-react';
 import type { SignetModule } from '../../services/ModManager';
 import { SignetAPI } from '../../services/SignetAPI';
 import { NotesView } from '../../../components/hub-views/NotesView';
 import { SettingsView } from '../../../components/hub-views/SettingsView';
-import { coreEventBus } from '../../services/EventBus';
 
-function FullscreenWindowWrapper({ windowId, children }: { windowId: string, children: React.ReactNode }) {
+function FullscreenWindowWrapper({ children }: { windowId: string, children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-full w-full bg-[#050508]/50 pointer-events-auto p-4">
       {children}

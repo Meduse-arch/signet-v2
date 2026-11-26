@@ -1,4 +1,3 @@
-import React from 'react';
 import { SignetAPI } from '../../services/SignetAPI';
 import { Dices } from 'lucide-react';
 import { DiceWindow } from './ui/DiceWindow';

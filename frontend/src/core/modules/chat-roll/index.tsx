@@ -1,7 +1,6 @@
 import type { SignetModule } from '../../services/ModManager';
 import { SignetAPI } from '../../services/SignetAPI';
 import { Dices } from 'lucide-react';
-import React from 'react';
 
 /**
  * Module "Chat Roll"

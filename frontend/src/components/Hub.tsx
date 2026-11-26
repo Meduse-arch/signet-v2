@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../core/supabase';
 // import { t } from '../core/locales/fr'; // plus utilisé ici
-import { Play, Plus, Clock, LogOut, Check, BookOpen, Globe, Puzzle, Settings, ArrowLeft } from 'lucide-react';
+import { Play, Plus, Clock, LogOut, BookOpen, Globe, Puzzle, Settings, ArrowLeft } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { Input } from './ui/Input';
 import { NetworkToggle } from './NetworkToggle';
 import { NotesView } from './hub-views/NotesView';
 import { PublicSessionsView } from './hub-views/PublicSessionsView';

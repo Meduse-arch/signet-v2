@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Stage, Layer, Rect, Circle, Text, Group, Line, Image, Transformer } from 'react-konva';
+import { Stage, Layer, Circle, Text, Group, Line, Image, Transformer } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import { coreEventBus } from '../../core/services/EventBus';
 import { FileTransferService } from '../../core/services/FileTransferService';
@@ -275,7 +275,7 @@ export const VTTCanvas: React.FC<VTTCanvasProps> = ({
             setSelectedTokenId(null);
           }
         }}
-        onPointerMove={(e) => {
+        onPointerMove={() => {
           if (activeTool === 'ruler' && rulerPoints) {
             const pointer = stageRef.current.getPointerPosition();
             if (pointer) {
@@ -285,7 +285,7 @@ export const VTTCanvas: React.FC<VTTCanvasProps> = ({
             }
           }
         }}
-        onPointerUp={(e) => {
+        onPointerUp={() => {
           if (activeTool === 'ruler') {
             setRulerPoints(null);
           }
@@ -331,7 +331,7 @@ export const VTTCanvas: React.FC<VTTCanvasProps> = ({
                 onDblClick={() => {
                   coreEventBus.emit('TOKEN_DOUBLE_CLICKED', token.id);
                 }}
-                onPointerDown={(e) => {
+                onPointerDown={() => {
                   if (canMove) {
                     setSelectedTokenId(token.id);
                   }

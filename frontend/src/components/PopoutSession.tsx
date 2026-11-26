@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useVTTNetwork } from '../core/hooks/useVTTNetwork';
 import { ModManager } from '../core/services/ModManager';
-import { Loader2 } from 'lucide-react';
 import { CoreChatModule } from '../core/modules/chat';
 import { CoreNavigationModule } from '../core/modules/navigation';
 import { CoreSystemWindowsModule } from '../core/modules/system-windows';
@@ -15,10 +14,7 @@ interface PopoutSessionProps {
 
 export function PopoutSession({ roomId, moduleId, signalUrl, username }: PopoutSessionProps) {
   const {
-    connectionState,
-    messages,
     joinGame,
-    sendMessage: rawSendMessage,
   } = useVTTNetwork(signalUrl);
 
   const [error, setError] = useState<string | null>(null);

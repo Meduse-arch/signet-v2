@@ -1,4 +1,3 @@
-import React from 'react';
 import { SignetAPI } from '../../core/services/SignetAPI';
 import { Users, Library } from 'lucide-react';
 import { FlowerAppWindow } from './ui/FlowerAppWindow';

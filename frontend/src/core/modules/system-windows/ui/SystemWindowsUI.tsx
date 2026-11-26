@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SettingsView } from '../../../../components/hub-views/SettingsView';
 import { NotesView } from '../../../../components/hub-views/NotesView';
 import { coreEventBus } from '../../../../core/services/EventBus';
