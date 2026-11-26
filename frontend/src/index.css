@@ -57,9 +57,14 @@ html {
   color-scheme: dark;
 }
 
+/* Hauteur en % (et non vh/dvh) : suit la fenêtre réelle, y compris en plein écran F11
+   (Tauri/WebView2), où les unités de viewport peuvent rester figées sur l'ancienne taille. */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
+
 #root, html, body {
-  min-height: 100vh;
-  min-height: 100dvh;
   margin: 0;
   padding: 0;
   background: #050508;
