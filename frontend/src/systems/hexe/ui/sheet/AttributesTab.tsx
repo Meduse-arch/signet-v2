@@ -11,7 +11,7 @@ export function AttributesTab({ sheet }: { sheet: HexeSheetState }) {
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-35 sm:opacity-40">
             <svg
               viewBox="0 0 100 100"
-              className="w-72 h-72 sm:w-80 sm:h-80 drop-shadow-[0_0_24px_rgba(225,29,72,0.65)] transition-transform duration-700 group-hover:scale-105"
+              className="w-72 h-72 sm:w-80 sm:h-80 transition-transform duration-700"
             >
               {/* Anneaux extérieurs et cercles ésotériques */}
               <circle cx="50" cy="50" r="47" stroke="#e11d48" strokeWidth="1" fill="none" opacity="0.6" />
@@ -55,23 +55,23 @@ export function AttributesTab({ sheet }: { sheet: HexeSheetState }) {
             return (
               <div
                 key={stat}
-                className="bg-[#090a10]/80 backdrop-blur-md border border-white/10 hover:border-rose-500/40 hover:bg-[#090a10]/90 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between gap-2 transition-all group shadow-sm min-w-0"
+                className="bg-surface/80 backdrop-blur-md border border-white/10 hover:border-rose-500/40 hover:bg-surface/90 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between gap-2 transition-[color,background-color,border-color,opacity,transform] group shadow-sm min-w-0"
               >
               <div className="flex items-center justify-between gap-1">
                 <span className="font-bold text-xs text-white truncate">
                   {STAT_LABELS[stat].split(' ')[0]}
                 </span>
-                <span className="text-[9px] font-black uppercase text-rose-400 tracking-wider bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.5 rounded shrink-0">
+                <span className="text-[11px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/30 px-1.5 py-0.5 rounded-lg shrink-0">
                   {STAT_SHORT[stat as HexeStatKey]}
                 </span>
               </div>
 
               <div className="flex items-center justify-between gap-1 pt-2 border-t border-white/5">
                 {/* Contrôle de niveau */}
-                <div className="flex items-center gap-1 bg-[#050508] px-1.5 py-1 rounded-lg border border-white/10 shrink-0">
+                <div className="flex items-center gap-1 bg-void px-1.5 py-1 rounded-lg border border-white/10 shrink-0">
                   <button
                     onClick={() => updateStat(stat, -1)}
-                    className="w-4 h-4 rounded text-slate-400 hover:text-white font-bold flex items-center justify-center text-xs"
+                    className="w-4 h-4 rounded-lg text-zinc-400 hover:text-white font-bold flex items-center justify-center text-xs"
                     title="Diminuer niveau"
                   >
                     -
@@ -81,14 +81,14 @@ export function AttributesTab({ sheet }: { sheet: HexeSheetState }) {
                       {baseLevel}
                     </span>
                     {hasBonus && (
-                      <span className="text-[9px] font-bold text-emerald-400 leading-none">
+                      <span className="text-[11px] font-bold text-emerald-400 leading-none">
                         +{bonus}
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => updateStat(stat, 1)}
-                    className="w-4 h-4 rounded text-slate-400 hover:text-white font-bold flex items-center justify-center text-xs"
+                    className="w-4 h-4 rounded-lg text-zinc-400 hover:text-white font-bold flex items-center justify-center text-xs"
                     title="Augmenter niveau"
                   >
                     +
@@ -98,11 +98,10 @@ export function AttributesTab({ sheet }: { sheet: HexeSheetState }) {
                 {/* Bouton de jet de dé */}
                 <button
                   onClick={() => rollStat(stat as HexeStatKey)}
-                  className="flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[11px] shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all whitespace-nowrap shrink-0 ml-auto"
+                  className="flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[11px] transition-[color,background-color,border-color,opacity,transform] whitespace-nowrap shrink-0 ml-auto"
                   title={`Lancer ${effectiveDice} pour ${STAT_LABELS[stat]}`}
                 >
-                  <span className="text-[11px]">🎲</span>
-                  <span>{effectiveDice}</span>
+                                    <span>{effectiveDice}</span>
                 </button>
               </div>
             </div>

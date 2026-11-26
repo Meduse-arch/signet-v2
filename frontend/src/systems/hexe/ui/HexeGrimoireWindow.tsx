@@ -13,28 +13,28 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
   const g = useGrimoireTemplates(api);
 
   return (
-    <div className="flex flex-col h-full bg-[#050508] text-slate-200 select-none overflow-hidden">
+    <div className="flex flex-col h-full bg-void text-zinc-200 select-none overflow-hidden">
       {/* Header */}
-      <div className="p-3 sm:p-4 border-b border-white/10 bg-slate-950/80 backdrop-blur-md flex items-center justify-between gap-3 shrink-0">
+      <div className="p-3 sm:p-4 border-b border-white/10 bg-void/80 backdrop-blur-md flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-rose-950/40 border border-rose-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(225,29,72,0.25)]">
+          <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center shrink-0">
             <BookOpen className="w-5 h-5 text-rose-400" />
           </div>
           <div className="min-w-0">
             <h2 className="text-sm font-black text-white tracking-wide flex items-center gap-2">
               Grimoire Hexe
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-950/60 border border-rose-800/40 text-rose-300 font-mono font-normal">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 font-mono font-normal">
                 {g.skills.length} sorts & dons
               </span>
             </h2>
-            <p className="text-[11px] text-slate-400 truncate">Catalogue des compétences, effets et formules occultes</p>
+            <p className="text-[11px] text-zinc-400 truncate">Catalogue des compétences, effets et formules occultes</p>
           </div>
         </div>
 
         {!g.isCreating && (
           <button
             onClick={g.handleStartCreate}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-[0_0_15px_rgba(225,29,72,0.3)] shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-[color,background-color,border-color,opacity,transform] shrink-0 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             <span>Créer un don / sort</span>
@@ -66,10 +66,10 @@ export function HexeGrimoireWindow({ api }: HexeGrimoireWindowProps) {
           {/* Liste des Cartes */}
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 custom-scrollbar">
             {g.filtered.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 rounded-xl bg-[#090a10]/40">
-                <BookOpen className="w-10 h-10 text-slate-600 mb-2" />
-                <p className="text-sm font-semibold text-slate-400">Aucune compétence trouvée</p>
-                <p className="text-xs text-slate-600 mt-1 max-w-sm">
+              <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 rounded-xl bg-surface/40">
+                <BookOpen className="w-10 h-10 text-zinc-600 mb-2" />
+                <p className="text-sm font-semibold text-zinc-400">Aucune compétence trouvée</p>
+                <p className="text-xs text-zinc-600 mt-1 max-w-sm">
                   {g.search ? 'Modifiez vos critères de recherche.' : 'Créez votre premier don ou sort avec le bouton ci-dessus.'}
                 </p>
               </div>

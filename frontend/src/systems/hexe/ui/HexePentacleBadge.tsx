@@ -165,7 +165,7 @@ export function HexePentacleBadge({
         width={size}
         height={size}
         viewBox="0 0 100 100"
-        className="shrink-0 drop-shadow-[0_0_6px_rgba(225,29,72,0.3)] transition-transform hover:scale-110"
+        className="shrink-0 transition-transform"
       >
         {/* Anneau / Cercle pour le rang ultime (S) */}
         {hasCircle && (
@@ -177,7 +177,7 @@ export function HexePentacleBadge({
             stroke={currentColors.stroke}
             strokeWidth="3"
             opacity="0.95"
-            className="animate-pulse"
+            className=""
           />
         )}
 
@@ -221,10 +221,10 @@ export function HexePentacleBadge({
 
       {showLabel && (
         <div className="flex flex-col leading-none">
-          <span className="text-[10px] font-bold text-slate-200">
+          <span className="text-[11px] font-bold text-zinc-200">
             {rankLabel}
           </span>
-          <span className="text-[9px] text-slate-400 capitalize">
+          <span className="text-[11px] text-zinc-400 capitalize">
             {nature === 'ego' ? "D'Ego" : nature === 'possessed' ? 'Possédée' : 'Classique'}
           </span>
         </div>

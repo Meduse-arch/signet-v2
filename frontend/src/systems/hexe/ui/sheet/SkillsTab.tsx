@@ -13,10 +13,10 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
         <div className="flex items-center justify-between pb-1 border-b border-white/10">
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-rose-400" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+            <span className="text-xs font-bold text-zinc-200">
               Compétences
             </span>
-            <span className="text-[10px] font-bold bg-white/10 text-slate-300 rounded-full px-2 py-0.2 leading-none">
+            <span className="text-[11px] font-bold bg-white/10 text-zinc-300 rounded-full px-2 py-0.2 leading-none">
               {availableSkills.length}
             </span>
           </div>
@@ -32,7 +32,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                     setExpandedSkills(new Set(availableSkills.map(s => s.skill.id)));
                   }
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors whitespace-nowrap"
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-zinc-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors whitespace-nowrap"
                 title={availableSkills.every(s => expandedSkills.has(s.skill.id)) ? 'Tout replier' : 'Tout déplier'}
               >
                 {availableSkills.every(s => expandedSkills.has(s.skill.id)) ? (
@@ -50,7 +50,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
             )}
             <button
               onClick={() => setShowGrimoirePicker(v => !v)}
-              className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg transition-[color,background-color,border-color,opacity,transform] whitespace-nowrap"
             >
               <BookOpen className="w-3.5 h-3.5 shrink-0" />
               <span>{showGrimoirePicker ? 'Fermer Grimoire' : '+ Grimoire'}</span>
@@ -75,12 +75,12 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
         )}
 
         {availableSkills.length === 0 && !showGrimoirePicker ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-500 bg-[#07080d]/60 border border-dashed border-white/10 rounded-2xl p-6">
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-zinc-500 bg-[#07080d]/60 border border-dashed border-white/10 rounded-2xl p-6">
             <BookOpen className="w-10 h-10 text-rose-500/40 mb-1" />
-            <p className="font-bold text-sm text-slate-300 text-center">
+            <p className="font-bold text-sm text-zinc-300 text-center">
               Aucune compétence acquise ou disponible
             </p>
-            <p className="text-xs text-slate-500 text-center max-w-sm">
+            <p className="text-xs text-zinc-500 text-center max-w-sm">
               Cliquez sur "+ Grimoire" pour piocher une compétence, ou équipez un objet en conférant.
             </p>
           </div>
@@ -98,8 +98,8 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                 <div key={groupType} className="space-y-2">
                   <div className="flex items-center gap-2 px-1">
                     {groupIcon}
-                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{groupLabel}</span>
-                    <span className="text-[10px] font-bold text-slate-500 font-mono">({groupEntries.length})</span>
+                    <span className="text-xs font-bold text-zinc-300">{groupLabel}</span>
+                    <span className="text-[11px] font-bold text-zinc-500 font-mono">({groupEntries.length})</span>
                   </div>
 
                   <div className="space-y-2">
@@ -114,9 +114,9 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                       return (
                         <div
                           key={skill.id}
-                          className={`bg-[#090a10] border rounded-xl overflow-hidden transition-all ${
+                          className={`bg-surface border rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,transform] ${
                             isActiveToggle
-                              ? 'border-rose-500/80 shadow-[0_0_15px_rgba(225,29,72,0.25)] bg-rose-950/20'
+                              ? 'border-rose-500/80 bg-rose-950/20'
                               : 'border-white/10 hover:border-white/20'
                           }`}
                         >
@@ -135,7 +135,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h4 className="text-xs font-bold text-white truncate">{skill.name}</h4>
-                                    <span className={`text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 border ${
+                                    <span className={`text-[11px] font-bold rounded-lg px-1.5 py-0.5 border ${
                                       isPassive
                                         ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
                                         : isToggle
@@ -149,14 +149,14 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
 
                                     {/* Distinction capacités apprises vs accordées par un objet */}
                                     {isLearned && (
-                                      <span className="text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 bg-white/5 border border-white/10 text-slate-300">
+                                      <span className="text-[11px] font-bold rounded-lg px-1.5 py-0.5 bg-white/5 border border-white/10 text-zinc-300">
                                         Appris
                                       </span>
                                     )}
                                     {sources.filter(s => s !== 'Appris').map(sourceName => (
                                       <span
                                         key={sourceName}
-                                        className="text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 bg-rose-950/70 border border-rose-800/50 text-rose-300 flex items-center gap-1 shadow-sm"
+                                        className="text-[11px] font-bold rounded-lg px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center gap-1 shadow-sm"
                                         title={`Accordé par l'équipement porté : ${sourceName}`}
                                       >
                                         <Swords className="w-2.5 h-2.5 text-rose-400" />
@@ -165,7 +165,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                     ))}
 
                                     {skill.skillLevel && (
-                                      <span className="text-[9px] font-bold bg-white/5 border border-white/10 text-slate-400 rounded px-1.5 py-0.5">
+                                      <span className="text-[11px] font-bold bg-white/5 border border-white/10 text-zinc-400 rounded-lg px-1.5 py-0.5">
                                         Niv. {skill.skillLevel}
                                       </span>
                                     )}
@@ -174,32 +174,32 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                   {/* Coûts et dés */}
                                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                     {skill.costs?.mp && (
-                                      <span className="text-[9px] font-bold text-blue-300 bg-blue-950/60 border border-blue-800/40 px-1.5 py-0.2 rounded">
+                                      <span className="text-[11px] font-bold text-blue-300 bg-blue-950/60 border border-blue-800/40 px-1.5 py-0.2 rounded-lg">
                                         {skill.costs.mp} MP
                                       </span>
                                     )}
                                     {skill.costs?.stm && (
-                                      <span className="text-[9px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.2 rounded">
+                                      <span className="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.2 rounded-lg">
                                         {skill.costs.stm} STM
                                       </span>
                                     )}
                                     {skill.costs?.hp && (
-                                      <span className="text-[9px] font-bold text-rose-300 bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.2 rounded">
+                                      <span className="text-[11px] font-bold text-rose-300 bg-rose-500/10 border border-rose-500/30 px-1.5 py-0.2 rounded-lg">
                                         {skill.costs.hp} HP
                                       </span>
                                     )}
                                     {skill.costs?.chance && (
-                                      <span className="text-[9px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.2 rounded">
+                                      <span className="text-[11px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.2 rounded-lg">
                                         {skill.costs.chance} Chance
                                       </span>
                                     )}
                                     {skill.dice && (
-                                      <span className="text-[9px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded">
-                                        🎲 {formatDiceFormula(skill.dice)}
+                                      <span className="text-[11px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded-lg">
+                                        {formatDiceFormula(skill.dice)}
                                       </span>
                                     )}
                                     {skill.duration && (
-                                      <span className="text-[9px] text-slate-400 bg-white/5 border border-white/10 rounded px-1.5 py-0.2">
+                                      <span className="text-[11px] text-zinc-400 bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.2">
                                         ⏱ {skill.duration}
                                       </span>
                                     )}
@@ -213,13 +213,13 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                   <button
                                     type="button"
                                     onClick={() => handleToggleSkill(skill.id)}
-                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-[color,background-color,border-color,opacity,transform] ${
                                       isActiveToggle
-                                        ? 'bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.4)]'
-                                        : 'bg-white/5 text-slate-400 hover:text-white border border-white/10 hover:bg-white/10'
+                                        ? 'bg-rose-600 text-white'
+                                        : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10 hover:bg-white/10'
                                     }`}
                                   >
-                                    {isActiveToggle ? <ToggleRight className="w-4 h-4 text-white" /> : <ToggleLeft className="w-4 h-4 text-slate-400" />}
+                                    {isActiveToggle ? <ToggleRight className="w-4 h-4 text-white" /> : <ToggleLeft className="w-4 h-4 text-zinc-400" />}
                                     <span>{isActiveToggle ? 'Actif' : 'Inactif'}</span>
                                   </button>
                                 )}
@@ -228,7 +228,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                   <button
                                     type="button"
                                     onClick={() => handleTriggerSkill(skill)}
-                                    className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all whitespace-nowrap"
+                                    className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition-[color,background-color,border-color,opacity,transform] whitespace-nowrap"
                                   >
                                     <Play className="w-3.5 h-3.5 fill-current" />
                                     <span>Lancer</span>
@@ -236,7 +236,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                 )}
 
                                 {isPassive && (
-                                  <span className="text-[10px] font-semibold text-emerald-400/90 italic px-2 py-0.5">
+                                  <span className="text-[11px] font-semibold text-emerald-400/90 px-2 py-0.5">
                                     Permanent
                                   </span>
                                 )}
@@ -245,7 +245,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                 <button
                                   type="button"
                                   onClick={() => setEditingSkill(skill)}
-                                  className="p-1 rounded text-slate-500 hover:text-white transition-colors"
+                                  className="p-1 rounded-lg text-zinc-500 hover:text-white transition-colors"
                                   title="Modifier cette compétence sur la fiche"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
@@ -255,14 +255,14 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteSkill(skill.id)}
-                                    className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
+                                    className="p-1 rounded-lg text-zinc-500 hover:text-rose-400 transition-colors"
                                     title="Oublier cette compétence apprise"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 ) : (
                                   <span
-                                    className="p-1 text-slate-500"
+                                    className="p-1 text-zinc-500"
                                     title={`Accordé par : ${sources.join(', ')}. Déséquipez l'objet pour retirer.`}
                                   >
                                     <Shield className="w-3.5 h-3.5 text-rose-400/60" />
@@ -274,7 +274,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                   <button
                                     type="button"
                                     onClick={() => toggleExpandSkill(skill.id)}
-                                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+                                    className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
                                     title={isExpanded ? 'Replier les détails' : 'Déplier les détails'}
                                   >
                                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -298,7 +298,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                               ) : null}
 
                               {skill.description && (
-                                <p className="text-[11px] text-slate-300 italic border-l-2 border-rose-500/60 pl-2">
+                                <p className="text-[11px] text-zinc-300 border-l-2 border-rose-500/60 pl-2">
                                   {skill.description}
                                 </p>
                               )}
@@ -306,7 +306,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                               {skill.conditions && skill.conditions.length > 0 && (
                                 <div className="flex gap-1 flex-wrap">
                                   {skill.conditions.map((cond, i) => (
-                                    <span key={i} className="text-[9px] font-medium bg-white/5 border border-white/10 text-amber-300/90 rounded-full px-2 py-0.5">
+                                    <span key={i} className="text-[11px] font-medium bg-white/5 border border-white/10 text-amber-300/90 rounded-full px-2 py-0.5">
                                       Condition : {cond}
                                     </span>
                                   ))}
@@ -318,7 +318,7 @@ export function SkillsTab({ sheet, api }: { sheet: HexeSheetState; api: SignetAP
                                   {skill.effects.map((eff, i) => (
                                     <span
                                       key={i}
-                                      className="text-[9px] font-semibold text-slate-200 bg-white/5 border border-white/10 rounded px-1.5 py-0.5"
+                                      className="text-[11px] font-semibold text-zinc-200 bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.5"
                                     >
                                       {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value} niv.`}
                                       {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value} ${eff.condition ? `(${eff.condition})` : ''}`}

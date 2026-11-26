@@ -13,8 +13,8 @@ export function InventorySection({ title, icon, count, action, children }: Inven
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon}
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-200">{title}</span>
-          <span className="text-[10px] font-bold bg-white/10 text-slate-300 rounded-full px-2 py-0.2 leading-none">
+          <span className="text-xs font-bold text-zinc-200">{title}</span>
+          <span className="text-[11px] font-bold bg-white/10 text-zinc-300 rounded-full px-2 py-0.2 leading-none">
             {count}
           </span>
         </div>

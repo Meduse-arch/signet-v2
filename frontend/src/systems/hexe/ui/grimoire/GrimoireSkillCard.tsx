@@ -11,21 +11,21 @@ function getActivationBadge(type: HexeActivationType) {
   switch (type) {
     case 'passive':
       return (
-        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 rounded px-1.5 py-0.5 uppercase tracking-wider">
+        <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 rounded-lg px-1.5 py-0.5">
           <Shield className="w-3 h-3 text-emerald-400" />
           Passif
         </span>
       );
     case 'toggle':
       return (
-        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-950/60 border border-amber-800/40 rounded px-1.5 py-0.5 uppercase tracking-wider">
+        <span className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-950/60 border border-amber-800/40 rounded-lg px-1.5 py-0.5">
           <Zap className="w-3 h-3 text-amber-400" />
           Toggle
         </span>
       );
     case 'active':
       return (
-        <span className="flex items-center gap-1 text-[10px] font-bold text-rose-400 bg-rose-950/60 border border-rose-800/40 rounded px-1.5 py-0.5 uppercase tracking-wider">
+        <span className="flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-lg px-1.5 py-0.5">
           <Flame className="w-3 h-3 text-rose-400" />
           Actif
         </span>
@@ -51,7 +51,7 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
   return (
     <div
       key={skill.id}
-      className="bg-[#090a10] border border-white/10 hover:border-white/20 rounded-xl overflow-hidden transition-all group shadow-md"
+      className="bg-surface border border-white/10 hover:border-white/20 rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,transform] group "
     >
       <div className="p-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -67,13 +67,13 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
               <h4 className="text-sm font-bold text-white truncate">{skill.name}</h4>
               {getActivationBadge(skill.activationType)}
               {skill.skillLevel && (
-                <span className="text-[10px] font-bold bg-white/5 border border-white/10 text-slate-400 rounded px-1.5 py-0.5 leading-none">
+                <span className="text-[11px] font-bold bg-white/5 border border-white/10 text-zinc-400 rounded-lg px-1.5 py-0.5 leading-none">
                   Niv. {skill.skillLevel}
                 </span>
               )}
               {skill.dice && (
-                <span className="text-[10px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.5 rounded leading-none">
-                  🎲 {formatDiceFormula(skill.dice)}
+                <span className="text-[11px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.5 rounded-lg leading-none">
+                  {formatDiceFormula(skill.dice)}
                 </span>
               )}
             </div>
@@ -83,17 +83,17 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
               {skill.costs && (
                 <>
                   {skill.costs.mp && (
-                    <span className="text-[10px] font-bold text-blue-300 bg-blue-950/60 border border-blue-800/40 rounded px-1.5 py-0.2">
+                    <span className="text-[11px] font-bold text-blue-300 bg-blue-950/60 border border-blue-800/40 rounded-lg px-1.5 py-0.2">
                       {skill.costs.mp} MP
                     </span>
                   )}
                   {skill.costs.stm && (
-                    <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/40 rounded px-1.5 py-0.2">
+                    <span className="text-[11px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/40 rounded-lg px-1.5 py-0.2">
                       {skill.costs.stm} STM
                     </span>
                   )}
                   {skill.costs.hp && (
-                    <span className="text-[10px] font-bold text-rose-300 bg-rose-950/60 border border-rose-800/40 rounded px-1.5 py-0.2">
+                    <span className="text-[11px] font-bold text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg px-1.5 py-0.2">
                       {skill.costs.hp} HP
                     </span>
                   )}
@@ -103,7 +103,7 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
               {skill.effects.slice(0, 2).map((eff, i) => (
                 <span
                   key={i}
-                  className="text-[10px] text-slate-300 bg-white/5 border border-white/10 rounded-full px-2 py-0.2 truncate max-w-[140px]"
+                  className="text-[11px] text-zinc-300 bg-white/5 border border-white/10 rounded-full px-2 py-0.2 truncate max-w-[140px]"
                 >
                   {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} +${eff.value} niv.`}
                   {eff.type === 'rollModifier' && `Jet +${eff.value}`}
@@ -113,7 +113,7 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
                 </span>
               ))}
               {skill.effects.length > 2 && (
-                <span className="text-[10px] text-slate-500">
+                <span className="text-[11px] text-zinc-500">
                   +{skill.effects.length - 2}
                 </span>
               )}
@@ -126,7 +126,7 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
           {hasDetails && (
             <button
               onClick={() => onToggleExpand(skill.id)}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
               title="Voir les détails"
             >
               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -134,21 +134,21 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
           )}
           <button
             onClick={() => onEdit(skill)}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-rose-400 transition-colors"
             title="Modifier"
           >
             <Edit3 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDuplicate(skill)}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-amber-400 transition-colors"
             title="Dupliquer"
           >
             <Copy className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(skill.id, skill.name)}
-            className="p-1.5 rounded-lg hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-rose-500/10 text-zinc-400 hover:text-rose-400 transition-colors"
             title="Supprimer"
           >
             <Trash2 className="w-4 h-4" />
@@ -170,25 +170,25 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
           ) : null}
 
           {skill.description && (
-            <p className="text-xs text-slate-300 italic">{skill.description}</p>
+            <p className="text-xs text-zinc-300 ">{skill.description}</p>
           )}
 
           {skill.duration && (
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400">
               <Clock className="w-3.5 h-3.5 text-rose-400" />
-              <span>Durée : <strong className="text-slate-200">{skill.duration}</strong></span>
+              <span>Durée : <strong className="text-zinc-200">{skill.duration}</strong></span>
             </div>
           )}
 
           {skill.conditions && skill.conditions.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+              <span className="text-[11px] text-zinc-500 font-bold">
                 Conditions :
               </span>
               {skill.conditions.map((c, i) => (
                 <span
                   key={i}
-                  className="text-[10px] text-amber-300/90 bg-amber-950/40 border border-amber-800/40 rounded-full px-2 py-0.5"
+                  className="text-[11px] text-amber-300/90 bg-amber-950/40 border border-amber-800/40 rounded-full px-2 py-0.5"
                 >
                   {c}
                 </span>
@@ -198,13 +198,13 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
 
           {skill.effects.length > 0 && (
             <div className="space-y-1.5 pt-1">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold block">
+              <span className="text-[11px] text-zinc-500 font-bold block">
                 Effets détaillés ({skill.effects.length}) :
               </span>
               {skill.effects.map((eff, i) => (
                 <div
                   key={i}
-                  className="bg-slate-900/80 border-l-2 border-rose-500 border border-white/10 rounded p-2 text-xs"
+                  className="bg-surface-raised/80 border-l-2 border-rose-500 border border-white/10 rounded-lg p-2 text-xs"
                 >
                   {eff.type === 'statLevel' && (
                     <div className="text-emerald-300 font-bold">
@@ -227,7 +227,7 @@ export const GrimoireSkillCard = memo(function GrimoireSkillCard({
                     </div>
                   )}
                   {eff.type === 'custom' && (
-                    <div className="text-slate-200">
+                    <div className="text-zinc-200">
                       {eff.description}
                     </div>
                   )}

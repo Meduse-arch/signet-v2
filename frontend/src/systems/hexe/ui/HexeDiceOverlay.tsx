@@ -33,11 +33,11 @@ export function HexeDiceOverlay({ api }: HexeDiceOverlayProps) {
 
   return (
     <div 
-      className="absolute inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black/80 backdrop-blur-[4px] transition-all duration-500 cursor-pointer"
+      className="absolute inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black/80 backdrop-blur-[4px] transition-[color,background-color,border-color,opacity,transform] duration-500 cursor-pointer"
       onClick={() => setActiveRoll(null)}
     >
       <div className="flex flex-col items-center justify-center animate-slide-up relative">
-        <span className="text-red-500 font-bold uppercase tracking-[0.3em] mb-8 text-sm drop-shadow-[0_0_10px_rgba(220,38,38,0.8)] z-10 font-serif">
+        <span className="text-red-500 font-bold mb-8 text-sm z-10 font-serif">
           {activeRoll.label}
         </span>
         
@@ -72,8 +72,8 @@ export function HexeDiceOverlay({ api }: HexeDiceOverlayProps) {
             }
           `}} />
 
-          <div className="z-10 flex items-center justify-center bg-[#2a1714]/80 backdrop-blur-md rounded-full w-24 h-24 border border-red-600/80 shadow-[0_0_40px_rgba(220,38,38,0.6)] animate-bounce-in">
-            <span className="text-5xl drop-shadow-[0_0_15px_rgba(255,255,255,0.9)] text-[#ebd5b3] font-black font-serif">
+          <div className="z-10 flex items-center justify-center bg-[#2a1714]/80 backdrop-blur-md rounded-full w-24 h-24 border border-red-600/80 animate-bounce-in">
+            <span className="text-5xl text-[#ebd5b3] font-black font-serif">
               {activeRoll.total}
             </span>
           </div>

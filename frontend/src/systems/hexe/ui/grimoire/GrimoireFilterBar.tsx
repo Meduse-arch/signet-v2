@@ -13,13 +13,13 @@ export function GrimoireFilterBar({ search, setSearch, activeFilter, setActiveFi
   return (
     <div className="p-3 border-b border-white/10 bg-black/20 space-y-2 shrink-0">
       <div className="relative">
-        <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           placeholder="Rechercher par nom, effet ou description..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full bg-slate-900/80 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+          className="w-full bg-surface-raised/80 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500"
         />
       </div>
 
@@ -32,14 +32,14 @@ export function GrimoireFilterBar({ search, setSearch, activeFilter, setActiveFi
             <button
               key={tab}
               onClick={() => setActiveFilter(tab)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-[color,background-color,border-color,opacity,transform] whitespace-nowrap ${
                 isSel
-                  ? 'bg-rose-600 text-white shadow-[0_0_10px_rgba(225,29,72,0.35)]'
-                  : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10'
               }`}
             >
               <span>{label}</span>
-              <span className="text-[10px] px-1 py-0.2 rounded bg-black/40 font-mono">
+              <span className="text-[11px] px-1 py-0.2 rounded-lg bg-black/40 font-mono">
                 {count}
               </span>
             </button>

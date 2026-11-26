@@ -75,17 +75,17 @@ export function ArsenalEditForm({
   };
 
   return (
-  <div className="flex-1 overflow-y-auto p-3 sm:p-4 custom-scrollbar bg-[#050508]">
-    <form onSubmit={onSubmit} className="max-w-2xl mx-auto space-y-4 bg-[#090a10] border border-white/10 rounded-xl p-4 sm:p-5 shadow-xl">
+  <div className="flex-1 overflow-y-auto p-3 sm:p-4 custom-scrollbar bg-void">
+    <form onSubmit={onSubmit} className="max-w-2xl mx-auto space-y-4 bg-surface border border-white/10 rounded-xl p-4 sm:p-5 ">
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
-        <h3 className="text-sm font-black text-rose-400 uppercase tracking-wider flex items-center gap-2">
+        <h3 className="text-sm font-black text-rose-400 flex items-center gap-2">
           {editingId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {editingId ? 'Modifier l\'équipement' : 'Nouvel équipement dans l\'Arsenal'}
         </h3>
         <button
           type="button"
           onClick={onCancel}
-          className="text-slate-400 hover:text-white p-1 rounded hover:bg-white/5 transition-colors"
+          className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -94,7 +94,7 @@ export function ArsenalEditForm({
       {/* Nom & Slot */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-2">
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-semibold text-zinc-300 mb-1">
             Nom de l'objet *
           </label>
           <input
@@ -103,18 +103,18 @@ export function ArsenalEditForm({
             placeholder="ex: Lame de l'Inquisiteur, Cotte de mailles..."
             value={form.name}
             onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-            className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+            className="w-full bg-void border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-semibold text-zinc-300 mb-1">
             Emplacement / Type
           </label>
           <select
             value={form.slot}
             onChange={e => setForm(prev => ({ ...prev, slot: e.target.value as HexeEquipmentSlot }))}
-            className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+            className="w-full bg-void border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
           >
             <option value="weapon">Arme</option>
             <option value="armor">Armure</option>
@@ -128,7 +128,7 @@ export function ArsenalEditForm({
       {/* Poids & Illustration de l'équipement */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
         <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-semibold text-zinc-300 mb-1">
             Poids unitaire (kg / charge)
           </label>
           <input
@@ -138,9 +138,9 @@ export function ArsenalEditForm({
             placeholder="ex: 1.5 (défaut 0)"
             value={form.weight}
             onChange={e => setForm(prev => ({ ...prev, weight: e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0) }))}
-            className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+            className="w-full bg-void border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
           />
-          <span className="text-[10px] text-slate-500 mt-1 block">
+          <span className="text-[11px] text-zinc-500 mt-1 block">
             Comptabilisé dans la charge maximale du personnage.
           </span>
         </div>
@@ -157,13 +157,13 @@ export function ArsenalEditForm({
       </div>
 
       {/* Section Rangs & Pentacles (Section 8) — Applicable à tous les équipements */}
-      <div className="border border-white/10 rounded-lg p-3 bg-[#050508]/60 space-y-3">
+      <div className="border border-white/10 rounded-lg p-3 bg-void/60 space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-zinc-300">
               Symbolique & Rang (Pentacle Hexe)
             </label>
-            <p className="text-[11px] text-slate-500">1 à 5 branches du pentacle ou anneau pour le rang ultime</p>
+            <p className="text-[11px] text-zinc-500">1 à 5 branches du pentacle ou anneau pour le rang ultime</p>
           </div>
           <HexePentacleBadge
             rank={form.rank || 'C'}
@@ -175,7 +175,7 @@ export function ArsenalEditForm({
 
         {/* Rangs graphiques par branches : aucun affichage de lettre */}
         <div className="space-y-1.5">
-          <label className="block text-[11px] text-slate-400 font-bold">
+          <label className="block text-[11px] text-zinc-400 font-bold">
             Rang ({RANK_DESCRIPTIONS[form.rank || 'C']})
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
@@ -184,10 +184,10 @@ export function ArsenalEditForm({
                 key={r}
                 type="button"
                 onClick={() => setForm(prev => ({ ...prev, rank: r }))}
-                className={`p-2 rounded-xl flex flex-col items-center justify-center gap-1.5 border transition-all ${
+                className={`p-2 rounded-xl flex flex-col items-center justify-center gap-1.5 border transition-[color,background-color,border-color,opacity,transform] ${
                   form.rank === r
-                    ? 'bg-rose-950/70 border-rose-500 text-white shadow-[0_0_12px_rgba(225,29,72,0.4)]'
-                    : 'bg-[#090a10] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-rose-950/70 border-rose-500 text-white'
+                    : 'bg-surface border-white/10 text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <HexePentacleBadge
@@ -200,7 +200,7 @@ export function ArsenalEditForm({
                   }}
                   size={28}
                 />
-                <span className="text-[10px] font-bold text-center leading-tight">
+                <span className="text-[11px] font-bold text-center leading-tight">
                   {RANK_DESCRIPTIONS[r]}
                 </span>
               </button>
@@ -210,52 +210,52 @@ export function ArsenalEditForm({
 
         {/* Nature / Volonté */}
         <div className="space-y-1">
-          <label className="block text-[11px] text-slate-400 font-bold">
+          <label className="block text-[11px] text-zinc-400 font-bold">
             Nature de la Volonté
           </label>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => setForm(prev => ({ ...prev, nature: 'classic' }))}
-              className={`p-2 rounded-lg text-left border transition-all ${
+              className={`p-2 rounded-lg text-left border transition-[color,background-color,border-color,opacity,transform] ${
                 form.nature === 'classic'
                   ? 'bg-rose-950/60 border-rose-500/80 text-rose-300'
-                  : 'bg-[#090a10] border-white/10 text-slate-400 hover:text-white'
+                  : 'bg-surface border-white/10 text-zinc-400 hover:text-white'
               }`}
             >
               <div className="text-xs font-bold">Classique</div>
-              <div className="text-[10px] text-slate-500">Volonté du porteur</div>
+              <div className="text-[11px] text-zinc-500">Volonté du porteur</div>
             </button>
             <button
               type="button"
               onClick={() => setForm(prev => ({ ...prev, nature: 'ego' }))}
-              className={`p-2 rounded-lg text-left border transition-all ${
+              className={`p-2 rounded-lg text-left border transition-[color,background-color,border-color,opacity,transform] ${
                 form.nature === 'ego'
                   ? 'bg-amber-950/60 border-amber-500/80 text-amber-300'
-                  : 'bg-[#090a10] border-white/10 text-slate-400 hover:text-white'
+                  : 'bg-surface border-white/10 text-zinc-400 hover:text-white'
               }`}
             >
               <div className="text-xs font-bold">Ego</div>
-              <div className="text-[10px] text-slate-500">Volonté de l'objet</div>
+              <div className="text-[11px] text-zinc-500">Volonté de l'objet</div>
             </button>
             <button
               type="button"
               onClick={() => setForm(prev => ({ ...prev, nature: 'possessed' }))}
-              className={`p-2 rounded-lg text-left border transition-all ${
+              className={`p-2 rounded-lg text-left border transition-[color,background-color,border-color,opacity,transform] ${
                 form.nature === 'possessed'
                   ? 'bg-red-950/70 border-red-500/80 text-red-300'
-                  : 'bg-[#090a10] border-white/10 text-slate-400 hover:text-white'
+                  : 'bg-surface border-white/10 text-zinc-400 hover:text-white'
               }`}
             >
               <div className="text-xs font-bold">Possédée</div>
-              <div className="text-[10px] text-slate-500">Entité résidente</div>
+              <div className="text-[11px] text-zinc-500">Entité résidente</div>
             </button>
           </div>
         </div>
 
         {/* Formule de dés (facultative) */}
         <div className="space-y-1">
-          <label className="block text-[11px] text-slate-400 font-bold">
+          <label className="block text-[11px] text-zinc-400 font-bold">
             Formule de Dés de Base (Facultatif — Dégâts ou jet spécifique, ex: 1d8, 2d6, 2d4+2)
           </label>
           <input
@@ -263,21 +263,21 @@ export function ArsenalEditForm({
             placeholder="Facultatif (ex: 1d8, 2d6+2...)"
             value={form.diceFormula || ''}
             onChange={e => setForm(prev => ({ ...prev, diceFormula: e.target.value }))}
-            className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+            className="w-full bg-void border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500"
           />
         </div>
       </div>
 
       {/* Bonus de statistiques */}
-      <div className="border border-white/10 rounded-lg p-3 bg-[#050508]/60">
-        <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+      <div className="border border-white/10 rounded-lg p-3 bg-void/60">
+        <label className="block text-xs font-semibold text-zinc-300 mb-2">
           Bonus de Statistiques (Profil de renfort)
         </label>
 
         {/* Badges existants */}
         <div className="flex flex-wrap gap-1.5 mb-3">
           {Object.entries(form.statBonuses).length === 0 ? (
-            <span className="text-xs italic text-slate-500">Aucun bonus direct (statuts/capacités pures).</span>
+            <span className="text-xs text-zinc-500">Aucun bonus direct (statuts/capacités pures).</span>
           ) : (
             Object.entries(form.statBonuses).map(([stat, val]) => (
               <span
@@ -302,27 +302,27 @@ export function ArsenalEditForm({
           <select
             value={newBonusStat}
             onChange={e => setNewBonusStat(e.target.value as HexeStatKey)}
-            className="bg-slate-900 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500"
+            className="bg-surface-raised border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500"
           >
             {ALL_STATS.map(s => (
               <option key={s} value={s}>{STAT_NAMES[s]}</option>
             ))}
           </select>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-400 font-bold">+</span>
+            <span className="text-xs text-zinc-400 font-bold">+</span>
             <input
               type="number"
               min={1}
               max={10}
               value={newBonusVal}
               onChange={e => setNewBonusVal(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-14 bg-slate-900 border border-white/10 rounded px-2 py-1.5 text-xs text-white text-center focus:outline-none focus:border-rose-500"
+              className="w-14 bg-surface-raised border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white text-center focus:outline-none focus:border-rose-500"
             />
           </div>
           <button
             type="button"
             onClick={addBonus}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded text-slate-200 border border-white/10 flex items-center gap-1 transition-colors"
+            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold rounded-lg text-zinc-200 border border-white/10 flex items-center gap-1 transition-colors"
           >
             <Plus className="w-3 h-3" /> Ajouter le bonus
           </button>
@@ -331,18 +331,18 @@ export function ArsenalEditForm({
 
       {/* Propriétés / Mots-clés */}
       <div className="border border-white/10 rounded-lg p-3 bg-black/20">
-        <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+        <label className="block text-xs font-semibold text-zinc-300 mb-2">
           Propriétés & Mots-clés (ex: légère, perforante, bénie, lourde...)
         </label>
 
         <div className="flex flex-wrap gap-1.5 mb-3">
           {form.properties.length === 0 ? (
-            <span className="text-xs italic text-slate-500">Aucune propriété.</span>
+            <span className="text-xs text-zinc-500">Aucune propriété.</span>
           ) : (
             form.properties.map(p => (
               <span
                 key={p}
-                className="inline-flex items-center gap-1 bg-slate-800/80 border border-white/15 text-slate-200 text-xs px-2.5 py-1 rounded-full font-medium"
+                className="inline-flex items-center gap-1 bg-zinc-800/80 border border-white/15 text-zinc-200 text-xs px-2.5 py-1 rounded-full font-medium"
               >
                 <Tag className="w-2.5 h-2.5 text-rose-400" />
                 {p}
@@ -365,12 +365,12 @@ export function ArsenalEditForm({
             value={newProp}
             onChange={e => setNewProp(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addProperty(); } }}
-            className="flex-1 bg-slate-900 border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+            className="flex-1 bg-surface-raised border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500"
           />
           <button
             type="button"
             onClick={addProperty}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded text-slate-200 border border-white/10 flex items-center gap-1 transition-colors"
+            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold rounded-lg text-zinc-200 border border-white/10 flex items-center gap-1 transition-colors"
           >
             <Plus className="w-3 h-3" /> Ajouter
           </button>
@@ -381,10 +381,10 @@ export function ArsenalEditForm({
       <div className="border border-white/10 rounded-lg p-3 bg-black/20 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-zinc-300">
               Capacités spéciales ({formLinkedSkills.length})
             </label>
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[11px] text-zinc-500">
               Capacités associées depuis le Grimoire ou le catalogue Hexe
             </p>
           </div>
@@ -396,7 +396,7 @@ export function ArsenalEditForm({
                   api.emit('SYSTEM_ACTION_TRIGGERED', 'hexe-grimoire');
                 }
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-zinc-400 hover:text-zinc-200 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
               title="Ouvrir le Grimoire pour forger de nouvelles compétences"
             >
               <BookOpen className="w-3 h-3 text-rose-400" />
@@ -405,7 +405,7 @@ export function ArsenalEditForm({
             <button
               type="button"
               onClick={onOpenSkillImport}
-              className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all"
+              className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition-[color,background-color,border-color,opacity,transform]"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>+ Importer une capacité</span>
@@ -415,8 +415,8 @@ export function ArsenalEditForm({
 
         {formLinkedSkills.length === 0 ? (
           <div className="p-4 border border-dashed border-white/10 rounded-lg bg-black/30 text-center">
-            <p className="text-xs text-slate-400">Aucune capacité spéciale associée.</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="text-xs text-zinc-400">Aucune capacité spéciale associée.</p>
+            <p className="text-[11px] text-zinc-500 mt-0.5">
               Cliquez sur « + Importer une capacité » pour lier une technique du catalogue sans doublon.
             </p>
           </div>
@@ -425,13 +425,13 @@ export function ArsenalEditForm({
             {formLinkedSkills.map(skill => (
               <div
                 key={skill.id}
-                className="bg-slate-900/90 border-l-2 border-rose-500 border border-white/10 rounded-lg p-2.5 flex items-start justify-between gap-2"
+                className="bg-surface-raised/90 border-l-2 border-rose-500 border border-white/10 rounded-lg p-2.5 flex items-start justify-between gap-2"
               >
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-rose-300 flex items-center gap-1.5 flex-wrap">
                     <Zap className="w-3 h-3 text-rose-400 shrink-0" />
                     <span>{skill.name}</span>
-                    <span className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded border ${
+                    <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded-lg border ${
                       skill.activationType === 'passive'
                         ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
                         : skill.activationType === 'toggle'
@@ -441,43 +441,43 @@ export function ArsenalEditForm({
                       {skill.activationType === 'passive' ? 'Passif' : skill.activationType === 'toggle' ? 'Toggle' : 'Actif'}
                     </span>
                     {skill.dice && (
-                      <span className="text-[9px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded">
-                        🎲 {formatDiceFormula(skill.dice)}
+                      <span className="text-[11px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded-lg">
+                        {formatDiceFormula(skill.dice)}
                       </span>
                     )}
                     {skill.costs?.mp && (
-                      <span className="text-[9px] text-blue-300 bg-blue-950/60 px-1 rounded">
+                      <span className="text-[11px] text-blue-300 bg-blue-950/60 px-1 rounded-lg">
                         {skill.costs.mp} MP
                       </span>
                     )}
                     {skill.costs?.stm && (
-                      <span className="text-[9px] text-emerald-300 bg-emerald-950/60 px-1 rounded">
+                      <span className="text-[11px] text-emerald-300 bg-emerald-950/60 px-1 rounded-lg">
                         {skill.costs.stm} STM
                       </span>
                     )}
                     {skill.costs?.hp && (
-                      <span className="text-[9px] text-rose-300 bg-rose-950/60 px-1 rounded">
+                      <span className="text-[11px] text-rose-300 bg-rose-500/10 px-1 rounded-lg">
                         {skill.costs.hp} HP
                       </span>
                     )}
                     {skill.costs?.chance && (
-                      <span className="text-[9px] text-amber-300 bg-amber-950/60 px-1 rounded">
+                      <span className="text-[11px] text-amber-300 bg-amber-950/60 px-1 rounded-lg">
                         {skill.costs.chance} Chance
                       </span>
                     )}
                   </div>
                   {skill.description && (
-                    <div className="text-xs text-slate-300 mt-0.5">{skill.description}</div>
+                    <div className="text-xs text-zinc-300 mt-0.5">{skill.description}</div>
                   )}
                   {skill.conditions?.length ? (
-                    <div className="text-[10px] text-amber-400/90 italic mt-1 font-medium">
+                    <div className="text-[11px] text-amber-400/90 mt-1 font-medium">
                       Condition : {skill.conditions.join(', ')}
                     </div>
                   ) : null}
                   {skill.effects?.length ? (
                     <div className="flex gap-1.5 flex-wrap mt-1">
                       {skill.effects.map((eff, i) => (
-                        <span key={i} className="text-[9px] text-slate-300 bg-white/5 border border-white/10 rounded px-1.5 py-0.2">
+                        <span key={i} className="text-[11px] text-zinc-300 bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.2">
                           {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                           {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                           {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()}`}
@@ -491,7 +491,7 @@ export function ArsenalEditForm({
                 <button
                   type="button"
                   onClick={() => handleRemoveLinkedSkill(skill.id)}
-                  className="text-slate-400 hover:text-rose-400 p-1 rounded hover:bg-white/5 transition-colors"
+                  className="text-zinc-400 hover:text-rose-400 p-1 rounded-lg hover:bg-white/5 transition-colors"
                   title="Retirer cette capacité de l'équipement"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -504,7 +504,7 @@ export function ArsenalEditForm({
 
       {/* Description & Lore */}
       <div>
-        <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-semibold text-zinc-300 mb-1">
           Description & Historique
         </label>
         <textarea
@@ -512,7 +512,7 @@ export function ArsenalEditForm({
           placeholder="Origine, particularités visuelles ou notes d'inquisition..."
           value={form.description}
           onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
-          className="w-full bg-slate-900/90 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 resize-none"
+          className="w-full bg-surface-raised/90 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 resize-none"
         />
       </div>
 
@@ -522,13 +522,13 @@ export function ArsenalEditForm({
           type="button"
           variant="ghost"
           onClick={onCancel}
-          className="text-slate-400 hover:text-white text-xs"
+          className="text-zinc-400 hover:text-white text-xs"
         >
           Annuler
         </Button>
         <Button
           type="submit"
-          className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 px-4 shadow-[0_0_15px_rgba(225,29,72,0.3)]"
+          className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 px-4"
         >
           <Check className="w-4 h-4 shrink-0" />
           {editingId ? 'Sauvegarder les modifications' : 'Enregistrer dans l\'Arsenal'}

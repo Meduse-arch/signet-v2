@@ -111,22 +111,22 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#090a10] border border-white/15 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-surface border border-white/15 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#050508]/80 shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-void/80 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-rose-600/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <Edit3 className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-black text-white">Modifier l'équipement</h3>
-              <p className="text-[11px] text-slate-400">Personnalisation sur la fiche du joueur</p>
+              <p className="text-[11px] text-zinc-400">Personnalisation sur la fiche du joueur</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -137,21 +137,21 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
           {/* Nom, Slot & Poids */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="sm:col-span-2 space-y-1">
-              <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Nom de l'objet *</label>
+              <label className="text-[11px] font-bold text-zinc-300">Nom de l'objet *</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={e => setName(e.target.value)}
-                className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                className="w-full bg-void border border-white/10 rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Type / Slot</label>
+              <label className="text-[11px] font-bold text-zinc-300">Type / Slot</label>
               <select
                 value={slot}
                 onChange={e => setSlot(e.target.value as HexeEquipmentSlot)}
-                className="w-full bg-[#050508] border border-white/10 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-rose-500"
+                className="w-full bg-void border border-white/10 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-rose-500"
               >
                 <option value="weapon">Arme</option>
                 <option value="armor">Armure</option>
@@ -161,7 +161,7 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Poids unit. (kg)</label>
+              <label className="text-[11px] font-bold text-zinc-300">Poids unit. (kg)</label>
               <input
                 type="number"
                 step="0.1"
@@ -169,7 +169,7 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                 placeholder="0"
                 value={weight}
                 onChange={e => setWeight(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                className="w-full bg-[#050508] border border-white/10 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-rose-500 font-mono"
+                className="w-full bg-void border border-white/10 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-rose-500 font-mono"
               />
             </div>
           </div>
@@ -185,13 +185,13 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
 
           {slot === 'consumable' && (
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Quantité</label>
+              <label className="text-[11px] font-bold text-zinc-300">Quantité</label>
               <input
                 type="number"
                 min={1}
                 value={quantity}
                 onChange={e => setQuantity(parseInt(e.target.value) || 1)}
-                className="w-24 bg-[#050508] border border-white/10 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-rose-500"
+                className="w-24 bg-void border border-white/10 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-rose-500"
               />
             </div>
           )}
@@ -200,10 +200,10 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
           <div className="border border-white/10 rounded-xl p-3 bg-black/40 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
+                <label className="text-[11px] font-bold text-zinc-300 block">
                   Symbolique & Rang (Pentacle Hexe)
                 </label>
-                <p className="text-[10px] text-slate-500">1 à 5 branches du pentacle ou anneau pour le rang ultime</p>
+                <p className="text-[11px] text-zinc-500">1 à 5 branches du pentacle ou anneau pour le rang ultime</p>
               </div>
               <HexePentacleBadge
                 rank={rank}
@@ -215,7 +215,7 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
 
             {/* Rangs graphiques : aucun texte alphabétique */}
             <div className="space-y-1">
-              <label className="text-[10px] text-slate-400 font-bold block">
+              <label className="text-[11px] text-zinc-400 font-bold block">
                 Rang ({RANK_DESCRIPTIONS[rank]})
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
@@ -224,10 +224,10 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                     key={r}
                     type="button"
                     onClick={() => setRank(r)}
-                    className={`py-1.5 px-1 rounded-lg flex flex-col items-center justify-center gap-1 border transition-all ${
+                    className={`py-1.5 px-1 rounded-lg flex flex-col items-center justify-center gap-1 border transition-[color,background-color,border-color,opacity,transform] ${
                       rank === r
-                        ? 'bg-rose-950/70 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.4)]'
-                        : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                        ? 'bg-rose-950/70 border-rose-500 text-white'
+                        : 'bg-void border-white/10 text-zinc-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <HexePentacleBadge
@@ -240,7 +240,7 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                       }}
                       size={24}
                     />
-                    <span className="text-[9px] font-bold text-center leading-tight">
+                    <span className="text-[11px] font-bold text-center leading-tight">
                       {RANK_DESCRIPTIONS[r]}
                     </span>
                   </button>
@@ -250,52 +250,52 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
 
             {/* Nature / Volonté */}
             <div className="space-y-1">
-              <label className="text-[10px] text-slate-400 font-bold block">
+              <label className="text-[11px] text-zinc-400 font-bold block">
                 Nature de la Volonté
               </label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={() => setNature('classic')}
-                  className={`p-2 rounded-lg text-left border transition-all ${
+                  className={`p-2 rounded-lg text-left border transition-[color,background-color,border-color,opacity,transform] ${
                     nature === 'classic'
                       ? 'bg-rose-950/60 border-rose-500/80 text-rose-300'
-                      : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                      : 'bg-void border-white/10 text-zinc-400 hover:text-white'
                   }`}
                 >
                   <div className="text-[11px] font-bold">Classique</div>
-                  <div className="text-[9px] text-slate-500">Volonté du porteur</div>
+                  <div className="text-[11px] text-zinc-500">Volonté du porteur</div>
                 </button>
                 <button
                   type="button"
                   onClick={() => setNature('ego')}
-                  className={`p-2 rounded-lg text-left border transition-all ${
+                  className={`p-2 rounded-lg text-left border transition-[color,background-color,border-color,opacity,transform] ${
                     nature === 'ego'
                       ? 'bg-amber-950/60 border-amber-500/80 text-amber-300'
-                      : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                      : 'bg-void border-white/10 text-zinc-400 hover:text-white'
                   }`}
                 >
                   <div className="text-[11px] font-bold">Ego</div>
-                  <div className="text-[9px] text-slate-500">Volonté de l'objet</div>
+                  <div className="text-[11px] text-zinc-500">Volonté de l'objet</div>
                 </button>
                 <button
                   type="button"
                   onClick={() => setNature('possessed')}
-                  className={`p-2 rounded-lg text-left border transition-all ${
+                  className={`p-2 rounded-lg text-left border transition-[color,background-color,border-color,opacity,transform] ${
                     nature === 'possessed'
                       ? 'bg-red-950/70 border-red-500/80 text-red-300'
-                      : 'bg-[#050508] border-white/10 text-slate-400 hover:text-white'
+                      : 'bg-void border-white/10 text-zinc-400 hover:text-white'
                   }`}
                 >
                   <div className="text-[11px] font-bold">Possédée</div>
-                  <div className="text-[9px] text-slate-500">Entité résidente</div>
+                  <div className="text-[11px] text-zinc-500">Entité résidente</div>
                 </button>
               </div>
             </div>
 
             {/* Formule de dés (facultative) */}
             <div className="space-y-1">
-              <label className="text-[10px] text-slate-400 font-bold block">
+              <label className="text-[11px] text-zinc-400 font-bold block">
                 Formule de dés de base (Facultatif, ex: 1d8, 2d6+2)
               </label>
               <input
@@ -303,29 +303,29 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                 placeholder="Facultatif (ex: 1d8, 2d6+2...)"
                 value={diceStr}
                 onChange={e => setDiceStr(e.target.value)}
-                className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                className="w-full bg-void border border-white/10 rounded-lg px-3 py-1.5 text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500"
               />
             </div>
           </div>
 
           {/* Description */}
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Description</label>
+            <label className="text-[11px] font-bold text-zinc-300">Description</label>
             <textarea
               rows={2}
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Description narrative ou historique..."
-              className="w-full bg-[#050508] border border-white/10 rounded-lg p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 resize-none"
+              className="w-full bg-void border border-white/10 rounded-lg p-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 resize-none"
             />
           </div>
 
           {/* Bonus de statistiques */}
           <div className="border border-white/10 rounded-xl p-3 bg-black/30 space-y-2.5">
-            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">Bonus de Statistiques</label>
+            <label className="text-[11px] font-bold text-zinc-300 block">Bonus de Statistiques</label>
             <div className="flex flex-wrap gap-1.5 min-h-[24px]">
               {Object.entries(statBonuses).length === 0 ? (
-                <span className="text-[11px] italic text-slate-500">Aucun bonus direct appliqué.</span>
+                <span className="text-[11px] text-zinc-500">Aucun bonus direct appliqué.</span>
               ) : (
                 (Object.entries(statBonuses) as [HexeStatKey, number][]).map(([st, val]) => (
                   <span
@@ -349,7 +349,7 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
               <select
                 value={newBonusStat}
                 onChange={e => setNewBonusStat(e.target.value as HexeStatKey)}
-                className="bg-[#050508] border border-white/10 rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-rose-500"
+                className="bg-void border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-rose-500"
               >
                 {ALL_STATS.map(s => (
                   <option key={s} value={s}>{STAT_LABELS[s] || s}</option>
@@ -361,12 +361,12 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                 max={99}
                 value={newBonusVal}
                 onChange={e => setNewBonusVal(parseInt(e.target.value) || 0)}
-                className="w-16 bg-[#050508] border border-white/10 rounded-lg px-2 py-1 text-center text-white focus:outline-none focus:border-rose-500"
+                className="w-16 bg-void border border-white/10 rounded-lg px-2 py-1 text-center text-white focus:outline-none focus:border-rose-500"
               />
               <button
                 type="button"
                 onClick={handleAddBonus}
-                className="px-2.5 py-1 bg-white/5 hover:bg-white/15 border border-white/10 text-slate-200 rounded-lg font-bold transition-colors"
+                className="px-2.5 py-1 bg-white/5 hover:bg-white/15 border border-white/10 text-zinc-200 rounded-lg font-bold transition-colors"
               >
                 + Bonus
               </button>
@@ -375,22 +375,22 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
 
           {/* Propriétés */}
           <div className="border border-white/10 rounded-xl p-3 bg-black/30 space-y-2.5">
-            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">Propriétés / Mots-clés</label>
+            <label className="text-[11px] font-bold text-zinc-300 block">Propriétés / Mots-clés</label>
             <div className="flex flex-wrap gap-1.5 min-h-[24px]">
               {properties.length === 0 ? (
-                <span className="text-[11px] italic text-slate-500">Aucune propriété.</span>
+                <span className="text-[11px] text-zinc-500">Aucune propriété.</span>
               ) : (
                 properties.map(p => (
                   <span
                     key={p}
-                    className="flex items-center gap-1.5 text-[11px] text-slate-300 bg-white/5 border border-white/10 rounded-full px-2.5 py-0.5"
+                    className="flex items-center gap-1.5 text-[11px] text-zinc-300 bg-white/5 border border-white/10 rounded-full px-2.5 py-0.5"
                   >
                     <Tag className="w-2.5 h-2.5 text-rose-400" />
                     <span>{p}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoveProp(p)}
-                      className="text-slate-400 hover:text-white"
+                      className="text-zinc-400 hover:text-white"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -406,12 +406,12 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                 value={newProp}
                 onChange={e => setNewProp(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddProp(); } }}
-                className="flex-1 bg-[#050508] border border-white/10 rounded-lg px-2.5 py-1 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                className="flex-1 bg-void border border-white/10 rounded-lg px-2.5 py-1 text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500"
               />
               <button
                 type="button"
                 onClick={handleAddProp}
-                className="px-2.5 py-1 bg-white/5 hover:bg-white/15 border border-white/10 text-slate-200 rounded-lg font-bold transition-colors"
+                className="px-2.5 py-1 bg-white/5 hover:bg-white/15 border border-white/10 text-zinc-200 rounded-lg font-bold transition-colors"
               >
                 Ajouter
               </button>
@@ -422,17 +422,17 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
           <div className="border border-white/10 rounded-xl p-3 bg-black/30 space-y-2.5">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
-                <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
+                <label className="text-[11px] font-bold text-zinc-300 block">
                   Capacités spéciales ({linkedSkills.length})
                 </label>
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[11px] text-zinc-500">
                   Capacités associées depuis le Grimoire ou le catalogue Hexe
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowImportModal(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg shadow-[0_0_10px_rgba(225,29,72,0.3)] transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg transition-[color,background-color,border-color,opacity,transform]"
               >
                 <Plus className="w-3 h-3" />
                 <span>+ Importer une capacité</span>
@@ -440,9 +440,9 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
             </div>
 
             {linkedSkills.length === 0 ? (
-              <div className="p-3 border border-dashed border-white/10 rounded-lg bg-[#050508] text-center">
-                <p className="text-slate-400 text-xs">Aucune capacité spéciale sur cet équipement.</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">
+              <div className="p-3 border border-dashed border-white/10 rounded-lg bg-void text-center">
+                <p className="text-zinc-400 text-xs">Aucune capacité spéciale sur cet équipement.</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
                   Cliquez sur « + Importer une capacité » pour piocher dans le Grimoire sans créer de doublon.
                 </p>
               </div>
@@ -451,13 +451,13 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                 {linkedSkills.map(ab => (
                   <div
                     key={ab.id}
-                    className="bg-slate-900/90 border-l-2 border-rose-500 border border-white/10 rounded-lg p-2.5 flex items-start justify-between gap-2"
+                    className="bg-surface-raised/90 border-l-2 border-rose-500 border border-white/10 rounded-lg p-2.5 flex items-start justify-between gap-2"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <Zap className="w-3 h-3 text-rose-400 shrink-0" />
                         <span className="font-bold text-rose-300">{ab.name}</span>
-                        <span className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded border ${
+                        <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded-lg border ${
                           ab.activationType === 'passive'
                             ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
                             : ab.activationType === 'toggle'
@@ -467,41 +467,41 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                           {ab.activationType === 'toggle' ? 'Toggle' : ab.activationType === 'active' ? 'Actif' : 'Passif'}
                         </span>
                         {ab.dice && (
-                          <span className="text-[9px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded">
-                            🎲 {formatDiceFormula(ab.dice)}
+                          <span className="text-[11px] font-mono font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded-lg">
+                            {formatDiceFormula(ab.dice)}
                           </span>
                         )}
                         {ab.costs?.mp && (
-                          <span className="text-[9px] text-blue-300 bg-blue-950/60 px-1 rounded">
+                          <span className="text-[11px] text-blue-300 bg-blue-950/60 px-1 rounded-lg">
                             {ab.costs.mp} MP
                           </span>
                         )}
                         {ab.costs?.stm && (
-                          <span className="text-[9px] text-emerald-300 bg-emerald-950/60 px-1 rounded">
+                          <span className="text-[11px] text-emerald-300 bg-emerald-950/60 px-1 rounded-lg">
                             {ab.costs.stm} STM
                           </span>
                         )}
                         {ab.costs?.hp && (
-                          <span className="text-[9px] text-rose-300 bg-rose-950/60 px-1 rounded">
+                          <span className="text-[11px] text-rose-300 bg-rose-500/10 px-1 rounded-lg">
                             {ab.costs.hp} HP
                           </span>
                         )}
                         {ab.costs?.chance && (
-                          <span className="text-[9px] text-amber-300 bg-amber-950/60 px-1 rounded">
+                          <span className="text-[11px] text-amber-300 bg-amber-950/60 px-1 rounded-lg">
                             {ab.costs.chance} Chance
                           </span>
                         )}
                       </div>
                       {ab.description && (
-                        <p className="text-[11px] text-slate-300 mt-0.5">{ab.description}</p>
+                        <p className="text-[11px] text-zinc-300 mt-0.5">{ab.description}</p>
                       )}
                       {ab.conditions?.length ? (
-                        <p className="text-[10px] italic text-amber-400/90 mt-0.5">Condition : {ab.conditions.join(', ')}</p>
+                        <p className="text-[11px] text-amber-400/90 mt-0.5">Condition : {ab.conditions.join(', ')}</p>
                       ) : null}
                       {ab.effects?.length ? (
                         <div className="flex gap-1 flex-wrap mt-1">
                           {ab.effects.map((eff, i) => (
-                            <span key={i} className="text-[9px] text-slate-300 bg-white/5 border border-white/10 rounded px-1.5 py-0.2">
+                            <span key={i} className="text-[11px] text-zinc-300 bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.2">
                               {eff.type === 'statLevel' && `${STAT_SHORT[eff.stat]} ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                               {eff.type === 'rollModifier' && `Jet ${eff.value > 0 ? `+${eff.value}` : eff.value}`}
                               {eff.type === 'resourceChange' && `${eff.operation} ${eff.resource.toUpperCase()}`}
@@ -515,7 +515,7 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
                     <button
                       type="button"
                       onClick={() => handleRemoveSkill(ab.id)}
-                      className="text-slate-400 hover:text-rose-400 p-1 rounded hover:bg-white/5 transition-colors"
+                      className="text-zinc-400 hover:text-rose-400 p-1 rounded-lg hover:bg-white/5 transition-colors"
                       title="Retirer cette capacité de l'équipement"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -531,13 +531,13 @@ export function EquipmentEditModal({ equipment, onSave, onClose, api }: Equipmen
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-slate-400 hover:text-white transition-colors"
+              className="px-3 py-1.5 text-zinc-400 hover:text-white transition-colors"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-[0_0_12px_rgba(225,29,72,0.35)] transition-all"
+              className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg transition-[color,background-color,border-color,opacity,transform]"
             >
               Enregistrer les modifications
             </button>

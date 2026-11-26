@@ -197,16 +197,16 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
   const filtered = visibleCharacters.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex flex-col h-full bg-[#050508] text-white p-3 sm:p-4 gap-3 pointer-events-auto font-sans relative overflow-hidden">
+    <div className="flex flex-col h-full bg-void text-white p-3 sm:p-4 gap-3 pointer-events-auto font-sans relative overflow-hidden">
       {/* En-tête / Recherche */}
-      <div className="flex items-center gap-2 bg-[#090a10] border border-white/10 rounded-xl px-3 py-2 shadow-inner shrink-0">
-        <Search className="w-4 h-4 text-slate-400 shrink-0" />
+      <div className="flex items-center gap-2 bg-surface border border-white/10 rounded-xl px-3 py-2 shrink-0">
+        <Search className="w-4 h-4 text-zinc-400 shrink-0" />
         <input 
           type="text" 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Rechercher un inquisiteur..."
-          className="bg-transparent border-none outline-none flex-1 text-xs text-white placeholder-slate-500"
+          className="bg-transparent border-none outline-none flex-1 text-xs text-white placeholder-zinc-500"
         />
       </div>
 
@@ -215,28 +215,28 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
         <div className="flex flex-col gap-2 shrink-0">
           <button
             onClick={handleCreate}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(225,29,72,0.3)] transition-all"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition-[color,background-color,border-color,opacity,transform]"
           >
             <Plus className="w-4 h-4" />
             <span>Créer un Inquisiteur</span>
           </button>
           
-          <div className="flex bg-[#090a10] border border-white/10 rounded-lg p-1">
+          <div className="flex bg-surface border border-white/10 rounded-lg p-1">
             <button 
               onClick={() => setActiveFilter('all')}
-              className={`flex-1 text-[11px] py-1 rounded font-bold transition-colors ${activeFilter === 'all' ? 'bg-rose-600 text-white shadow-[0_0_8px_rgba(225,29,72,0.3)]' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 text-[11px] py-1 rounded-lg font-bold transition-colors ${activeFilter === 'all' ? 'bg-rose-600 text-white' : 'text-zinc-400 hover:text-white'}`}
             >
               Tous
             </button>
             <button 
               onClick={() => setActiveFilter('players')}
-              className={`flex-1 text-[11px] py-1 rounded font-bold transition-colors ${activeFilter === 'players' ? 'bg-rose-600 text-white shadow-[0_0_8px_rgba(225,29,72,0.3)]' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 text-[11px] py-1 rounded-lg font-bold transition-colors ${activeFilter === 'players' ? 'bg-rose-600 text-white' : 'text-zinc-400 hover:text-white'}`}
             >
               Joueurs
             </button>
             <button 
               onClick={() => setActiveFilter('npcs')}
-              className={`flex-1 text-[11px] py-1 rounded font-bold transition-colors ${activeFilter === 'npcs' ? 'bg-rose-600 text-white shadow-[0_0_8px_rgba(225,29,72,0.3)]' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 text-[11px] py-1 rounded-lg font-bold transition-colors ${activeFilter === 'npcs' ? 'bg-rose-600 text-white' : 'text-zinc-400 hover:text-white'}`}
             >
               PNJ
             </button>
@@ -247,14 +247,14 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
       {/* Liste des personnages */}
       <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2">
         {loading ? (
-          <div className="text-center text-slate-400 text-xs mt-10 animate-pulse font-bold">Chargement des inquisiteurs...</div>
+          <div className="text-center text-zinc-400 text-xs mt-10 font-bold">Chargement des inquisiteurs...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center text-slate-500 text-xs mt-10 italic">
+          <div className="text-center text-zinc-500 text-xs mt-10 ">
             {isTauri() ? "Aucun inquisiteur trouvé dans le grimoire." : "Le Maître de Jeu ne t'a confié aucun inquisiteur."}
           </div>
         ) : (
           filtered.map(c => (
-            <div key={c.id} className="flex items-center justify-between p-2.5 sm:p-3 bg-[#090a10] border border-white/10 hover:border-white/20 rounded-xl transition-all shadow-sm gap-2">
+            <div key={c.id} className="flex items-center justify-between p-2.5 sm:p-3 bg-surface border border-white/10 hover:border-white/20 rounded-xl transition-[color,background-color,border-color,opacity,transform] shadow-sm gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 {c.avatarUrl ? (
                   <img 
@@ -269,13 +269,13 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
                     }}
                   />
                 ) : (
-                  <div className={`w-10 h-10 rounded-xl border border-white/15 bg-black/40 flex items-center justify-center shrink-0 ${!c.owner_id ? 'text-rose-400' : 'text-slate-300'}`}>
+                  <div className={`w-10 h-10 rounded-xl border border-white/15 bg-black/40 flex items-center justify-center shrink-0 ${!c.owner_id ? 'text-rose-400' : 'text-zinc-300'}`}>
                     {!c.owner_id ? <Skull className="w-5 h-5" /> : <User className="w-5 h-5" />}
                   </div>
                 )}
                 <div className="min-w-0">
                   <div className="font-bold text-white truncate text-xs sm:text-sm">{c.name}</div>
-                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                  <div className="text-[11px] text-zinc-400 truncate mt-0.5">
                     {c.owner_id ? `Lié à : ${c.owner_id}` : 'PNJ (Non lié)'}
                   </div>
                 </div>
@@ -299,7 +299,7 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
                       avatarUrl: c.avatarUrl
                     });
                   }} 
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" 
+                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors" 
                   title="Placer / Retirer sur la carte"
                 >
                   <MapPin className="w-4 h-4" />
@@ -307,7 +307,7 @@ export function HexeCharacterManagerWindow({ api, onOpenSheet }: CharacterManage
                 {isTauri() && (
                   <button
                     onClick={() => handleDelete(c.id)}
-                    className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition-colors"
+                    className="p-1 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                     title="Supprimer"
                   >
                     <Trash2 className="w-4 h-4" />

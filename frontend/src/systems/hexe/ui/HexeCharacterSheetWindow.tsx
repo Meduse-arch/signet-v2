@@ -25,9 +25,9 @@ export function HexeCharacterSheetWindow({ api, characterId, onBack }: HexeChara
   } = sheet;
 
   const tabs: { id: SheetTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'attributs',   label: 'Attributs',   icon: <Swords   className="w-4 h-4 shrink-0" /> },
-    { id: 'inventaire',  label: 'Inventaire',  icon: <Backpack  className="w-4 h-4 shrink-0" /> },
-    { id: 'competences', label: 'Compétences', icon: <BookOpen  className="w-4 h-4 shrink-0" /> },
+    { id: 'attributs', label: 'Attributs', icon: <Swords className="w-4 h-4 shrink-0" /> },
+    { id: 'inventaire', label: 'Inventaire', icon: <Backpack className="w-4 h-4 shrink-0" /> },
+    { id: 'competences', label: 'Compétences', icon: <BookOpen className="w-4 h-4 shrink-0" /> },
   ];
 
   const resource = (key: 'hp' | 'mp' | 'stm' | 'chance') => ({
