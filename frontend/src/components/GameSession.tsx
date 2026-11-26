@@ -35,7 +35,7 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
     sendMessage: rawSendMessage,
     sendBinary,
     disconnect,
-  } = useVTTNetwork(signalUrl);
+  } = useVTTNetwork(signalUrl, isHost);
   const isCompanion = useCompanionMode();
 
   const sendMessage = useCallback((msg: any) => {
@@ -163,18 +163,15 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
     }
   }, [connectionState, isHost, username, sendMessage]);
 
-  const lastProcessedIdx = React.useRef(-1);
+  // Dernier numéro de séquence traité (monotone : insensible à la troncature du buffer)
+  const lastProcessedSeq = React.useRef(-1);
 
   // Traitement des messages entrants
   useEffect(() => {
-    if (messages.length === 0) {
-      lastProcessedIdx.current = -1; // Reset l'index si la connexion a été relancée
-      return;
-    }
-    
-    for (let i = lastProcessedIdx.current + 1; i < messages.length; i++) {
-      const msg = messages[i];
-      console.log('[GameSession] Nouveau message reçu:', msg);
+    for (const { seq, msg } of messages) {
+      if (seq <= lastProcessedSeq.current) continue;
+      lastProcessedSeq.current = seq;
+      console.log('[GameSession] Nouveau message reçu:', msg.type);
 
       if (isHost && msg.type === 'PLAYER_JOIN') {
         console.log('[GameSession] Hôte: Réception PLAYER_JOIN pour', msg.payload.username);
@@ -227,8 +224,6 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
         setIsGameStarted(true);
       }
     }
-    
-    lastProcessedIdx.current = messages.length - 1;
   }, [messages, isHost, sendMessage, isGameStarted, isRoomOpen]);
 
   const handleStartGame = () => {

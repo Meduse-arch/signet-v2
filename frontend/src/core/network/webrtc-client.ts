@@ -49,6 +49,9 @@ export class VTTNetwork {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private listeners: Set<VTTNetworkListener> = new Set();
 
+  /** Incrémenté à chaque `cleanup()` : invalide les réponses réseau en vol d'une session précédente. */
+  private generation = 0;
+
   /** URL de base du serveur de signalement (sans query string). */
   private readonly signalUrl: string;
 
@@ -118,9 +121,16 @@ export class VTTNetwork {
   public async joinGame(roomId: string): Promise<void> {
     this.cleanup();
 
+    const generation = this.generation;
+    let inFlight = false; // un seul getSignal à la fois (une requête lente ne doit pas être doublée)
+
     const checkOffer = async () => {
+      if (inFlight) return;
+      inFlight = true;
       try {
         const room = await this.getSignal(roomId);
+        // Session fermée ou relancée pendant la requête, ou peer déjà créé : on abandonne.
+        if (generation !== this.generation || this.peer) return;
         if (room?.offer) {
           console.info('[VTTNetwork·Joueur] Offre de l\'hôte trouvée !');
           this.stopPolling();
@@ -128,6 +138,8 @@ export class VTTNetwork {
         }
       } catch (err) {
         console.error('[VTTNetwork·Joueur] Erreur vérification offre :', err);
+      } finally {
+        inFlight = false;
       }
     };
 
@@ -135,13 +147,14 @@ export class VTTNetwork {
     await checkOffer();
 
     // 2. Si on n'a pas trouvé l'offre, on boucle (polling) au lieu de crasher
-    if (this.pollingTimer === null && !this.peer) {
+    if (generation === this.generation && this.pollingTimer === null && !this.peer) {
       console.info('[VTTNetwork·Joueur] En attente de la création de la partie par le MJ...');
       this.pollingTimer = setInterval(checkOffer, this.pollIntervalMs);
     }
   }
 
   private startPlayerPeer(roomId: string, offer: SimplePeer.SignalData): void {
+    if (this.peer) return; // ne jamais écraser un peer existant sans le détruire
     this.peer = new SimplePeer({
       initiator: false,
       trickle: false,
@@ -237,6 +250,7 @@ export class VTTNetwork {
       this.emit({ kind: 'connected' });
 
       // Lancement d'un heartbeat pour garder la connexion WebRTC (et le routeur NAT) active
+      this.stopHeartbeat();
       this.heartbeatTimer = setInterval(() => {
         try {
           peer.send(JSON.stringify({ type: 'PING' }));
@@ -263,7 +277,7 @@ export class VTTNetwork {
 
     peer.on('close', () => {
       console.info('[VTTNetwork] Connexion WebRTC fermée.');
-      if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+      this.stopHeartbeat();
       this.emit({ kind: 'disconnected' });
     });
 
@@ -334,9 +348,15 @@ export class VTTNetwork {
   private startPollingForAnswer(roomId: string): void {
     this.stopPolling();
 
+    const generation = this.generation;
+    let inFlight = false; // un seul getSignal à la fois (une requête lente ne doit pas être doublée)
+
     this.pollingTimer = setInterval(async () => {
+      if (inFlight) return;
+      inFlight = true;
       try {
         const room = await this.getSignal(roomId);
+        if (generation !== this.generation) return; // session fermée ou relancée pendant la requête
         if (room?.answer) {
           console.info('[VTTNetwork·Hôte] Réponse SDP reçue depuis le serveur de signalement.');
           this.stopPolling();
@@ -344,6 +364,8 @@ export class VTTNetwork {
         }
       } catch (err) {
         console.error('[VTTNetwork·Hôte] Erreur polling :', err);
+      } finally {
+        inFlight = false;
       }
     }, this.pollIntervalMs);
   }
@@ -357,12 +379,17 @@ export class VTTNetwork {
 
   // ── Nettoyage ───────────────────────────────────────────────────────────
 
-  private cleanup(): void {
-    this.stopPolling();
-    if (this.heartbeatTimer) {
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer !== null) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
+  }
+
+  private cleanup(): void {
+    this.generation++;
+    this.stopPolling();
+    this.stopHeartbeat();
     if (this.peer) {
       // Retire les écouteurs pour éviter que le `destroy()` ne déclenche 
       // un événement 'error' ou 'close' qui polluerait l'interface (faux positifs)

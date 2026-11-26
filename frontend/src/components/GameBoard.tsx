@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { P2PMessage } from '../core/network/schemas';
+import type { SequencedMessage } from '../core/hooks/useVTTNetwork';
 import { ModuleOverlays } from './game/ModuleOverlays';
 import { DockManager } from './game/DockManager';
 import { ModManager } from '../core/services/ModManager';
@@ -19,7 +20,7 @@ import { CompanionShell } from './companion/CompanionShell';
 interface GameBoardProps {
   isHost: boolean;
   username: string;
-  messages: P2PMessage[];
+  messages: SequencedMessage[];
   sendMessage: (msg: P2PMessage) => void;
   sendBinary: (data: Uint8Array) => void;
   systemId?: string | null;
@@ -232,17 +233,14 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     };
   }, [onReturn]);
 
-  const lastProcessedMsgIdx = useRef(-1);
+  // Dernier numéro de séquence traité (monotone : insensible à la troncature du buffer)
+  const lastProcessedSeq = useRef(-1);
 
   // Pont 1 : Réseau (Props) -> EventBus (Modules)
   useEffect(() => {
-    if (messages.length === 0) {
-      lastProcessedMsgIdx.current = -1;
-      return;
-    }
-
-    for (let i = lastProcessedMsgIdx.current + 1; i < messages.length; i++) {
-      const msg = messages[i];
+    for (const { seq, msg } of messages) {
+      if (seq <= lastProcessedSeq.current) continue;
+      lastProcessedSeq.current = seq;
 
       if (msg.type === 'MOVE_TOKEN') {
         const { tokenId, x, y } = msg.payload;
@@ -444,8 +442,6 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
       coreEventBus.emit('NETWORK_INCOMING', msg);
     }
     }
-    
-    lastProcessedMsgIdx.current = messages.length - 1;
   }, [messages, isHost, mapUrl, tokens]);
 
   // Pont 2 : EventBus (Modules) -> Réseau (Props)

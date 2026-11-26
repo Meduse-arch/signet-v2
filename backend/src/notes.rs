@@ -1,5 +1,6 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
+use crate::fs_util::atomic_write;
 use std::time::UNIX_EPOCH;
 use tauri::{AppHandle, Manager};
 use serde::{Deserialize, Serialize};
@@ -28,11 +29,27 @@ fn get_notes_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(notes_dir)
 }
 
+/// Résout `rel` sous `base` en n'acceptant que des composants `Normal`.
+/// Rejette `..`, les chemins absolus / préfixes de lecteur, et le chemin vide
+/// (qui désignerait la racine des notes elle-même).
 fn sanitize_path(base: &Path, rel: &str) -> Result<PathBuf, String> {
     let clean_rel = rel.trim().trim_start_matches(['/', '\\']);
-    let target = base.join(clean_rel);
-    if !target.starts_with(base) {
-        return Err("Accès interdit hors du dossier des notes".to_string());
+    let mut target = base.to_path_buf();
+    let mut has_component = false;
+    for component in Path::new(clean_rel).components() {
+        match component {
+            Component::Normal(part) => {
+                target.push(part);
+                has_component = true;
+            }
+            Component::CurDir => {}
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
+                return Err("Accès interdit hors du dossier des notes".to_string());
+            }
+        }
+    }
+    if !has_component {
+        return Err("Chemin de note vide".to_string());
     }
     Ok(target)
 }
@@ -118,7 +135,7 @@ pub fn save_note_content(app: AppHandle, path: String, content: String) -> Resul
             fs::create_dir_all(parent).map_err(|e| format!("Erreur création dossier parent: {}", e))?;
         }
     }
-    fs::write(&target, content).map_err(|e| format!("Erreur sauvegarde note: {}", e))
+    atomic_write(&target, content.as_bytes())
 }
 
 #[tauri::command]

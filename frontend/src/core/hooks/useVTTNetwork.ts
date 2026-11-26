@@ -10,10 +10,25 @@ import { coreEventBus } from '../services/EventBus';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 
+/** Message validé + numéro de séquence monotone (jamais réinitialisé, survit à la troncature). */
+export interface SequencedMessage {
+  seq: number;
+  msg: P2PMessage;
+}
+
+/** Types qu'un client ne peut pas envoyer à l'hôte : seul le MJ les émet. */
+const HOST_ONLY_TYPES: ReadonlySet<P2PMessage['type']> = new Set([
+  'SET_MAP',
+  'START_GAME',
+  'SPAWN_TOKEN',
+  'REMOVE_TOKEN',
+  'MOVE_PLAYER_MAP',
+]);
+
 export interface UseVTTNetworkReturn {
   connectionState: ConnectionState;
   roomId: string | null;
-  messages: P2PMessage[];
+  messages: SequencedMessage[];
   hostGame: (roomId: string) => void;
   joinGame: (roomId: string) => void;
   lockRoom: (roomId: string) => void;
@@ -28,12 +43,15 @@ const MAX_MESSAGES = 500;
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
+export function useVTTNetwork(signalUrl: string, isHost: boolean): UseVTTNetworkReturn {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [roomId, setRoomId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<P2PMessage[]>([]);
+  const [messages, setMessages] = useState<SequencedMessage[]>([]);
 
   const networkRef = useRef<VTTNetwork | null>(null);
+  const seqRef = useRef(0);
+  const isHostRef = useRef(isHost);
+  isHostRef.current = isHost;
 
   const getNetwork = useCallback((): VTTNetwork => {
     if (!networkRef.current) {
@@ -74,17 +92,17 @@ export function useVTTNetwork(signalUrl: string): UseVTTNetworkReturn {
         case 'data': {
           const result = P2PMessageSchema.safeParse(event.payload);
           if (!result.success) {
-            const payloadType = (event.payload as any)?.type ?? 'unknown';
-            console.warn(
-              `[useVTTNetwork] Message P2P rejeté (type: "${payloadType}") Zod:`,
-              result.error.issues,
-              'Payload brut :',
-              event.payload,
-            );
+            console.warn('[useVTTNetwork] Message P2P rejeté (validation Zod) :', result.error.issues);
             return;
           }
+          // Contrôle de rôle : tout message reçu par l'hôte vient d'un joueur.
+          if (isHostRef.current && HOST_ONLY_TYPES.has(result.data.type)) {
+            console.warn(`[useVTTNetwork] Message "${result.data.type}" réservé au MJ rejeté.`);
+            return;
+          }
+          const entry: SequencedMessage = { seq: seqRef.current++, msg: result.data };
           setMessages((prev) => {
-            const next = [...prev, result.data];
+            const next = [...prev, entry];
             return next.length > MAX_MESSAGES ? next.slice(-MAX_MESSAGES) : next;
           });
           break;

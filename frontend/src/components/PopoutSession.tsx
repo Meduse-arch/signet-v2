@@ -15,7 +15,7 @@ interface PopoutSessionProps {
 export function PopoutSession({ roomId, moduleId, signalUrl, username }: PopoutSessionProps) {
   const {
     joinGame,
-  } = useVTTNetwork(signalUrl);
+  } = useVTTNetwork(signalUrl, false);
 
   const [error, setError] = useState<string | null>(null);
 

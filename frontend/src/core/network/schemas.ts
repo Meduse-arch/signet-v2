@@ -4,6 +4,11 @@ import { z } from 'zod';
 // Schémas de validation des messages P2P (WebRTC DataChannel)
 // ---------------------------------------------------------------------------
 
+/** Longueur max d'une URL ou d'un hash de fichier transporté dans un message P2P. */
+const MAX_URL_LEN = 2048;
+/** Nombre max de tokens dans un SYNC_STATE. */
+const MAX_SYNC_TOKENS = 500;
+
 const ChatMessageSchema = z.object({
   type: z.literal('CHAT'),
   payload: z.object({
@@ -17,13 +22,13 @@ const ChatMessageSchema = z.object({
 const ChatMessageModuleSchema = z.object({
   type: z.literal('CHAT_MESSAGE'),
   payload: z.object({
-    id: z.string().optional(),
-    sender: z.string().optional(),
-    author: z.string().optional(),
-    text: z.string().optional(),
-    content: z.string().optional(),
-    timestamp: z.number().optional(),
-    type: z.string().optional(),
+    id: z.string().max(64).optional(),
+    sender: z.string().max(64).optional(),
+    author: z.string().max(64).optional(),
+    text: z.string().max(2000).optional(),
+    content: z.string().max(2000).optional(),
+    timestamp: z.number().finite().optional(),
+    type: z.string().max(32).optional(),
   }),
 });
 
@@ -65,12 +70,12 @@ const SpawnTokenSchema = z.object({
     name: z.string().max(128),
     x: z.number().finite(),
     y: z.number().finite(),
-    color: z.string(),
-    owner: z.string().optional(),
+    color: z.string().max(32),
+    owner: z.string().max(64).optional(),
     scaleX: z.number().finite().optional(),
     scaleY: z.number().finite().optional(),
     rotation: z.number().finite().optional(),
-    avatarUrl: z.string().optional(),
+    avatarUrl: z.string().max(MAX_URL_LEN).optional(),
   }).passthrough(),
 });
 
@@ -92,7 +97,7 @@ const PlayerJoinSchema = z.object({
 const LobbyStateSchema = z.object({
   type: z.literal('LOBBY_STATE'),
   payload: z.object({
-    players: z.array(z.string()),
+    players: z.array(z.string().max(80)).max(64),
     isGameStarted: z.boolean(),
     isRoomOpen: z.boolean(),
   }),
@@ -101,28 +106,28 @@ const LobbyStateSchema = z.object({
 const RequestStateSchema = z.object({
   type: z.literal('REQUEST_STATE'),
   payload: z.object({
-    mapUrl: z.string().optional(),
-    requester: z.string().optional(),
+    mapUrl: z.string().max(MAX_URL_LEN).optional(),
+    requester: z.string().max(80).optional(),
   }),
 });
 
 const SyncStateSchema = z.object({
   type: z.literal('SYNC_STATE'),
   payload: z.object({
-    targetUsername: z.string().optional(),
-    mapUrl: z.string().nullable().optional(),
+    targetUsername: z.string().max(80).optional(),
+    mapUrl: z.string().max(MAX_URL_LEN).nullable().optional(),
     tokens: z.array(z.object({
-      id: z.string(),
-      name: z.string(),
+      id: z.string().max(128),
+      name: z.string().max(128),
       x: z.number().finite(),
       y: z.number().finite(),
-      color: z.string(),
-      owner: z.string().nullable().optional(),
+      color: z.string().max(32),
+      owner: z.string().max(64).nullable().optional(),
       scaleX: z.number().finite().nullable().optional(),
       scaleY: z.number().finite().nullable().optional(),
       rotation: z.number().finite().nullable().optional(),
-      avatarUrl: z.string().nullable().optional(),
-    })),
+      avatarUrl: z.string().max(MAX_URL_LEN).nullable().optional(),
+    })).max(MAX_SYNC_TOKENS),
   }),
 });
 
@@ -141,30 +146,30 @@ const PingSchema = z.object({
 
 const ModEventSchema = z.object({
   type: z.literal('MOD_EVENT'),
-  _sourceMod: z.string(),
-  modEventType: z.string(),
+  _sourceMod: z.string().max(64),
+  modEventType: z.string().max(64),
   payload: z.any(),
 });
 
 const SetMapSchema = z.object({
   type: z.literal('SET_MAP'),
   payload: z.object({
-    url: z.string(),
+    url: z.string().max(MAX_URL_LEN),
   }),
 });
 
 const RequestFileSchema = z.object({
   type: z.literal('REQUEST_FILE'),
   payload: z.object({
-    hash: z.string().min(1),
+    hash: z.string().min(1).max(128),
   }),
 });
 
 const MovePlayerMapSchema = z.object({
   type: z.literal('MOVE_PLAYER_MAP'),
   payload: z.object({
-    username: z.string(),
-    url: z.string(),
+    username: z.string().max(80),
+    url: z.string().max(MAX_URL_LEN),
   }),
 });
 

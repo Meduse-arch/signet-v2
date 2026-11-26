@@ -1,11 +1,26 @@
 use rusqlite::{params, Connection, Result as SqlResult};
 use std::fs;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
+use std::time::Duration;
 use tauri::{AppHandle, Manager, State};
 use serde::{Deserialize, Serialize};
+use crate::fs_util::atomic_write;
 
 // Wrapper pour partager la connexion SQLite de façon "thread-safe"
 pub struct DbState(pub Mutex<Option<Connection>>);
+
+/// Verrouille la connexion SQLite. Un mutex empoisonné (panic dans un autre thread)
+/// devient une erreur renvoyée au front plutôt qu'un panic en cascade.
+fn lock_state(db: &DbState) -> Result<MutexGuard<'_, Option<Connection>>, String> {
+    db.0.lock()
+        .map_err(|_| "Base de données indisponible (verrou corrompu), redémarrez l'application".to_string())
+}
+
+/// Version courante du schéma, stockée dans `PRAGMA user_version`.
+const SCHEMA_VERSION: i32 = 1;
+
+/// Délai d'attente (ms) si la base est verrouillée par un autre accès.
+const BUSY_TIMEOUT_MS: u64 = 5_000;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CharacterRecord {
@@ -33,13 +48,88 @@ pub struct TokenRecord {
 
 pub fn init_db(app: &AppHandle) -> Result<(), String> {
     let state: State<DbState> = app.state();
-    *state.0.lock().unwrap() = None; // Pas de DB par défaut, on attend open_campaign_db
+    *lock_state(state.inner())? = None; // Pas de DB par défaut, on attend open_campaign_db
     println!("[Base de données] SQLite en attente de la sélection de campagne.");
+    Ok(())
+}
+
+/// Accepte uniquement `signet-XXXXXX` (préfixe insensible à la casse, 6 caractères
+/// alphanumériques ASCII) : empêche tout composant de chemin (`..`, `/`, `\`).
+fn validate_room_id(room_id: &str) -> Result<(), String> {
+    const PREFIX: &[u8] = b"signet-";
+    let bytes = room_id.as_bytes();
+    let valid = bytes.len() == PREFIX.len() + 6
+        && bytes[..PREFIX.len()].eq_ignore_ascii_case(PREFIX)
+        && bytes[PREFIX.len()..].iter().all(|b| b.is_ascii_alphanumeric());
+    if valid {
+        Ok(())
+    } else {
+        Err("Identifiant de salon invalide (format attendu : signet-XXXXXX)".to_string())
+    }
+}
+
+/// Applique les migrations de schéma manquantes, de façon atomique.
+/// Version 0 = base neuve ou antérieure au versionnement : les `CREATE TABLE IF NOT EXISTS`
+/// sont idempotents, les données existantes sont conservées.
+fn migrate(conn: &Connection) -> Result<(), String> {
+    let version: i32 = conn
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .map_err(|e| format!("Erreur lecture version du schéma: {}", e))?;
+
+    if version > SCHEMA_VERSION {
+        return Err(format!(
+            "Cette campagne a été créée avec une version plus récente de Signet (schéma {}).",
+            version
+        ));
+    }
+
+    if version < 1 {
+        conn.execute_batch(
+            "BEGIN;
+             CREATE TABLE IF NOT EXISTS characters (
+                 id TEXT PRIMARY KEY,
+                 name TEXT NOT NULL,
+                 owner_id TEXT,
+                 data TEXT NOT NULL
+             );
+             CREATE TABLE IF NOT EXISTS tokens (
+                 id TEXT PRIMARY KEY,
+                 map_id TEXT NOT NULL,
+                 x REAL NOT NULL,
+                 y REAL NOT NULL,
+                 scale_x REAL NOT NULL,
+                 scale_y REAL NOT NULL,
+                 rotation REAL NOT NULL,
+                 data TEXT NOT NULL
+             );
+             CREATE TABLE IF NOT EXISTS assets (
+                 hash TEXT PRIMARY KEY,
+                 name TEXT,
+                 extension TEXT,
+                 file_type TEXT
+             );
+             CREATE TABLE IF NOT EXISTS players (
+                 username TEXT PRIMARY KEY
+             );
+             CREATE TABLE IF NOT EXISTS module_data (
+                 module_id TEXT,
+                 key TEXT,
+                 data TEXT NOT NULL,
+                 PRIMARY KEY (module_id, key)
+             );
+             PRAGMA user_version = 1;
+             COMMIT;",
+        )
+        .map_err(|e| format!("Erreur migration du schéma v1: {}", e))?;
+    }
+
     Ok(())
 }
 
 #[tauri::command]
 pub fn open_campaign_db(app: tauri::AppHandle, state: State<'_, DbState>, room_id: String) -> Result<(), String> {
+    validate_room_id(&room_id)?;
+
     let app_data_dir = app
         .path()
         .app_data_dir()
@@ -47,73 +137,26 @@ pub fn open_campaign_db(app: tauri::AppHandle, state: State<'_, DbState>, room_i
 
     // On suit la règle demandée: local / <CODE> / bd
     let db_dir = app_data_dir.join("local").join(&room_id).join("bd");
-    
+
     if !db_dir.exists() {
         fs::create_dir_all(&db_dir)
             .map_err(|e| format!("Erreur création dossier BD: {}", e))?;
     }
 
     let db_path = db_dir.join("data.sqlite");
-    
+
     let conn = Connection::open(&db_path)
         .map_err(|e| format!("Erreur ouverture BD: {}", e))?;
 
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS characters (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            owner_id TEXT,
-            data TEXT NOT NULL
-        )",
-        [],
-    ).map_err(|e| format!("Erreur table characters: {}", e))?;
+    conn.busy_timeout(Duration::from_millis(BUSY_TIMEOUT_MS))
+        .map_err(|e| format!("Erreur busy_timeout: {}", e))?;
+    conn.pragma_update(None, "journal_mode", "WAL")
+        .map_err(|e| format!("Erreur activation WAL: {}", e))?;
 
-    // DROP de la table tokens pour forcer la mise à jour du schéma en test
-    let _ = conn.execute("DROP TABLE IF EXISTS tokens", []);
+    migrate(&conn)?;
 
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS tokens (
-            id TEXT PRIMARY KEY,
-            map_id TEXT NOT NULL,
-            x REAL NOT NULL,
-            y REAL NOT NULL,
-            scale_x REAL NOT NULL,
-            scale_y REAL NOT NULL,
-            rotation REAL NOT NULL,
-            data TEXT NOT NULL
-        )",
-        [],
-    ).map_err(|e| format!("Erreur table tokens: {}", e))?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS assets (
-            hash TEXT PRIMARY KEY,
-            name TEXT,
-            extension TEXT,
-            file_type TEXT
-        )",
-        [],
-    ).map_err(|e| format!("Erreur table assets: {}", e))?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS players (
-            username TEXT PRIMARY KEY
-        )",
-        [],
-    ).map_err(|e| format!("Erreur table players: {}", e))?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS module_data (
-            module_id TEXT,
-            key TEXT,
-            data TEXT NOT NULL,
-            PRIMARY KEY (module_id, key)
-        )",
-        [],
-    ).map_err(|e| format!("Erreur table module_data: {}", e))?;
-
-    // On stocke la connexion dans le State de Tauri
-    let mut lock = state.inner().0.lock().unwrap();
+    // On stocke la connexion dans le State de Tauri (la précédente est fermée au remplacement)
+    let mut lock = lock_state(state.inner())?;
     *lock = Some(conn);
 
     println!("[Base de données] SQLite ouvert pour la room {} dans : {:?}", room_id, db_path);
@@ -132,7 +175,7 @@ pub fn save_character(
     owner_id: Option<String>,
     data: String,
 ) -> Result<(), String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     conn.execute(
@@ -150,7 +193,7 @@ pub fn save_character(
 
 #[tauri::command]
 pub fn get_characters(state: State<'_, DbState>) -> Result<Vec<CharacterRecord>, String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     let mut stmt = conn.prepare("SELECT id, name, owner_id, data FROM characters")
@@ -177,7 +220,7 @@ pub fn get_characters(state: State<'_, DbState>) -> Result<Vec<CharacterRecord>,
 
 #[tauri::command]
 pub fn delete_character(state: State<'_, DbState>, id: String) -> Result<(), String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     conn.execute("DELETE FROM characters WHERE id = ?1", params![id])
@@ -202,7 +245,7 @@ pub fn save_token(
     rotation: f64,
     data: String,
 ) -> Result<(), String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     conn.execute(
@@ -224,7 +267,7 @@ pub fn save_token(
 
 #[tauri::command]
 pub fn get_tokens(state: State<'_, DbState>, map_id: String) -> Result<Vec<TokenRecord>, String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     let mut stmt = conn.prepare("SELECT id, map_id, x, y, scale_x, scale_y, rotation, data FROM tokens WHERE map_id = ?1")
@@ -255,7 +298,7 @@ pub fn get_tokens(state: State<'_, DbState>, map_id: String) -> Result<Vec<Token
 
 #[tauri::command]
 pub fn delete_token(state: State<'_, DbState>, id: String) -> Result<(), String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     conn.execute("DELETE FROM tokens WHERE id = ?1", params![id])
@@ -284,7 +327,7 @@ pub fn insert_asset_record(conn: &Connection, hash: &str, extension: &str, name:
 
 #[tauri::command]
 pub fn save_player(state: State<'_, DbState>, username: String) -> Result<(), String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     conn.execute(
@@ -297,7 +340,7 @@ pub fn save_player(state: State<'_, DbState>, username: String) -> Result<(), St
 
 #[tauri::command]
 pub fn get_players(state: State<'_, DbState>) -> Result<Vec<String>, String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     let mut stmt = conn.prepare("SELECT username FROM players")
@@ -328,7 +371,7 @@ pub fn save_module_data(
     key: String,
     data: String,
 ) -> Result<(), String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     conn.execute(
@@ -344,7 +387,7 @@ pub fn save_module_data(
 
 #[tauri::command]
 pub fn get_module_data(state: State<'_, DbState>, module_id: String) -> Result<Vec<(String, String)>, String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     let mut stmt = conn.prepare("SELECT key, data FROM module_data WHERE module_id = ?1")
@@ -366,7 +409,7 @@ pub fn get_module_data(state: State<'_, DbState>, module_id: String) -> Result<V
 
 #[tauri::command]
 pub fn delete_module_data(state: State<'_, DbState>, module_id: String, key: String) -> Result<(), String> {
-    let lock = state.inner().0.lock().unwrap();
+    let lock = lock_state(state.inner())?;
     let conn = lock.as_ref().ok_or("BD non initialisée")?;
 
     conn.execute("DELETE FROM module_data WHERE module_id = ?1 AND key = ?2", params![module_id, key])
@@ -389,7 +432,7 @@ pub fn save_campaigns_list(app: tauri::AppHandle, data: String) -> Result<(), St
     }
     
     let path = db_dir.join("campaigns_list.json");
-    fs::write(&path, data).map_err(|e| format!("Erreur de sauvegarde: {}", e))?;
+    atomic_write(&path, data.as_bytes())?;
     
     Ok(())
 }

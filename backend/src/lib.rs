@@ -1,3 +1,4 @@
+mod fs_util;
 mod lan_server;
 mod dice;
 pub mod library;
