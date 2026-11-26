@@ -83,11 +83,11 @@ export function InventoryTab({ sheet, api }: { sheet: HexeSheetState; api: Signe
                 equip={equip}
                 api={api}
                 expanded={expandedEquip.has(equip.id)}
-                onToggleExpand={() => toggleExpandEquip(equip.id)}
-                onToggleEquip={() => toggleEquipped(equip.id)}
-                onRollWeapon={() => handleRollWeapon(equip)}
-                onEdit={() => setEditingEquipment(equip)}
-                onDelete={() => deleteEquipment(equip.id)}
+                onToggleExpand={toggleExpandEquip}
+                onToggleEquip={toggleEquipped}
+                onRollWeapon={handleRollWeapon}
+                onEdit={setEditingEquipment}
+                onDelete={deleteEquipment}
               />
             ))
           )}
@@ -136,13 +136,13 @@ export function InventoryTab({ sheet, api }: { sheet: HexeSheetState; api: Signe
                   equip={equip}
                   api={api}
                   expanded={expandedEquip.has(equip.id)}
-                  onToggleExpand={() => toggleExpandEquip(equip.id)}
-                  onToggleEquip={() => toggleEquipped(equip.id)}
-                  onRollWeapon={() => handleRollWeapon(equip)}
-                  onConsume={() => handleConsumeItem(equip)}
-                  onUpdateQty={(delta) => updateEquipmentQty(equip.id, delta)}
-                  onEdit={() => setEditingEquipment(equip)}
-                  onDelete={() => deleteEquipment(equip.id)}
+                  onToggleExpand={toggleExpandEquip}
+                  onToggleEquip={toggleEquipped}
+                  onRollWeapon={handleRollWeapon}
+                  onConsume={handleConsumeItem}
+                  onUpdateQty={updateEquipmentQty}
+                  onEdit={setEditingEquipment}
+                  onDelete={deleteEquipment}
                 />
               ))}
 

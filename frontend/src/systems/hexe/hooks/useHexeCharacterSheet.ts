@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { SignetAPI } from '../../../core/services/SignetAPI';
 import type {
   HexeCharacter, HexeEquipment, HexeStatKey, HexeEquipmentSlot,
@@ -35,6 +35,10 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
     equipment: [],
     inventory: [],
   });
+
+  // Ref vers l'état courant : permet des handlers stables (useCallback) sans closure périmée
+  const charRef = useRef(char);
+  charRef.current = char;
 
   const [knownPlayers, setKnownPlayers] = useState<string[]>([]);
   const [isHost, setIsHost] = useState(false);
@@ -136,7 +140,7 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
   }, [characterId, api]);
 
   // Synchronisation réseau
-  const updateCharacterLocally = (updater: (prev: HexeCharacter) => HexeCharacter) => {
+  const updateCharacterLocally = useCallback((updater: (prev: HexeCharacter) => HexeCharacter) => {
     setChar(prev => {
       const next = updater(prev);
       if (isTauri()) {
@@ -146,7 +150,7 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
       api.emit('NETWORK_OUTGOING', { type: 'MOD_EVENT', _sourceMod: 'system-hexe', modEventType: 'SYNC_CHARACTER', payload: next });
       return next;
     });
-  };
+  }, [api]);
 
   const updateField = (field: keyof HexeCharacter, value: any) => {
     updateCharacterLocally(prev => ({ ...prev, [field]: value }));
@@ -189,7 +193,8 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
     });
   };
 
-  const handleRollWeapon = (equip: HexeEquipment) => {
+  const handleRollWeapon = useCallback((equip: HexeEquipment) => {
+    const char = charRef.current;
     if (!equip.dice) return;
     const rollResult = rollDiceFormula(equip.dice);
     const formulaStr = formatDiceFormula(equip.dice);
@@ -218,7 +223,7 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
       details: rollResult as unknown as Record<string, unknown>,
       visibility: 'all'
     });
-  };
+  }, [api]);
 
   // ─── Gestion compétences & activation ───────────────────────────────────────
 
@@ -322,7 +327,7 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
     }));
   };
 
-  const toggleEquipped = (equipId: string) => {
+  const toggleEquipped = useCallback((equipId: string) => {
     updateCharacterLocally(prev => ({
       ...prev,
       equipment: (prev.equipment ?? []).map(e => {
@@ -331,9 +336,9 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
         return { ...e, isEquipped: !e.isEquipped };
       })
     }));
-  };
+  }, [updateCharacterLocally]);
 
-  const updateEquipmentQty = (equipId: string, delta: number) => {
+  const updateEquipmentQty = useCallback((equipId: string, delta: number) => {
     updateCharacterLocally(prev => ({
       ...prev,
       equipment: (prev.equipment ?? []).map(e => {
@@ -342,9 +347,10 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
         return { ...e, quantity: newQty };
       }).filter(e => (e.quantity ?? 1) > 0)
     }));
-  };
+  }, [updateCharacterLocally]);
 
-  const handleConsumeItem = (equip: HexeEquipment) => {
+  const handleConsumeItem = useCallback((equip: HexeEquipment) => {
+    const char = charRef.current;
     const execResult = executeSkillOrItem(char, {
       name: equip.name,
       effects: equip.effects || [],
@@ -384,14 +390,14 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
         sender: char.name
       }
     });
-  };
+  }, [api, updateCharacterLocally]);
 
-  const deleteEquipment = (equipId: string) => {
+  const deleteEquipment = useCallback((equipId: string) => {
     updateCharacterLocally(prev => ({
       ...prev,
       equipment: (prev.equipment ?? []).filter(e => e.id !== equipId)
     }));
-  };
+  }, [updateCharacterLocally]);
 
   const handleSaveEquipment = (updated: HexeEquipment) => {
     updateCharacterLocally(prev => ({
@@ -401,13 +407,13 @@ export function useHexeCharacterSheet(api: SignetAPI, characterId: string) {
     setEditingEquipment(null);
   };
 
-  const toggleExpandEquip = (equipId: string) => {
+  const toggleExpandEquip = useCallback((equipId: string) => {
     setExpandedEquip(prev => {
       const next = new Set(prev);
       next.has(equipId) ? next.delete(equipId) : next.add(equipId);
       return next;
     });
-  };
+  }, []);
 
   // ─── Rétrocompatibilité objets simples existants ────────────────────────────
 

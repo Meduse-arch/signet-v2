@@ -12,13 +12,13 @@ import { STAT_SHORT } from '../../constants';
 interface EquipmentCardProps {
   equip: HexeEquipment;
   expanded: boolean;
-  onToggleExpand: () => void;
-  onToggleEquip: () => void;
-  onRollWeapon?: () => void;
-  onConsume?: () => void;
-  onUpdateQty?: (delta: number) => void;
-  onEdit?: () => void;
-  onDelete: () => void;
+  onToggleExpand: (id: string) => void;
+  onToggleEquip: (id: string) => void;
+  onRollWeapon?: (equip: HexeEquipment) => void;
+  onConsume?: (equip: HexeEquipment) => void;
+  onUpdateQty?: (id: string, delta: number) => void;
+  onEdit?: (equip: HexeEquipment) => void;
+  onDelete: (id: string) => void;
   api?: SignetAPI;
 }
 
@@ -86,7 +86,7 @@ export const EquipmentCard = memo(function EquipmentCard({
           {/* Bouton déplier détails si présents */}
           {hasDetails && (
             <button
-              onClick={onToggleExpand}
+              onClick={() => onToggleExpand(equip.id)}
               className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
               title="Détails"
             >
@@ -111,7 +111,7 @@ export const EquipmentCard = memo(function EquipmentCard({
               <>
                 <div className="flex items-center gap-1 bg-[#050508] border border-white/10 rounded-lg px-1.5 py-0.5">
                   <button
-                    onClick={() => onUpdateQty && onUpdateQty(-1)}
+                    onClick={() => onUpdateQty && onUpdateQty(equip.id, -1)}
                     className="w-4 h-4 text-slate-400 hover:text-white font-bold text-xs"
                     title="Diminuer"
                   >
@@ -121,7 +121,7 @@ export const EquipmentCard = memo(function EquipmentCard({
                     {equip.quantity ?? 1}
                   </span>
                   <button
-                    onClick={() => onUpdateQty && onUpdateQty(1)}
+                    onClick={() => onUpdateQty && onUpdateQty(equip.id, 1)}
                     className="w-4 h-4 text-slate-400 hover:text-white font-bold text-xs"
                     title="Augmenter"
                   >
@@ -130,7 +130,7 @@ export const EquipmentCard = memo(function EquipmentCard({
                 </div>
 
                 <button
-                  onClick={onConsume}
+                  onClick={() => onConsume?.(equip)}
                   className="px-2 py-1 text-[10px] font-bold rounded-lg transition-colors bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.3)] whitespace-nowrap"
                   title="Consommer"
                 >
@@ -142,7 +142,7 @@ export const EquipmentCard = memo(function EquipmentCard({
               <>
                 {equip.slot === 'weapon' && equip.dice && onRollWeapon && (
                   <button
-                    onClick={onRollWeapon}
+                    onClick={() => onRollWeapon(equip)}
                     className="px-2 py-1 text-[10px] font-bold rounded-lg transition-colors bg-rose-950/70 hover:bg-rose-900 border border-rose-800/60 text-rose-300 flex items-center gap-1 shadow-sm whitespace-nowrap"
                     title={`Lancer les dés (${formatDiceFormula(equip.dice)})`}
                   >
@@ -151,7 +151,7 @@ export const EquipmentCard = memo(function EquipmentCard({
                   </button>
                 )}
                 <button
-                  onClick={onToggleEquip}
+                  onClick={() => onToggleEquip(equip.id)}
                   className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap ${
                     equip.isEquipped
                       ? 'bg-rose-600 text-white shadow-[0_0_10px_rgba(225,29,72,0.3)] hover:bg-rose-500'
@@ -165,7 +165,7 @@ export const EquipmentCard = memo(function EquipmentCard({
 
             {onEdit && (
               <button
-                onClick={onEdit}
+                onClick={() => onEdit(equip)}
                 className="p-1 rounded text-slate-500 hover:text-white transition-colors"
                 title="Modifier cet équipement sur la fiche"
               >
@@ -174,7 +174,7 @@ export const EquipmentCard = memo(function EquipmentCard({
             )}
 
             <button
-              onClick={onDelete}
+              onClick={() => onDelete(equip.id)}
               className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
               title="Supprimer"
             >
