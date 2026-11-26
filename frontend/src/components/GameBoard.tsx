@@ -12,6 +12,8 @@ import { CoreDiceModule } from '../core/modules/dice-roller';
 import { CoreChatRollModule } from '../core/modules/chat-roll';
 import { CoreActivityLogModule } from '../core/modules/activity-log';
 import { coreEventBus } from '../core/services/EventBus';
+import { usePopoutRelay } from '../core/hooks/usePopoutRelay';
+import { loadGameSystems } from './game/loadGameSystems';
 import { VTTCanvas, type TokenData } from './game/VTTCanvas';
 import { CompanionShell } from './companion/CompanionShell';
 
@@ -38,6 +40,8 @@ import { FileTransferService } from '../core/services/FileTransferService';
 const isTauri = () => '__TAURI_INTERNALS__' in window;
 
 export function GameBoard({ isHost, username, messages, sendMessage, sendBinary, systemId, onReturn, isCompanion = false, sessionName, onQuit }: GameBoardProps) {
+  usePopoutRelay(); // relais local vers les fenêtres détachées (popouts), sans WebRTC
+
   const [tokens, setTokens] = useState<TokenData[]>([]);
 
   // État des outils VTT
@@ -81,33 +85,8 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     // Chargement conditionnel (et à la demande) du système de la campagne :
     // le code du système n'est téléchargé que s'il est réellement utilisé.
     let cancelled = false;
-    let wantFlower = false;
-    let wantHexe = false;
-    if (systemId === 'stars' || systemId === 'flower') {
-      wantFlower = true;
-    } else if (systemId === 'hexe') {
-      wantHexe = true;
-    } else {
-      // Fallback si pas de système défini (on charge ce qui est activé globalement)
-      const enabledSystems = ModManager.getEnabledSystems();
-      wantFlower = enabledSystems.some(sys => sys.id === 'stars' || sys.id === 'flower');
-      wantHexe = enabledSystems.some(sys => sys.id === 'hexe');
-    }
-    const loadSystems = async () => {
-      try {
-        if (wantFlower) {
-          const { SystemFlowerModule } = await import('../systems/flower');
-          if (!cancelled) ModManager.registerMod(SystemFlowerModule);
-        }
-        if (wantHexe) {
-          const { SystemHexeModule } = await import('../systems/hexe');
-          if (!cancelled) ModManager.registerMod(SystemHexeModule);
-        }
-      } catch (err) {
-        console.error('[GameBoard] Échec du chargement du système de jeu:', err);
-      }
-    };
-    void loadSystems();
+    loadGameSystems(systemId ?? null, () => cancelled)
+      .catch(err => console.error('[GameBoard] Échec du chargement du système de jeu:', err));
 
     // Nettoyage au démontage (fin de session) : décharge tous les modules
     // pour que la prochaine session reparte sur un état vierge.

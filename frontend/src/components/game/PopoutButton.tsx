@@ -20,7 +20,9 @@ export function PopoutButton({ windowId, title, size, onPopout }: PopoutButtonPr
       return;
     }
     
-    const popoutUrl = `/#/popout/${roomId}?module=${windowId}`;
+    // Le popout est une webview neuve (sessionStorage vide) : le système actif passe par l'URL
+    const systemId = sessionStorage.getItem('signet_system_id') || '';
+    const popoutUrl = `/#/popout/${roomId}?module=${encodeURIComponent(windowId)}&system=${encodeURIComponent(systemId)}`;
     console.log("[PopoutButton] Target URL:", popoutUrl);
     
     // Fermer la fenêtre locale dans l'application principale
@@ -38,6 +40,7 @@ export function PopoutButton({ windowId, title, size, onPopout }: PopoutButtonPr
           const win = new WebviewWindow(`popout-${windowId}-${Date.now()}`, {
             url: popoutUrl,
             title: `${title} (Pop-out)`,
+            decorations: true, // barre native + bouton « Réintégrer » dans l'en-tête du popout,
             width: 800,
             height: 600
           });

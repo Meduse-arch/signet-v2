@@ -3,6 +3,7 @@ import { ModManager } from '../../core/services/ModManager';
 import type { RegisteredWindow, WindowPosition } from '../../core/services/ModManager';
 import { coreEventBus } from '../../core/services/EventBus';
 import { DraggableWindow } from './DraggableWindow';
+import { onDockInRequest } from '../../core/services/popoutChannel';
 
 export function DockManager() {
   const [windows, setWindows] = useState<RegisteredWindow[]>([]);
@@ -65,6 +66,9 @@ export function DockManager() {
       setDockStates(prev => ({ ...prev, [windowId]: state }));
     };
 
+    // Réintégration d'une fenêtre détachée (popout) : ré-ouvre la DraggableWindow
+    const stopDockIn = onDockInRequest(handleOpen);
+
     coreEventBus.on('SYSTEM_UI_UPDATED', handleUpdate);
     coreEventBus.on('WINDOW_TOGGLE', handleToggle);
     coreEventBus.on('WINDOW_OPEN', handleOpen);
@@ -73,6 +77,7 @@ export function DockManager() {
     coreEventBus.on('WINDOW_DOCK_CHANGE', handleDockChange);
 
     return () => {
+      stopDockIn();
       coreEventBus.off('SYSTEM_UI_UPDATED', handleUpdate);
       coreEventBus.off('WINDOW_TOGGLE', handleToggle);
       coreEventBus.off('WINDOW_OPEN', handleOpen);

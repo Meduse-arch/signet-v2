@@ -16,6 +16,7 @@ export default function App() {
   const [sessionRoomId, setSessionRoomId] = useState<string | null>(null);
   const [sessionSystemId, setSessionSystemId] = useState<string | null>(null);
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null);
+  const [popoutSystemId, setPopoutSystemId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
@@ -53,6 +54,7 @@ export default function App() {
       if (roomId && moduleId) {
         setSessionRoomId(roomId);
         setPopoutModuleId(moduleId);
+        setPopoutSystemId(searchParams.get('system') || null);
         setAppState('popout');
         isPopoutMode = true;
       }
@@ -97,6 +99,7 @@ export default function App() {
 
   const handleJoinGame = (roomId: string, host: boolean, systemId?: string, metadata?: any) => {
     sessionStorage.setItem('signet_room_id', roomId);
+    sessionStorage.setItem('signet_system_id', systemId || '');
     setSessionRoomId(roomId);
     setIsHost(host);
     setSessionSystemId(systemId || null);
@@ -157,9 +160,8 @@ export default function App() {
       {appState === 'popout' && sessionRoomId && popoutModuleId && (
         <div className="animate-fade-in h-full flex flex-col">
           <PopoutSession 
-            roomId={sessionRoomId}
             moduleId={popoutModuleId}
-            signalUrl={signalUrl}
+            systemId={popoutSystemId}
             username={username || 'Aventurier'}
           />
         </div>
