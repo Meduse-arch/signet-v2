@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import type { SignetAPI } from '../../../core/services/SignetAPI';
 import {
   Droplet, Shield, Star, Sparkles, ArrowLeft, Swords, Backpack, BookOpen,
@@ -24,7 +24,7 @@ import {
   getSkillsCatalog, subscribeSkills, getCharacterAvailableSkills, getEquipmentSkills
 } from '../hexeSkillStore';
 import { HexePentacleBadge, ALL_RANKS, RANK_DESCRIPTIONS } from './HexePentacleBadge';
-import { SkillImportModal } from './SkillImportModal';
+const SkillImportModal = lazy(() => import('./SkillImportModal').then(m => ({ default: m.SkillImportModal })));
 import { invoke } from '@tauri-apps/api/core';
 import { ModManager } from '../../../core/services/ModManager';
 import {
@@ -32,28 +32,11 @@ import {
 } from '../hexeEquipmentStore';
 import type { HexeEquipmentTemplate } from '../hexeEquipmentStore';
 import { HexeImagePicker, HexeItemImage, HexeItemDetailBanner } from './HexeImagePicker';
+import { STAT_SHORT, SLOT_FILTER_OPTIONS } from '../constants';
 
 const isTauri = () => '__TAURI_INTERNALS__' in window;
 
 type SheetTab = 'attributs' | 'inventaire' | 'competences';
-
-const STAT_SHORT: Record<HexeStatKey, string> = {
-  str: 'STR', dex: 'DEX', agi: 'AGI', tec: 'TEC', vit: 'VIT', luc: 'LUC'
-};
-
-const SLOT_FILTER_OPTIONS: {
-  slot: HexeEquipmentSlot | 'all';
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  colorClass: string;
-}[] = [
-  { slot: 'all', label: 'Tous', icon: Layers, colorClass: 'text-slate-400' },
-  { slot: 'weapon', label: 'Armes', icon: Swords, colorClass: 'text-rose-400' },
-  { slot: 'armor', label: 'Armures', icon: Shield, colorClass: 'text-amber-400' },
-  { slot: 'accessory', label: 'Accessoires', icon: Sparkles, colorClass: 'text-cyan-400' },
-  { slot: 'consumable', label: 'Consommables', icon: FlaskConical, colorClass: 'text-emerald-400' },
-  { slot: 'other', label: 'Autre', icon: Package, colorClass: 'text-sky-400' },
-];
 
 interface HexeCharacterSheetWindowProps {
   api: SignetAPI;
@@ -2586,11 +2569,13 @@ function EquipmentEditModal({ equipment, onSave, onClose, api }: EquipmentEditMo
       </div>
 
       {showImportModal && (
+        <Suspense fallback={null}>
         <SkillImportModal
           alreadyLinkedIds={linkedSkills.map(s => s.id)}
           onImportSkillIds={handleImportSkills}
           onClose={() => setShowImportModal(false)}
         />
+        </Suspense>
       )}
     </div>
   );

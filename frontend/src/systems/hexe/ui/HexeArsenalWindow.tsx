@@ -1,14 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import type { SignetAPI } from '../../../core/services/SignetAPI';
 import {
-  Shield, Swords, Sparkles, Plus, Trash2, Edit3, Copy, Search, Tag, Zap, X, Check,
-  ChevronDown, ChevronUp, Package, FlaskConical, Layers, BookOpen
+  Shield, Plus, Trash2, Edit3, Copy, Search, Tag, Zap, X, Check,
+  ChevronDown, ChevronUp, Package, BookOpen
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { invoke } from '@tauri-apps/api/core';
 import type {
   HexeEquipmentSlot, HexeStatKey, HexeCharacter,
-  HexeWeaponRank, HexeWeaponNature, HexeAbility
 } from '../types';
 import { SLOT_LABELS } from '../types';
 import {
@@ -19,8 +18,10 @@ import type { HexeEquipmentTemplate } from '../hexeEquipmentStore';
 import { HexePentacleBadge, ALL_RANKS, RANK_DESCRIPTIONS } from './HexePentacleBadge';
 import { parseDiceFormula, formatDiceFormula } from '../hexeDiceEngine';
 import { getEquipmentSkills } from '../hexeSkillStore';
-import { SkillImportModal } from './SkillImportModal';
+const SkillImportModal = lazy(() => import('./SkillImportModal').then(m => ({ default: m.SkillImportModal })));
 import { HexeImagePicker, HexeItemImage, HexeItemDetailBanner } from './HexeImagePicker';
+import { STAT_SHORT, SLOT_FILTER_OPTIONS, EMPTY_FORM } from '../constants';
+import type { EquipmentFormState } from '../constants';
 
 interface HexeArsenalWindowProps {
   api?: SignetAPI;
@@ -29,9 +30,6 @@ interface HexeArsenalWindowProps {
 const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 const ALL_STATS: HexeStatKey[] = ['str', 'dex', 'agi', 'tec', 'vit', 'luc'];
-const STAT_SHORT: Record<HexeStatKey, string> = {
-  str: 'STR', dex: 'DEX', agi: 'AGI', tec: 'TEC', vit: 'VIT', luc: 'LUC'
-};
 const STAT_NAMES: Record<HexeStatKey, string> = {
   str: 'Force (STR)',
   dex: 'Dextérité (DEX)',
@@ -41,49 +39,7 @@ const STAT_NAMES: Record<HexeStatKey, string> = {
   luc: 'Chance (LUC)'
 };
 
-const SLOT_FILTER_OPTIONS: {
-  slot: HexeEquipmentSlot | 'all';
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  colorClass: string;
-}[] = [
-  { slot: 'all', label: 'Tous', icon: Layers, colorClass: 'text-slate-400' },
-  { slot: 'weapon', label: 'Armes', icon: Swords, colorClass: 'text-rose-400' },
-  { slot: 'armor', label: 'Armures', icon: Shield, colorClass: 'text-amber-400' },
-  { slot: 'accessory', label: 'Accessoires', icon: Sparkles, colorClass: 'text-cyan-400' },
-  { slot: 'consumable', label: 'Consommables', icon: FlaskConical, colorClass: 'text-emerald-400' },
-  { slot: 'other', label: 'Autre', icon: Package, colorClass: 'text-sky-400' },
-];
-
-interface FormState {
-  name: string;
-  slot: HexeEquipmentSlot;
-  weight?: number | '';
-  imageUrl?: string;
-  statBonuses: Partial<Record<HexeStatKey, number>>;
-  properties: string[];
-  abilities: HexeAbility[];
-  abilityIds: string[];
-  description: string;
-  rank?: HexeWeaponRank;
-  nature?: HexeWeaponNature;
-  diceFormula?: string;
-}
-
-const EMPTY_FORM: FormState = {
-  name: '',
-  slot: 'weapon',
-  weight: '',
-  imageUrl: undefined,
-  statBonuses: {},
-  properties: [],
-  abilities: [],
-  abilityIds: [],
-  description: '',
-  rank: 'C',
-  nature: 'classic',
-  diceFormula: '',
-};
+type FormState = EquipmentFormState;
 
 export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
   const [templates, setTemplates] = useState<HexeEquipmentTemplate[]>([]);
@@ -1157,6 +1113,7 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
 
       {/* Modal d'importation de capacités */}
       {showSkillImportModal && (
+        <Suspense fallback={null}>
         <SkillImportModal
           alreadyLinkedIds={formLinkedSkills.map(s => s.id)}
           onImportSkillIds={handleImportSkillIds}
@@ -1167,6 +1124,7 @@ export function HexeArsenalWindow({ api }: HexeArsenalWindowProps) {
             }
           }}
         />
+        </Suspense>
       )}
     </div>
   );

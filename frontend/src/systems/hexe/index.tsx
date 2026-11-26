@@ -1,11 +1,18 @@
 import { SignetAPI } from '../../core/services/SignetAPI';
 import { Skull, Shield, BookOpen } from 'lucide-react';
-import { HexeAppWindow } from './ui/HexeAppWindow';
-import { HexeArsenalWindow } from './ui/HexeArsenalWindow';
-import { HexeGrimoireWindow } from './ui/HexeGrimoireWindow';
+import { lazy, Suspense } from 'react';
 import { HexeDiceOverlay } from './ui/HexeDiceOverlay';
 
 const MOD_ID = 'system-hexe';
+
+// Fenêtres lourdes chargées à la première ouverture (code-splitting)
+const HexeAppWindow = lazy(() => import('./ui/HexeAppWindow').then(m => ({ default: m.HexeAppWindow })));
+const HexeArsenalWindow = lazy(() => import('./ui/HexeArsenalWindow').then(m => ({ default: m.HexeArsenalWindow })));
+const HexeGrimoireWindow = lazy(() => import('./ui/HexeGrimoireWindow').then(m => ({ default: m.HexeGrimoireWindow })));
+
+const WindowFallback = () => (
+  <div className="w-full h-full flex items-center justify-center text-white/50 text-sm">Chargement…</div>
+);
 
 export const SystemHexeModule = {
   id: MOD_ID,
@@ -48,7 +55,7 @@ export const SystemHexeModule = {
     api.ui.registerWindow(
       'hexe-app',
       'Personnages Hexe',
-      <HexeAppWindow api={api} />,
+      <Suspense fallback={<WindowFallback />}><HexeAppWindow api={api} /></Suspense>,
       {
         icon: <Skull className="w-5 h-5 text-red-500" />,
         defaultWidth: 480,
@@ -61,7 +68,7 @@ export const SystemHexeModule = {
     api.ui.registerWindow(
       'hexe-arsenal',
       'Arsenal Hexe',
-      <HexeArsenalWindow api={api} />,
+      <Suspense fallback={<WindowFallback />}><HexeArsenalWindow api={api} /></Suspense>,
       {
         icon: <Shield className="w-5 h-5 text-rose-500" />,
         defaultWidth: 520,
@@ -74,7 +81,7 @@ export const SystemHexeModule = {
     api.ui.registerWindow(
       'hexe-grimoire',
       'Grimoire Hexe',
-      <HexeGrimoireWindow api={api} />,
+      <Suspense fallback={<WindowFallback />}><HexeGrimoireWindow api={api} /></Suspense>,
       {
         icon: <BookOpen className="w-5 h-5 text-rose-500" />,
         defaultWidth: 540,

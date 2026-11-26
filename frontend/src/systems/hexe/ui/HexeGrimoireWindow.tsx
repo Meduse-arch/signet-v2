@@ -8,15 +8,8 @@ import type {
   HexeSkill, HexeActivationType, HexeEffect, HexeStatKey, HexeResourceKey
 } from '../types';
 import { ALL_STATS, STAT_LABELS } from '../types';
+import { STAT_SHORT } from '../constants';
 
-const STAT_SHORT: Record<HexeStatKey, string> = {
-  str: 'STR',
-  dex: 'DEX',
-  agi: 'AGI',
-  tec: 'TEC',
-  vit: 'VIT',
-  luc: 'LUC',
-};
 import {
   getSkillsCatalog, addSkillToCatalog, updateSkillInCatalog,
   removeSkillFromCatalog, subscribeSkills

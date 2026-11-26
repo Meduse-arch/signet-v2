@@ -15,6 +15,21 @@ export default defineConfig({
       ignored: ['**/src-tauri/**']
     }
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        // Vendors stables dans des chunks séparés (meilleur cache, parse parallèle).
+        codeSplitting: {
+          groups: [
+            { name: 'vendor-react', test: /node_modules[\/](react|react-dom|scheduler)[\/]/, priority: 40 },
+            { name: 'vendor-konva', test: /node_modules[\/](konva|react-konva|react-reconciler)[\/]/, priority: 30 },
+            { name: 'vendor-supabase', test: /node_modules[\/]@supabase[\/]/, priority: 20 },
+            { name: 'vendor-net', test: /node_modules[\/](simple-peer|zod|buffer|readable-stream|safe-buffer|events|process|util|stream-browserify|vite-plugin-node-polyfills)[\/]/, priority: 10 },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     tailwindcss(),
     react(),

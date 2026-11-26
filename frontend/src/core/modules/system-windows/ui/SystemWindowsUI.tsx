@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { SettingsView } from '../../../../components/hub-views/SettingsView';
-import { NotesView } from '../../../../components/hub-views/NotesView';
+const NotesView = lazy(() => import('../../../../components/hub-views/NotesView').then(m => ({ default: m.NotesView })));
 import { coreEventBus } from '../../../../core/services/EventBus';
 
 type WindowType = 'settings' | 'notes' | null;
@@ -46,7 +46,7 @@ export function SystemWindowsUI() {
       </div>
       <div className="flex-1 w-full min-h-0">
         {activeWindow === 'settings' && <SettingsView />}
-        {activeWindow === 'notes' && <NotesView />}
+        {activeWindow === 'notes' && <Suspense fallback={null}><NotesView /></Suspense>}
       </div>
     </div>
   );

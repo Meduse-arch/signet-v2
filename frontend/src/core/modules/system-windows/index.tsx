@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Settings, BookOpen } from 'lucide-react';
 import type { SignetModule } from '../../services/ModManager';
 import { SignetAPI } from '../../services/SignetAPI';
-import { NotesView } from '../../../components/hub-views/NotesView';
+const NotesView = lazy(() => import('../../../components/hub-views/NotesView').then(m => ({ default: m.NotesView })));
 import { SettingsView } from '../../../components/hub-views/SettingsView';
 
 function FullscreenWindowWrapper({ children }: { windowId: string, children: React.ReactNode }) {
@@ -24,7 +24,7 @@ export const CoreSystemWindowsModule: SignetModule = {
     // On enregistre les deux fenêtres séparément
     api.ui.registerWindow('system-notes', 'Notes Globales', (
       <FullscreenWindowWrapper windowId="system-notes">
-        <NotesView />
+        <Suspense fallback={null}><NotesView /></Suspense>
       </FullscreenWindowWrapper>
     ), { defaultPosition: 'fullscreen', companionTab: 'more' });
 

@@ -11,8 +11,6 @@ import { CoreToolbarModule } from '../core/modules/toolbar';
 import { CoreDiceModule } from '../core/modules/dice-roller';
 import { CoreChatRollModule } from '../core/modules/chat-roll';
 import { CoreActivityLogModule } from '../core/modules/activity-log';
-import { SystemFlowerModule } from '../systems/flower';
-import { SystemHexeModule } from '../systems/hexe';
 import { coreEventBus } from '../core/services/EventBus';
 import { VTTCanvas, type TokenData } from './game/VTTCanvas';
 import { CompanionShell } from './companion/CompanionShell';
@@ -80,25 +78,41 @@ export function GameBoard({ isHost, username, messages, sendMessage, sendBinary,
     // Module Journal d'Activité (Core)
     ModManager.registerMod(CoreActivityLogModule);
 
-    // Chargement conditionnel du système sélectionné pour cette campagne
+    // Chargement conditionnel (et à la demande) du système de la campagne :
+    // le code du système n'est téléchargé que s'il est réellement utilisé.
+    let cancelled = false;
+    let wantFlower = false;
+    let wantHexe = false;
     if (systemId === 'stars' || systemId === 'flower') {
-      ModManager.registerMod(SystemFlowerModule);
+      wantFlower = true;
     } else if (systemId === 'hexe') {
-      ModManager.registerMod(SystemHexeModule);
+      wantHexe = true;
     } else {
       // Fallback si pas de système défini (on charge ce qui est activé globalement)
       const enabledSystems = ModManager.getEnabledSystems();
-      if (enabledSystems.some(s => s.id === 'stars' || s.id === 'flower')) {
-        ModManager.registerMod(SystemFlowerModule);
-      }
-      if (enabledSystems.some(s => s.id === 'hexe')) {
-        ModManager.registerMod(SystemHexeModule);
-      }
+      wantFlower = enabledSystems.some(sys => sys.id === 'stars' || sys.id === 'flower');
+      wantHexe = enabledSystems.some(sys => sys.id === 'hexe');
     }
+    const loadSystems = async () => {
+      try {
+        if (wantFlower) {
+          const { SystemFlowerModule } = await import('../systems/flower');
+          if (!cancelled) ModManager.registerMod(SystemFlowerModule);
+        }
+        if (wantHexe) {
+          const { SystemHexeModule } = await import('../systems/hexe');
+          if (!cancelled) ModManager.registerMod(SystemHexeModule);
+        }
+      } catch (err) {
+        console.error('[GameBoard] Échec du chargement du système de jeu:', err);
+      }
+    };
+    void loadSystems();
 
     // Nettoyage au démontage (fin de session) : décharge tous les modules
     // pour que la prochaine session reparte sur un état vierge.
     return () => {
+      cancelled = true;
       ModManager.unloadAll();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

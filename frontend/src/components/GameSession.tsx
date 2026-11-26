@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { ModManager } from '../core/services/ModManager';
 import { useVTTNetwork } from '../core/hooks/useVTTNetwork';
-import { GameBoard } from './GameBoard';
 import { Button } from './ui/Button';
 import { Play } from 'lucide-react';
 import { LobbyHeader } from './game/LobbyHeader';
@@ -24,6 +23,8 @@ interface GameSessionProps {
   } | null;
   onLeave: () => void;
 }
+
+const GameBoard = lazy(() => import('./GameBoard').then(m => ({ default: m.GameBoard })));
 
 export function GameSession({ roomId, signalUrl, isHost, username, systemId, sessionMetadata, onLeave }: GameSessionProps) {
   const {
@@ -277,18 +278,20 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
 
   if (isInGameView) {
     return (
-      <GameBoard 
-        isHost={isHost}
-        username={username}
-        messages={messages}
-        sendMessage={sendMessage}
-        sendBinary={sendBinary}
-        systemId={systemId}
-        onReturn={handleReturnToLobby}
-        isCompanion={isCompanion}
-        sessionName={sessionMetadata?.name || roomId}
-        onQuit={handleQuit}
-      />
+      <Suspense fallback={<div className="h-full w-full bg-[#050508] flex items-center justify-center text-white/50 text-sm">Chargement de la table…</div>}>
+        <GameBoard 
+          isHost={isHost}
+          username={username}
+          messages={messages}
+          sendMessage={sendMessage}
+          sendBinary={sendBinary}
+          systemId={systemId}
+          onReturn={handleReturnToLobby}
+          isCompanion={isCompanion}
+          sessionName={sessionMetadata?.name || roomId}
+          onQuit={handleQuit}
+        />
+      </Suspense>
     );
   }
 

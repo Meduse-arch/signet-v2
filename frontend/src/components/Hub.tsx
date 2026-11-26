@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { supabase } from '../core/supabase';
 // import { t } from '../core/locales/fr'; // plus utilisé ici
 import { Play, Plus, Clock, LogOut, BookOpen, Globe, Puzzle, Settings, ArrowLeft } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { NetworkToggle } from './NetworkToggle';
-import { NotesView } from './hub-views/NotesView';
+const NotesView = lazy(() => import('./hub-views/NotesView').then(m => ({ default: m.NotesView })));
 import { PublicSessionsView } from './hub-views/PublicSessionsView';
 import { ModsView } from './hub-views/ModsView';
 import { SettingsView } from './hub-views/SettingsView';
@@ -382,7 +382,7 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
               </Button>
             </div>
             <div className="flex-1 w-full h-full min-h-0">
-              {currentView === 'notes' && <NotesView />}
+              {currentView === 'notes' && <Suspense fallback={null}><NotesView /></Suspense>}
               {currentView === 'public' && (
                 <PublicSessionsView 
                   signalUrl={signalUrl}
