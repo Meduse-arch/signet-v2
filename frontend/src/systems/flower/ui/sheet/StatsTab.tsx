@@ -25,7 +25,7 @@ export function StatsTab({ sheet }: { sheet: FlowerSheetState }) {
             {stat.isCustom && isTauri() && (
               <button
                 onClick={() => deleteCustomStat(key)}
-                className="w-6 h-6 flex items-center justify-center text-zinc-600 hover:text-rose-400 hover:bg-rose-950/40 rounded transition-all opacity-0 group-hover/stat:opacity-100"
+                className="w-6 h-6 flex items-center justify-center text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-[color,background-color,border-color,opacity,transform] opacity-0 group-hover/stat:opacity-100"
                 title={`Supprimer la stat "${stat.name}"`}
               >
                 <Skull className="w-3.5 h-3.5" />
@@ -36,7 +36,7 @@ export function StatsTab({ sheet }: { sheet: FlowerSheetState }) {
       ))}
 
       {/* Ajout de Statistique Personnalisée (Interface MJ) */}
-      <div className="mt-4 pt-4 border-t border-rose-900/50">
+      <div className="mt-4 pt-4 border-t border-rose-500/30">
         <form onSubmit={addCustomStat} className="flex gap-2">
           <input 
             list="known-custom-stats"

@@ -26,7 +26,7 @@ export function CompendiumModal({ type, entries, onClose, onImport }: Compendium
       
       <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
         {entries.length === 0 ? (
-          <p className="text-zinc-500 text-center italic mt-10">Aucun élément dans le compendium.</p>
+          <p className="text-zinc-500 text-center mt-10">Aucun élément dans le compendium.</p>
         ) : (
           entries.map(entry => (
             <div key={entry.id} className="bg-white/5 border border-white/10 p-3 rounded-lg flex items-center justify-between group hover:bg-white/10 transition-colors">

@@ -208,18 +208,18 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#050508] text-white overflow-hidden border border-white/10 shadow-2xl">
-      <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-[#090a10] shrink-0">
+    <div className="w-full h-full flex flex-col bg-void text-white overflow-hidden border border-white/10 shadow-2xl">
+      <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-surface shrink-0">
         <Library className="w-6 h-6 text-rose-400" />
         <div>
           <h2 className="text-lg font-black text-white tracking-tight">
             Compendium Flower
           </h2>
-          <p className="text-xs text-slate-400">Gérez les compétences et objets du système</p>
+          <p className="text-xs text-zinc-400">Gérez les compétences et objets du système</p>
         </div>
       </div>
 
-      <div className="flex border-b border-white/10 bg-[#090a10] shrink-0">
+      <div className="flex border-b border-white/10 bg-surface shrink-0">
         <button
           onClick={() => { setActiveTab('skill'); setEditingId(null); }}
           className={`flex-1 py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'skill' ? 'border-rose-500 text-rose-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
@@ -240,25 +240,25 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
             <h3 className="font-bold text-rose-300 mb-2">Édition</h3>
             
             <div>
-              <label className="block text-xs uppercase text-zinc-500 mb-1">Nom</label>
+              <label className="block text-xs text-zinc-500 mb-1">Nom</label>
               <input 
                 type="text" 
                 value={editForm.name || ''} 
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
+                className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
               />
             </div>
 
             {activeTab === 'skill' && (
               <div>
-                <label className="block text-xs uppercase text-zinc-500 mb-1">Type de Compétence</label>
+                <label className="block text-xs text-zinc-500 mb-1">Type de Compétence</label>
                 <select 
                   value={editForm.skillType || 'active'}
                   onChange={(e) => {
                     const v = e.target.value;
                     if (v === 'active' || v === 'toggle' || v === 'passive') setEditForm({ ...editForm, skillType: v });
                   }}
-                  className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 text-white"
+                  className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 text-white"
                 >
                   <option value="active">Active (Classique)</option>
                   <option value="toggle">Activable (Toggle)</option>
@@ -269,21 +269,21 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
 
             {activeTab === 'item' && (
               <div>
-                <label className="block text-xs uppercase text-zinc-500 mb-1">Catégorie d'Objet</label>
+                <label className="block text-xs text-zinc-500 mb-1">Catégorie d'Objet</label>
                 <select 
                   value={editForm.itemType || 'neutral'}
                   onChange={(e) => setEditForm({ ...editForm, itemType: e.target.value as any })}
-                  className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-rose-500 text-white"
+                  className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-sm focus:outline-none focus:border-rose-500 text-white"
                 >
-                  <option value="neutral">⚪ Neutre (Standard)</option>
-                  <option value="equippable">🛡️ Équipable</option>
-                  <option value="consumable">🧪 Consommable</option>
+                  <option value="neutral">Neutre (standard)</option>
+                  <option value="equippable">Équipable</option>
+                  <option value="consumable">Consommable</option>
                 </select>
               </div>
             )}
 
             <div>
-              <label className="block text-xs uppercase text-zinc-500 mb-1">Modificateurs (optionnel)</label>
+              <label className="block text-xs text-zinc-500 mb-1">Modificateurs (optionnel)</label>
               <div className="space-y-2">
                 {(editForm.modifiers || []).map((mod: any, idx: number) => (
                   <div key={idx} className="flex gap-2 items-center flex-wrap">
@@ -296,7 +296,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
                         newMods[idx].target = e.target.value;
                         setEditForm({ ...editForm, modifiers: newMods });
                       }}
-                      className="bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none flex-1 min-w-[120px]"
+                      className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm focus:outline-none flex-1 min-w-[120px]"
                     />
                     <datalist id="mod-targets">
                       {allStats.map(s => <option key={s} value={s} />)}
@@ -310,7 +310,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
                         newMods[idx].value = e.target.value;
                         setEditForm({ ...editForm, modifiers: newMods });
                       }}
-                      className="w-20 bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none"
+                      className="w-20 bg-black/50 border border-white/10 rounded-lg p-2 text-sm focus:outline-none"
                     />
                     <input
                       list={`scale-targets-${idx}`}
@@ -321,7 +321,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
                         newMods[idx].scaleStat = e.target.value === '' ? undefined : e.target.value;
                         setEditForm({ ...editForm, modifiers: newMods });
                       }}
-                      className="bg-black/50 border border-white/10 rounded p-2 text-sm focus:outline-none flex-1 min-w-[120px] text-zinc-300"
+                      className="bg-black/50 border border-white/10 rounded-lg p-2 text-sm focus:outline-none flex-1 min-w-[120px] text-zinc-300"
                     />
                     <datalist id={`scale-targets-${idx}`}>
                       <option value="">-- Sans Scaling --</option>
@@ -346,11 +346,11 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
             </div>
 
             <div>
-              <label className="block text-xs uppercase text-zinc-500 mb-1">Description</label>
+              <label className="block text-xs text-zinc-500 mb-1">Description</label>
               <textarea 
                 value={editForm.description || ''} 
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm h-24 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
+                className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-sm h-24 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
               />
             </div>
 
@@ -367,7 +367,7 @@ export function FlowerCompendiumWindow({ api }: { api: SignetAPI }) {
             </Button>
             
             {filteredEntries.length === 0 ? (
-              <p className="text-center text-zinc-500 italic mt-8">Aucun élément dans cette catégorie.</p>
+              <p className="text-center text-zinc-500 mt-8">Aucun élément dans cette catégorie.</p>
             ) : (
               filteredEntries.map(entry => (
                 <div key={entry.id} className="bg-white/5 border border-white/10 p-3 rounded-lg flex items-center justify-between group hover:bg-white/10 transition-colors">
