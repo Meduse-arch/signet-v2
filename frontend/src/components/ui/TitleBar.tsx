@@ -45,6 +45,10 @@ export function TitleBar() {
             }
           }
           setIsFullscreen(next);
+          // WebView2 (fenêtre sans décoration) perd le routage souris après le changement de
+          // mode : on redonne le focus à la fenêtre native puis à la webview.
+          await win.setFocus().catch(err => console.warn('[TitleBar] setFocus :', err));
+          window.focus();
         };
 
         // Gérer le plein écran avec F11
