@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { coreEventBus } from '../../../../core/services/EventBus';
 import type { RegisteredAction } from '../../../../core/services/ModManager';
 
@@ -11,6 +11,18 @@ interface TaskbarProps {
 export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Repli de secours : le pointeur peut quitter la fenêtre (ou la fenêtre perdre le focus)
+  // sans qu'un événement de sortie n'arrive sur la barre.
+  useEffect(() => {
+    const collapse = () => setIsExpanded(false);
+    window.addEventListener('blur', collapse);
+    document.addEventListener('mouseleave', collapse);
+    return () => {
+      window.removeEventListener('blur', collapse);
+      document.removeEventListener('mouseleave', collapse);
+    };
+  }, []);
+
   // Séparation système (gauche) / classique (droite) pour le positionnement
   // L'ORDRE dans chaque groupe respecte l'ordre d'épinglage (pas un ordre prédéfini)
   const leftActions = pinnedActions.filter(a => a.modId.startsWith('system-'));
@@ -22,6 +34,7 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
       <button
         key={action.actionId}
         onClick={() => coreEventBus.emit(action.onClickEvent, action.actionId)}
+        draggable={false}
         className={`relative group/btn p-2 flex flex-col items-center justify-center transition-all duration-300 ${
           isActive
             ? 'text-rose-300 -translate-y-1'
@@ -54,12 +67,13 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
       {/* Barre avec zone de hover agrandie via pt-8 — pointer-events seulement sur la barre */}
       <div
         className="relative pointer-events-auto flex items-center pb-5 pt-8"
-        onMouseEnter={() => setIsExpanded(true)}
-        onMouseLeave={() => setIsExpanded(false)}
+        onPointerEnter={() => setIsExpanded(true)}
+        onPointerLeave={() => setIsExpanded(false)}
+        onPointerCancel={() => setIsExpanded(false)}
       >
         {/* Fond glassmorphism — apparaît au hover */}
         <div
-          className={`absolute inset-x-[-24px] inset-y-[-10px] rounded-2xl transition-all duration-500 ${
+          className={`absolute inset-x-[-24px] inset-y-[-10px] rounded-2xl pointer-events-none transition-all duration-500 ${
             isExpanded
               ? 'opacity-100 bg-black/50 backdrop-blur-xl border border-white/8 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]'
               : 'opacity-0 backdrop-blur-none'
@@ -88,12 +102,14 @@ export function Taskbar({ onOpenMenu, pinnedActions, activeIds }: TaskbarProps) 
               e.stopPropagation();
               onOpenMenu();
             }}
+            draggable={false}
             className="relative group/logo p-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:-translate-y-1 shrink-0"
             title="Menu Principal (Grimoire)"
           >
             <img
               src="/logo.svg"
               alt="Signet"
+              draggable={false}
               className={`transition-all duration-400 ${
                 isExpanded
                   ? 'w-7 h-7 opacity-95 drop-shadow-[0_0_14px_rgba(225,29,72,0.6)] group-hover/logo:drop-shadow-[0_0_22px_rgba(225,29,72,0.9)]'

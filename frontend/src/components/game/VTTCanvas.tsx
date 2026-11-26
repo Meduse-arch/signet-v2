@@ -368,6 +368,8 @@ export const VTTCanvas: React.FC<VTTCanvasProps> = ({
   // Resize dynamique
   useEffect(() => {
     const handleResize = () => {
+      // Annule un drag Konva resté actif (pointerup perdu pendant le redimensionnement F11)
+      stageRef.current?.stopDrag();
       setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     };
     window.addEventListener('resize', handleResize);

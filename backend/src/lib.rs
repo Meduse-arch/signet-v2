@@ -8,13 +8,32 @@ pub mod notes;
 use tauri::Manager;
 use tauri::http::Response;
 use std::fs;
-
 #[tauri::command]
 fn get_local_ip() -> Result<String, String> {
     match local_ip_address::local_ip() {
         Ok(ip) => Ok(ip.to_string()),
         Err(e) => Err(format!("Erreur réseau: {}", e)),
     }
+}
+
+/// Bascule le plein écran natif puis redonne le focus Win32 à la webview (sinon WebView2
+/// perd le routage souris sur une fenêtre `decorations: false`). À l'entrée, un recalibrage
+/// différé force la surface cliente WebView2 à s'ajuster (bande noire de la barre des tâches).
+/// Pas d'`unmaximize` : il fait décrocher la souris. Renvoie le nouvel état (true = plein écran).
+#[tauri::command]
+fn toggle_fullscreen(window: tauri::WebviewWindow) -> Result<bool, String> {
+    let next = !window.is_fullscreen().map_err(|e| e.to_string())?;
+    window.set_fullscreen(next).map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())?;
+    if next {
+        let win = window.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            let _ = win.eval("window.dispatchEvent(new Event('resize'))");
+            let _ = win.set_focus();
+        });
+    }
+    Ok(next)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -72,8 +91,23 @@ pub fn run() {
 
       Ok(())
     })
+    .on_window_event(|window, event| {
+        // Redonne le focus à la webview quand la fenêtre est activée ou redimensionnée
+        // (évite la perte de focus Win32 du contrôle enfant WebView2, decorations: false).
+        let refocus = match event {
+            tauri::WindowEvent::Focused(true) => true,
+            tauri::WindowEvent::Resized(_) => !window.is_minimized().unwrap_or(false),
+            _ => false,
+        };
+        if refocus && window.label() == "main" {
+            if let Some(webview_window) = window.app_handle().get_webview_window("main") {
+                let _ = webview_window.set_focus();
+            }
+        }
+    })
     .invoke_handler(tauri::generate_handler![
-        get_local_ip, 
+        get_local_ip,
+        toggle_fullscreen,
         dice::dice::roll_dice,
         library::upload_asset,
         library::check_asset_exists,

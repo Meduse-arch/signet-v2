@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, X, Copy } from 'lucide-react';
 
@@ -11,7 +12,6 @@ export function TitleBar() {
     let disposed = false;
     let unlisten: (() => void) | undefined;
     let removeKeyListener: (() => void) | undefined;
-    let restoreMaximize = false;
 
     const setup = async () => {
       try {
@@ -27,27 +27,9 @@ export function TitleBar() {
         unlisten = off;
 
         const toggleFullscreen = async () => {
-          const next = !(await win.isFullscreen());
-          if (next) {
-            // Fenêtre sans décoration (Windows/WebView2) : entrer en plein écran depuis l'état
-            // maximisé laisse la webview à la taille de la zone de travail, d'où une bande noire
-            // de la hauteur de la barre des tâches en bas. On démaximise d'abord.
-            if (await win.isMaximized()) {
-              restoreMaximize = true;
-              await win.unmaximize();
-            }
-            await win.setFullscreen(true);
-          } else {
-            await win.setFullscreen(false);
-            if (restoreMaximize) {
-              restoreMaximize = false;
-              await win.maximize();
-            }
-          }
-          setIsFullscreen(next);
-          // WebView2 (fenêtre sans décoration) perd le routage souris après le changement de
-          // mode : on redonne le focus à la fenêtre native puis à la webview.
-          await win.setFocus().catch(err => console.warn('[TitleBar] setFocus :', err));
+          // Bascule 100 % native (Rust) : pas d'unmaximize() côté JS, et set_focus() inclus
+          // pour que WebView2 garde le routage souris sur la fenêtre sans décoration.
+          setIsFullscreen(await invoke<boolean>('toggle_fullscreen'));
           window.focus();
         };
 

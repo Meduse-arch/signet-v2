@@ -240,11 +240,16 @@ export function DraggableWindow({
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('pointercancel', handlePointerUp);
+    // F11 / unmaximize : WebView2 redimensionne et peut perdre le pointerup → drag verrouillé.
+    window.addEventListener('blur', handlePointerUp);
+    window.addEventListener('resize', handlePointerUp);
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('blur', handlePointerUp);
+      window.removeEventListener('resize', handlePointerUp);
     };
   }, [isDragging, isResizing, dockState, isCollapsed]);
 
