@@ -115,13 +115,13 @@ export default function App() {
   if (isInitializing) {
     return (
       <div className="h-full w-full bg-zinc-950 flex items-center justify-center">
-        <div className="text-rose-500 animate-pulse font-bold">{t('app_loading')}</div>
+        <div className="text-zinc-400 text-sm">{t('app_loading')}</div>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full overflow-hidden bg-[#050508] text-zinc-200 selection:bg-rose-500/30 font-sans flex flex-col">
+    <div className="h-full w-full overflow-hidden bg-void text-zinc-200 selection:bg-rose-500/30 font-sans flex flex-col">
       {/* Transitions simples gérées par React (montage/démontage avec animations Tailwind) */}
       
       {appState === 'auth' && (

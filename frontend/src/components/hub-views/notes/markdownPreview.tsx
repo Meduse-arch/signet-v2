@@ -49,19 +49,19 @@ export function renderMarkdownPreview(text: string): ReactNode[] {
       );
     } else if (line.startsWith('> ')) {
       elements.push(
-        <blockquote key={index} className="border-l-4 border-rose-500 bg-white/5 pl-3 py-1 my-1.5 italic text-slate-300 rounded-r text-sm">
+        <blockquote key={index} className="border-l-4 border-rose-500 bg-white/5 pl-3 py-1 my-1.5 italic text-zinc-300 rounded-r text-sm">
           {line.slice(2)}
         </blockquote>
       );
     } else if (line.startsWith('- ') || line.startsWith('* ')) {
       elements.push(
-        <li key={index} className="ml-5 list-disc text-sm text-slate-200 my-0.5">
+        <li key={index} className="ml-5 list-disc text-sm text-zinc-200 my-0.5">
           {line.slice(2)}
         </li>
       );
     } else if (/^\d+\.\s/.test(line)) {
       elements.push(
-        <li key={index} className="ml-5 list-decimal text-sm text-slate-200 my-0.5">
+        <li key={index} className="ml-5 list-decimal text-sm text-zinc-200 my-0.5">
           {line.replace(/^\d+\.\s/, '')}
         </li>
       );
@@ -71,7 +71,7 @@ export function renderMarkdownPreview(text: string): ReactNode[] {
       elements.push(<div key={index} className="h-2" />);
     } else {
       elements.push(
-        <p key={index} className="text-sm text-slate-300 leading-relaxed my-1">
+        <p key={index} className="text-sm text-zinc-300 leading-relaxed my-1">
           {line}
         </p>
       );

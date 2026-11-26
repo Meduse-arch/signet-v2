@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { supabase } from '../core/supabase';
 // import { t } from '../core/locales/fr'; // plus utilisé ici
-import { Play, Plus, LogOut, BookOpen, Globe, Puzzle, Settings, ArrowLeft, ChevronDown, X, Sparkles } from 'lucide-react';
+import { Play, Plus, LogOut, BookOpen, Globe, Puzzle, Settings, ArrowLeft, ChevronDown, X } from 'lucide-react';
 import { Button } from './ui/Button';
 const NotesView = lazy(() => import('./hub-views/NotesView').then(m => ({ default: m.NotesView })));
 import { PublicSessionsView } from './hub-views/PublicSessionsView';
@@ -49,7 +49,6 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
   const toggleCard = (id: HubView) => setCollapsedCards(prev => ({ ...prev, [id]: !prev[id] }));
   // Bandeau « mise à jour » (masqué une fois fermé, jusqu'à la prochaine version)
   const [isUpdateSeen, setIsUpdateSeen] = useState(() => localStorage.getItem(HUB_UPDATE_SEEN_KEY) === HUB_UPDATE.version);
-  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   // Dernière note modifiée (lecture seule, pour l'aperçu du Carnet)
   const [lastNote, setLastNote] = useState<{ name: string; updatedAt?: number; excerpt: string } | null>(null);
   useEffect(() => {
@@ -395,45 +394,30 @@ export function Hub({ onJoinGame, onLogout, onSignalUrlChange, isLanMode, onLanM
                 </div>
                 </div>
 
-                {/* Centre dégagé : bandeau mise à jour discret, masquable */}
+                {/* Centre dégagé : nouveautés de la version, masquables */}
                 {!isUpdateSeen && (
-                  <div className="self-start w-full max-w-xl rounded-sm bg-slate-950/70 backdrop-blur-xl border border-white/10">
-                    <div className="flex items-center gap-3 h-12 pl-4 pr-2">
-                      <Sparkles className="w-4 h-4 shrink-0 text-rose-400" aria-hidden="true" />
-                      <span className="text-sm font-bold text-white whitespace-nowrap">Mise à jour</span>
-                      <span className="num text-xs text-rose-300 border border-rose-500/30 rounded-sm px-1.5 py-0.5">v{HUB_UPDATE.version}</span>
-                      <span className="flex-1 min-w-0 text-sm text-zinc-400 truncate">{HUB_UPDATE.notes[0]}</span>
-                      <button
-                        type="button"
-                        onClick={() => setIsUpdateOpen(o => !o)}
-                        aria-expanded={isUpdateOpen}
-                        aria-label={isUpdateOpen ? 'Masquer les nouveautés' : 'Voir les nouveautés'}
-                        title={isUpdateOpen ? 'Masquer les nouveautés' : 'Voir les nouveautés'}
-                        className="w-8 h-8 grid place-items-center rounded-sm text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-                      >
-                        <ChevronDown className={`w-4 h-4 transition-transform ${isUpdateOpen ? 'rotate-180' : ''}`} />
-                      </button>
+                  <div className="self-start w-full max-w-md rounded-2xl bg-[#090a10]/75 backdrop-blur-xl border border-white/[.08] p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-2 text-xs text-zinc-500">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" aria-hidden="true" />
+                        <span>Nouveautés</span>
+                        <span className="num text-zinc-400">v{HUB_UPDATE.version}</span>
+                      </div>
                       <button
                         type="button"
                         onClick={dismissUpdate}
-                        aria-label="Fermer le bandeau"
-                        title="Fermer"
-                        className="w-8 h-8 grid place-items-center rounded-sm text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+                        aria-label="Masquer les nouveautés"
+                        title="Masquer"
+                        className="-mt-1.5 -mr-1.5 w-7 h-7 grid place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                    {isUpdateOpen && (
-                      <ul className="px-4 pb-4 pt-1 space-y-2 border-t border-white/5">
-                        <li className="pt-3 text-xs text-zinc-500">{HUB_UPDATE.title}</li>
-                        {HUB_UPDATE.notes.map(note => (
-                          <li key={note} className="flex gap-2 text-sm text-zinc-300">
-                            <span className="mt-2 w-1 h-1 rounded-full bg-rose-400 shrink-0" />
-                            {note}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <ul className="mt-3 space-y-2">
+                      {HUB_UPDATE.notes.map(note => (
+                        <li key={note} className="text-sm leading-relaxed text-zinc-300">{note}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>

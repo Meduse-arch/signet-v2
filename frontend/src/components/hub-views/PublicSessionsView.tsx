@@ -99,15 +99,15 @@ export function PublicSessionsView({
       {/* Zone de contenu */}
       <div className="flex-1 overflow-y-auto pb-12 custom-scrollbar">
         {loading && sessions.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
+          <div className="h-64 flex flex-col items-center justify-center text-zinc-500 text-sm gap-2">
             <RefreshCw className="w-6 h-6 animate-spin text-rose-500" />
             <span>Recherche des sessions publiques ouvertes…</span>
           </div>
         ) : error && sessions.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-hairline rounded-2xl bg-surface/50">
             <AlertCircle className="w-10 h-10 text-rose-500 mb-2" />
-            <p className="text-sm font-semibold text-slate-300">{error}</p>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">
+            <p className="text-sm font-semibold text-zinc-300">{error}</p>
+            <p className="text-xs text-zinc-500 mt-1 max-w-sm">
               Vérifiez que le serveur de signalement ({signalUrl}) est bien démarré.
             </p>
             <Button variant="ghost" size="sm" onClick={loadSessions} className="mt-4">
@@ -116,11 +116,11 @@ export function PublicSessionsView({
           </div>
         ) : filteredSessions.length === 0 ? (
           <div className="h-72 flex flex-col items-center justify-center text-center p-6 border border-dashed border-hairline rounded-2xl bg-surface/50">
-            <Sparkles className="w-10 h-10 text-slate-600 mb-3" />
+            <Sparkles className="w-10 h-10 text-zinc-600 mb-3" />
             <p className="text-base font-bold text-white">
               {search ? 'Aucune session ne correspond à votre recherche' : 'Aucune session publique en direct'}
             </p>
-            <p className="text-xs text-slate-400 mt-1 max-w-md leading-relaxed">
+            <p className="text-xs text-zinc-400 mt-1 max-w-md leading-relaxed">
               {search
                 ? 'Essayez avec un autre mot-clé (nom du jeu, tag...).'
                 : "Les parties publiques hébergées par d'autres Maîtres du Jeu apparaîtront ici dès qu'ils lancent leur session avec l'option \"Session Publique\" activée."}
@@ -149,19 +149,19 @@ export function PublicSessionsView({
                       </div>
 
                       {s.desc && (
-                        <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                        <p className="text-xs text-zinc-400 mt-1 line-clamp-2">
                           {s.desc}
                         </p>
                       )}
 
-                      <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-slate-300">
+                      <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-zinc-300">
                         <span className="flex items-center gap-1.5 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md">
                           <Swords className="w-3.5 h-3.5" />
                           <span>{s.system}</span>
                         </span>
 
                         <span className="flex items-center gap-1.5 text-zinc-300 num" title="Joueurs connectés">
-                          <Users className="w-3.5 h-3.5 text-slate-400" />
+                          <Users className="w-3.5 h-3.5 text-zinc-400" />
                           <span>
                             {s.maxPlayers ? `${s.players}/${s.maxPlayers} joueurs` : `${s.players} joueur${s.players > 1 ? 's' : ''}`}
                           </span>

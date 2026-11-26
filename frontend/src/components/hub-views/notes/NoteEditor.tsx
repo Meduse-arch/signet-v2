@@ -27,14 +27,14 @@ export function NoteEditor({ notes }: { notes: NotesState }) {
                   setRenamingItem(activeNote);
                   setRenameValue(activeNote.name);
                 }}
-                className="p-1 text-slate-500 hover:text-white rounded hover:bg-white/5 transition-colors"
+                className="p-1 text-zinc-500 hover:text-white rounded hover:bg-white/5 transition-colors"
                 title="Renommer la note"
               >
                 <Edit3 className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-              <Clock className="w-3 h-3 text-slate-600" />
+            <div className="text-[11px] text-zinc-500 flex items-center gap-1.5 mt-0.5">
+              <Clock className="w-3 h-3 text-zinc-600" />
               <span>
                 {isSaving ? 'Enregistrement…' : lastSaved ? `Enregistré (${new Date(lastSaved).toLocaleTimeString()})` : 'Enregistré'}
               </span>
@@ -170,7 +170,7 @@ export function NoteEditor({ notes }: { notes: NotesState }) {
             {noteContent.trim() ? (
               renderMarkdownPreview(noteContent)
             ) : (
-              <div className="text-slate-600 italic text-sm text-center mt-12">
+              <div className="text-zinc-600 italic text-sm text-center mt-12">
                 Aucun contenu à prévisualiser.
               </div>
             )}

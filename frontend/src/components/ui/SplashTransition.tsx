@@ -37,7 +37,7 @@ export function SplashTransition({
   }, [muted, onDone]);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#050508] pointer-events-none">
+    <div className="fixed inset-0 z-[9999] bg-void pointer-events-none">
       
       {/* Ligne de fracture (angle 150deg = perpendiculaire à 60deg) */}
       <div 

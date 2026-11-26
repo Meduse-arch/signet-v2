@@ -278,7 +278,7 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
 
   if (isInGameView) {
     return (
-      <Suspense fallback={<div className="h-full w-full bg-[#050508] flex items-center justify-center text-white/50 text-sm">Chargement de la table…</div>}>
+      <Suspense fallback={<div className="h-full w-full bg-void flex items-center justify-center text-white/50 text-sm">Chargement de la table…</div>}>
         <GameBoard 
           isHost={isHost}
           username={username}
@@ -296,7 +296,7 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
   }
 
   return (
-    <div className="h-full pt-8 relative animate-fade-in bg-[#050508] flex flex-col overflow-x-hidden">
+    <div className="h-full pt-8 relative animate-fade-in bg-void flex flex-col overflow-x-hidden">
       {/* Background Cinématique */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-cover bg-center opacity-40 blur-sm scale-105 grayscale" style={{ backgroundImage: 'url("/fantasy_vtt_bg.jpg")' }} />
@@ -320,8 +320,8 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
         
         {/* Code Héro */}
         <div className="text-center mb-16 animate-slide-up">
-          <h2 className="text-zinc-400 text-sm font-bold uppercase tracking-[0.3em] mb-4 drop-shadow-md">Code d'invitation</h2>
-          <div className="text-5xl md:text-7xl font-black text-white tracking-widest drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+          <h2 className="text-zinc-400 text-sm mb-4">Code d'invitation</h2>
+          <div className="text-5xl md:text-7xl font-black text-white font-mono tracking-tight">
             {roomId}
           </div>
         </div>
@@ -341,9 +341,9 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
             variant="primary" 
             onClick={handleStartGame}
             leftIcon={<Play className="w-6 h-6 fill-current" />}
-            className="w-full max-w-md py-5 text-xl tracking-widest shadow-[0_0_40px_rgba(225,29,72,0.4)] hover:shadow-[0_0_60px_rgba(225,29,72,0.6)] animate-pulse"
+            className="w-full max-w-md h-14 !py-0 text-lg"
           >
-            LANCER LA SESSION
+            Lancer la session
           </Button>
         ) : (
           <Button 
@@ -351,9 +351,9 @@ export function GameSession({ roomId, signalUrl, isHost, username, systemId, ses
             onClick={handleEnterGame}
             disabled={connectionState !== 'connected' || !isRoomOpen}
             leftIcon={<Play className="w-6 h-6 fill-current" />}
-            className={`w-full max-w-md py-5 text-xl tracking-widest ${connectionState === 'connected' && isRoomOpen ? 'shadow-[0_0_40px_rgba(225,29,72,0.4)] hover:shadow-[0_0_60px_rgba(225,29,72,0.6)] animate-pulse' : 'opacity-50'}`}
+            className="w-full max-w-md h-14 !py-0 text-lg"
           >
-            {connectionState !== 'connected' ? 'CONNEXION EN COURS...' : (!isRoomOpen ? 'SALLE FERMÉE' : 'ENTRER EN JEU')}
+            {connectionState !== 'connected' ? 'Connexion en cours…' : (!isRoomOpen ? 'Salle fermée' : 'Entrer en jeu')}
           </Button>
         )}
       </div>

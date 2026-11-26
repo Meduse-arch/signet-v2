@@ -18,7 +18,7 @@ interface SettingsViewProps {
 
 function Section({ icon, title, desc, children }: { icon: React.ReactNode; title: string; desc?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl bg-[#090a10]/75 backdrop-blur-xl border border-white/[.08] p-6">
+    <section className="rounded-2xl bg-surface/75 backdrop-blur-xl border border-white/[.08] p-6">
       <div className="flex items-start gap-4 mb-5">
         <span className="mt-0.5 text-rose-400">{icon}</span>
         <div>

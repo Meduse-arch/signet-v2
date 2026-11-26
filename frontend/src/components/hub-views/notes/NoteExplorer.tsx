@@ -68,7 +68,7 @@ export function NoteExplorer({ notes }: { notes: NotesState }) {
             const isLast = index === breadcrumbParts.length - 1;
             return (
               <React.Fragment key={subPath}>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
                 <button
                   onClick={() => setCurrentPath(subPath)}
                   className={`transition-colors hover:text-white px-2 py-1 rounded-md hover:bg-white/5 truncate max-w-[150px] ${
@@ -84,7 +84,7 @@ export function NoteExplorer({ notes }: { notes: NotesState }) {
 
         {/* Recherche */}
         <div className="relative min-w-[220px]">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Rechercher une note"
@@ -98,16 +98,16 @@ export function NoteExplorer({ notes }: { notes: NotesState }) {
       {/* Grille des éléments */}
       <div className="flex-1 overflow-y-auto pb-12 custom-scrollbar">
         {loading ? (
-          <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
+          <div className="h-48 flex items-center justify-center text-zinc-500 text-sm">
             Chargement des documents…
           </div>
         ) : sortedItems.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-hairline rounded-2xl bg-surface/50">
-            <FileText className="w-10 h-10 text-slate-600 mb-2" />
-            <p className="text-sm font-semibold text-slate-400">
+            <FileText className="w-10 h-10 text-zinc-600 mb-2" />
+            <p className="text-sm font-semibold text-zinc-400">
               {search ? 'Aucune note ne correspond à votre recherche' : 'Ce dossier est vide'}
             </p>
-            <p className="text-xs text-slate-600 mt-1 max-w-sm">
+            <p className="text-xs text-zinc-600 mt-1 max-w-sm">
               {search
                 ? 'Essayez avec d\'autres mots-clés.'
                 : 'Créez votre première note ou organisez vos dossiers avec les boutons ci-dessus.'}

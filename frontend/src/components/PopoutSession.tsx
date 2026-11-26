@@ -77,7 +77,7 @@ export function PopoutSession({ moduleId, systemId: urlSystemId, username }: Pop
 
   if (error) {
     return (
-      <div className="w-full h-screen bg-[#050508] text-white flex items-center justify-center p-8 text-center">
+      <div className="w-full h-screen bg-void text-white flex items-center justify-center p-8 text-center">
         <p className="text-rose-500 font-bold">{error}</p>
       </div>
     );
@@ -89,13 +89,13 @@ export function PopoutSession({ moduleId, systemId: urlSystemId, username }: Pop
 
   // The popout is a fullscreen container for the module
   return (
-    <div className="w-full h-screen bg-[#050508] text-white overflow-hidden flex flex-col">
+    <div className="w-full h-screen bg-void text-white overflow-hidden flex flex-col">
       {/* En-tête : la barre native gère le déplacement, on ne garde que le titre et « Réintégrer » */}
-      <div className="w-full h-8 bg-[#090a10] flex items-center justify-between px-4 shrink-0 border-b border-white/10">
-        <span className="text-xs font-bold text-white/50 tracking-widest uppercase">{windowDef.title}</span>
+      <div className="w-full h-8 bg-surface flex items-center justify-between px-4 shrink-0 border-b border-hairline">
+        <span className="text-xs font-medium text-zinc-400">{windowDef.title}</span>
         <button
           onClick={handleDockIn}
-          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors cursor-pointer"
           title="Réintégrer dans l'app"
         >
           <ArrowDownToLine className="w-3.5 h-3.5" />
