@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { SignetAPI } from '../../../services/SignetAPI';
 import { Dices, Play } from 'lucide-react';
 import { Button } from '../../../../components/ui/Button';
+import { useCompanionMode } from '../../../hooks/useCompanionMode';
+
+/** Retour haptique léger, sauf si l'utilisateur préfère réduire les animations */
+function hapticTick() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  navigator.vibrate?.(30);
+}
 
 interface DiceWindowProps {
   api: SignetAPI;
 }
 
 export function DiceWindow({ api }: DiceWindowProps) {
+  const compact = useCompanionMode();
   const [customCount, setCustomCount] = useState<string>('1');
   const [customMax, setCustomMax] = useState<string>('100');
   const [lastResult, setLastResult] = useState<{ dice: string[], results: number[] } | null>(null);
@@ -33,6 +41,7 @@ export function DiceWindow({ api }: DiceWindowProps) {
   }, [api]);
 
   const rollDice = async (diceString: string) => {
+    hapticTick();
     // 1. Demande le lancer à Rust
     const results = await api.requestRoll([diceString]);
     
@@ -77,9 +86,9 @@ export function DiceWindow({ api }: DiceWindowProps) {
             <button
               key={d}
               onClick={() => rollDice(d)}
-              className="bg-white/5 hover:bg-rose-600/20 border border-white/10 hover:border-rose-500/50 rounded-md py-3 text-center transition-all group"
+              className={`bg-white/5 hover:bg-rose-600/20 active:bg-rose-600/30 border border-white/10 hover:border-rose-500/50 rounded-md py-3 max-md:min-h-14 text-center transition-colors group ${compact ? 'min-h-14' : ''}`}
             >
-              <span className="font-bold text-zinc-300 group-hover:text-rose-400">{d.toUpperCase()}</span>
+              <span className={`font-bold text-zinc-300 group-hover:text-rose-400 ${compact ? 'text-lg' : ''}`}>{d.toUpperCase()}</span>
             </button>
           ))}
         </div>
@@ -100,7 +109,9 @@ export function DiceWindow({ api }: DiceWindowProps) {
               max="100"
               value={customCount}
               onChange={(e) => setCustomCount(e.target.value)}
-              className="w-full bg-black/50 border border-white/10 rounded-md px-2 py-2 text-white text-center focus:outline-none focus:border-rose-500/50 transition-colors"
+              aria-label="Nombre de dés"
+              inputMode="numeric"
+              className="w-full bg-black/50 border border-white/10 rounded-md px-2 py-2 max-md:min-h-14 text-white text-center focus:outline-none focus:border-rose-500/50 transition-colors"
             />
           </div>
           <div className="relative flex-1">
@@ -110,10 +121,12 @@ export function DiceWindow({ api }: DiceWindowProps) {
               min="2"
               value={customMax}
               onChange={(e) => setCustomMax(e.target.value)}
-              className="w-full bg-black/50 border border-white/10 rounded-md pl-8 pr-3 py-2 text-white focus:outline-none focus:border-rose-500/50 transition-colors"
+              aria-label="Nombre de faces"
+              inputMode="numeric"
+              className="w-full bg-black/50 border border-white/10 rounded-md pl-8 pr-3 py-2 max-md:min-h-14 text-white focus:outline-none focus:border-rose-500/50 transition-colors"
             />
           </div>
-          <Button type="submit" variant="glass" className="px-4">
+          <Button type="submit" variant="glass" className="px-4 max-md:min-w-14 max-md:min-h-14" aria-label="Lancer">
             <Play className="w-4 h-4" />
           </Button>
         </form>
@@ -121,12 +134,12 @@ export function DiceWindow({ api }: DiceWindowProps) {
 
       {/* Résultat (Toast local) */}
       {lastResult && (
-        <div className="mt-auto animate-slide-up bg-[#050508]/90 border border-rose-500/30 rounded-xl p-4 text-center shadow-[0_0_30px_rgba(225,29,72,0.15)] relative overflow-hidden backdrop-blur-md">
+        <div role="status" aria-live="polite" className="mt-auto animate-slide-up bg-[#050508]/90 border border-rose-500/30 rounded-xl p-4 text-center shadow-[0_0_30px_rgba(225,29,72,0.15)] relative overflow-hidden backdrop-blur-md">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-600 to-rose-400" />
           <span className="text-[10px] text-rose-400 font-bold uppercase tracking-widest block mb-2">
             Lancé de {lastResult.dice.join(', ')}
           </span>
-          <span className="text-5xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+          <span className="text-6xl max-md:text-7xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
             {lastResult.results.reduce((a, b) => a + b, 0)}
           </span>
           {lastResult.results.length > 1 && (

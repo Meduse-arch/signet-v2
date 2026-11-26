@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ChevronRight, Dices, Ellipsis, LogOut, MessageSquare, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { AppWindow, ArrowLeft, BookOpen, ChevronRight, Dices, Ellipsis, LogOut, MessageSquare, Settings, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { ModManager } from '../../core/services/ModManager';
 import type { CompanionTab, RegisteredWindow } from '../../core/services/ModManager';
 import { coreEventBus } from '../../core/services/EventBus';
+import { useVisualViewportHeight } from '../../core/hooks/useVisualViewportHeight';
+import { ModuleOverlays } from '../game/ModuleOverlays';
 
 type TabId = 'sheet' | 'dice' | 'chat' | 'more';
 
@@ -15,7 +19,7 @@ interface CompanionShellProps {
   onQuit: () => void;
 }
 
-const TABS: { id: TabId; label: string; icon: typeof Users }[] = [
+const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: 'sheet', label: 'Fiche', icon: Users },
   { id: 'dice', label: 'Dés', icon: Dices },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
@@ -28,6 +32,18 @@ const EMPTY_MESSAGES: Record<TabId, string> = {
   chat: 'Le chat est désactivé.',
   more: '',
 };
+
+/** Icônes de repli pour les fenêtres enregistrées sans `icon` (onglet Plus) */
+const FALLBACK_ICONS: Record<string, LucideIcon> = {
+  'system-notes': BookOpen,
+  'system-settings': Settings,
+};
+
+function windowIcon(w: RegisteredWindow): ReactNode {
+  if (w.icon) return w.icon;
+  const Icon = FALLBACK_ICONS[w.windowId] ?? AppWindow;
+  return <Icon />;
+}
 
 function windowKey(w: RegisteredWindow): string {
   return `${w.modId}:${w.windowId}`;
@@ -45,6 +61,8 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
   const [visited, setVisited] = useState<TabId[]>(['sheet']);
   const [sheetKey, setSheetKey] = useState<string | null>(null);
   const [moreKey, setMoreKey] = useState<string | null>(null);
+  // Clavier virtuel : la coque suit la zone réellement visible et libère la barre d'onglets
+  const { height: visibleHeight, keyboardOpen } = useVisualViewportHeight();
 
   // Les modules s'enregistrent après le montage : on suit les mises à jour
   useEffect(() => {
@@ -128,7 +146,7 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
             onClick={() => setMoreKey(windowKey(w))}
             className="flex items-center gap-3 min-h-[56px] px-4 rounded-lg bg-slate-950/80 border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors"
           >
-            <span className="w-5 h-5 shrink-0 [&>svg]:w-full [&>svg]:h-full" aria-hidden="true">{w.icon}</span>
+            <span className="w-5 h-5 shrink-0 [&>svg]:w-full [&>svg]:h-full" aria-hidden="true">{windowIcon(w)}</span>
             <span className="flex-1 text-left truncate">{w.title}</span>
             <ChevronRight className="w-5 h-5 shrink-0 text-white/60" aria-hidden="true" />
           </button>
@@ -152,7 +170,10 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#050508] text-white pointer-events-auto">
+    <div
+      className="h-full flex flex-col relative bg-[#050508] text-white pointer-events-auto"
+      style={visibleHeight !== null ? { height: visibleHeight } : undefined}
+    >
       <header className="shrink-0 flex items-center gap-1 pl-1 pr-4 border-b border-white/10 bg-slate-950/80 backdrop-blur-md pt-[env(safe-area-inset-top)]">
         <button
           onClick={onBack}
@@ -183,6 +204,7 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
 
       <nav
         aria-label="Navigation du mode compagnon"
+        hidden={keyboardOpen}
         className="shrink-0 flex border-t border-white/10 bg-slate-950/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
       >
         {TABS.map(({ id, label, icon: Icon }) => {
@@ -204,6 +226,9 @@ export function CompanionShell({ sessionName, username, onBack, onQuit }: Compan
           );
         })}
       </nav>
+
+      {/* Overlays des modules (animations de dés…) — sans la navigation desktop (Taskbar) */}
+      <ModuleOverlays exclude={['nav-wrapper']} />
     </div>
   );
 }

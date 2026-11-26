@@ -7,7 +7,12 @@ import { coreEventBus } from '../../core/services/EventBus';
  * Composant réceptacle (invisible) qui affiche dynamiquement 
  * toutes les interfaces graphiques (UI) enregistrées par les Modules.
  */
-export function ModuleOverlays() {
+interface ModuleOverlaysProps {
+  /** overlayId à ne pas afficher (ex: 'nav-wrapper' en Mode Compagnon : pas de Taskbar desktop) */
+  exclude?: string[];
+}
+
+export function ModuleOverlays({ exclude = [] }: ModuleOverlaysProps = {}) {
   const [overlays, setOverlays] = useState<UIOverlay[]>([]);
 
   useEffect(() => {
@@ -26,11 +31,12 @@ export function ModuleOverlays() {
     };
   }, []);
 
-  if (overlays.length === 0) return null;
+  const visible = overlays.filter(o => !exclude.includes(o.overlayId));
+  if (visible.length === 0) return null;
 
   return (
     <div className="absolute inset-0 pointer-events-none z-50">
-      {overlays.map((overlay) => (
+      {visible.map((overlay) => (
         <React.Fragment key={`${overlay.modId}:${overlay.overlayId}`}>
           {overlay.component}
         </React.Fragment>

@@ -52,7 +52,7 @@ export function ChatUI() {
   return (
     <div className="flex flex-col h-full w-full pointer-events-auto">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div role="log" aria-live="polite" aria-label="Messages du chat" className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 custom-scrollbar">
         {messages.length === 0 && (
           <div className="text-center text-zinc-500 text-xs italic mt-4">
             Aucun message. Soyez le premier à parler !
@@ -74,10 +74,14 @@ export function ChatUI() {
       <form onSubmit={handleSend} className="p-4 bg-black/40 border-t border-white/10 shrink-0">
         <input
           type="text"
+          name="message"
+          aria-label="Message"
+          autoComplete="off"
+          enterKeyHint="send"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Envoyer un message..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#e11d48]/50 transition-colors shadow-inner"
+          placeholder="Envoyer un message…"
+          className="w-full min-h-12 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-base md:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#e11d48]/50 transition-colors shadow-inner"
         />
       </form>
     </div>
